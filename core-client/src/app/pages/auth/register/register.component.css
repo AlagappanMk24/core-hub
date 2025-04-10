@@ -1,0 +1,39 @@
+/* In your register.component.css */
+.close-button {
+    float: right; /* Position the button to the right */
+    margin-left: 10px; /* Add some space */
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 1.2rem; /* Make it a bit bigger */
+    padding: 0; /* remove default padding */
+}
+
+/* In your component's CSS file (e.g., login.component.css) or global styles */
+.mat-form-field-appearance-fill .mat-form-field-flex {
+    background-color: white !important; /* Important to override Material styles */
+  }
+  
+  /* For outline appearance */
+  .mat-form-field-appearance-outline .mat-form-field-outline {
+      background-color: white; /* sets the outline's background */
+  }
+  
+  .mat-form-field-appearance-outline .mat-form-field-infix {
+      padding: 0.5rem; /* Adjust padding as needed */
+  }
+  
+  /* styles for the label */
+  .mat-form-field-label {
+      color: gray !important; /* Or any color you prefer */
+  }
+  
+  /* styles for the input text */
+  .mat-form-field-input {
+      color: black !important;
+  }
+  
+  /* Optional: Style the hint text (if you use it) */
+  .mat-form-field-hint {
+      color: gray;
+  }

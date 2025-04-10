@@ -1,0 +1,124 @@
+<div
+  class="h-screen flex items-center justify-center bg-gradient-to-r from-purple-50 to-pink-50"
+>
+  <div class="w-full max-w-2xl bg-white rounded-lg shadow-lg p-8">
+    <div class="text-center mb-6">
+      <h1 class="text-3xl font-bold text-purple-700 mb-2">Register</h1>
+      <p class="text-gray-600">Create your account</p>
+    </div>
+
+    <div
+      *ngIf="errorMessage"
+      class="mb-4 p-3 bg-red-100 text-red-700 border border-red-300 rounded-lg"
+      style="font-size: 12px"
+    >
+      {{ errorMessage }}
+    </div>
+    <form [formGroup]="form" (ngSubmit)="register()">
+      <div class="grid grid-cols-2 gap-4">
+        <mat-form-field appearance="fill" class="w-full">
+          <mat-label>Fullname</mat-label>
+          <input matInput placeholder="Fullname" formControlName="fullname" />
+          <mat-icon matPrefix>person</mat-icon>
+        </mat-form-field>
+
+        <mat-form-field appearance="fill" class="w-full">
+          <mat-label>Email</mat-label>
+          <input matInput placeholder="Email" formControlName="email" />
+          <mat-icon matPrefix>email</mat-icon>
+        </mat-form-field>
+
+        <mat-form-field appearance="fill" class="w-full">
+          <mat-label>Street Address</mat-label>
+          <input
+            matInput
+            placeholder="Street Address"
+            formControlName="streetAddress"
+          />
+          <mat-icon matPrefix>location_on</mat-icon> 
+        </mat-form-field>
+
+        <mat-form-field appearance="fill" class="w-full">
+          <mat-label>City</mat-label>
+          <input matInput placeholder="City" formControlName="city" />
+          <mat-icon matPrefix>location_city</mat-icon> 
+        </mat-form-field>
+
+        <mat-form-field appearance="fill" class="w-full">
+          <mat-label>State</mat-label>
+          <input matInput placeholder="State" formControlName="state" />
+          <mat-icon matPrefix>map</mat-icon> 
+        </mat-form-field>
+
+        <mat-form-field appearance="fill" class="w-full">
+          <mat-label>Postal Code</mat-label>
+          <input
+            matInput
+            placeholder="Postal Code"
+            formControlName="postalCode"
+          />
+          <mat-icon matPrefix>pin</mat-icon>
+        </mat-form-field>
+        <mat-form-field appearance="fill" class="w-full">
+          <mat-label>Password</mat-label>
+          <input
+            matInput
+            [type]="hidePassword ? 'password' : 'text'"
+            formControlName="password"
+            placeholder="Password"
+          />
+          <mat-icon matPrefix>lock</mat-icon>
+          <mat-icon
+            (click)="hidePassword = !hidePassword"
+            matSuffix
+            class="cursor-pointer"
+          >
+            {{ hidePassword ? "visibility_off" : "visibility" }}
+          </mat-icon>
+        </mat-form-field>
+
+        <mat-form-field appearance="fill" class="w-full">
+          <mat-label>Confirm Password</mat-label>
+          <input
+            matInput
+            [type]="hideConfirmPassword ? 'password' : 'text'"
+            formControlName="confirmPassword"
+            placeholder="Confirm Password"
+          />
+          <mat-icon matPrefix>lock</mat-icon>
+          <mat-icon
+            (click)="hideConfirmPassword = !hideConfirmPassword"
+            matSuffix
+            class="cursor-pointer"
+          >
+            {{ hideConfirmPassword ? "visibility_off" : "visibility" }}
+          </mat-icon>
+          <mat-error *ngIf="form.get('confirmPassword')?.errors?.['notSame']"
+            >Passwords do not match</mat-error
+          >
+        </mat-form-field>
+      </div>
+      <button
+        type="submit"
+        [disabled]="!form.valid"
+        class="w-full bg-purple-700 hover:bg-purple-800 text-white font-bold py-2 px-4 rounded-lg disabled:bg-purple-300 transition duration-300 mt-4"
+      >
+        Register
+      </button>
+
+      <div class="mt-6 text-center">
+        <span class="text-gray-600">Already have an account?</span>
+        <a
+          class="text-purple-700 hover:underline ml-1"
+          [routerLink]="['/auth/login']"
+          >Login</a
+        >
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Full-screen Loading Overlay -->
+<div *ngIf="loading" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+  <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-purple-500"></div>
+</div>
