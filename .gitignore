@@ -1,0 +1,14 @@
+﻿################################################################################
+# This .gitignore file was automatically created by Microsoft(R) Visual Studio.
+################################################################################
+
+/Core API/.vs
+/Core API/Core API.Application/bin/Debug/net8.0
+/Core API/Core API.Application/obj
+/Core API/Core API.Domain/bin/Debug/net8.0
+/Core API/Core API.Domain/obj
+/Core API/Core API.Infrastructure/bin/Debug/net8.0
+/Core API/Core API.Infrastructure/obj
+/Core API/Core API.Web/bin/Debug/net8.0
+/Core API/Core API.Web/obj
+/.vs
