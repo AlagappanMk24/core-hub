@@ -1,0 +1,42 @@
+<!-- layout.component.html -->
+<div class="flex h-screen bg-gray-50">
+  <!-- Sidebar -->
+  <app-sidebar
+    [class.hidden]="isSidebarCollapsed"
+    (menuItemSelected)="onMenuItemSelected($event)"
+  >
+  </app-sidebar>
+
+  <!-- Main Content Area -->
+  <div class="flex-1 flex flex-col overflow-hidden">
+    <!-- Header -->
+    <app-header
+      [userName]="currentUser.name"
+      [userAvatar]="currentUser.avatar"
+      [hasNotifications]="hasNotifications"
+      (themeChanged)="onThemeChanged($event)"
+    >
+    </app-header>
+
+    <!-- Dynamic Content Area -->
+    <main class="flex-1 overflow-y-auto bg-gray-50">
+      <!-- This is where router-outlet or dashboard content goes -->
+      <ng-content></ng-content>
+    </main>
+  </div>
+</div>
+
+<!-- Mobile Sidebar Overlay -->
+<div
+  class="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+  [class.hidden]="isSidebarCollapsed"
+  (click)="toggleSidebar()"
+></div>
+
+<!-- Mobile Menu Button -->
+<button
+  class="fixed top-4 left-4 z-50 lg:hidden bg-purple-600 text-white p-2 rounded-md shadow-lg"
+  (click)="toggleSidebar()"
+>
+  <i class="fas fa-bars"></i>
+</button>

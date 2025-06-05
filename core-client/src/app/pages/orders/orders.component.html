@@ -1,0 +1,192 @@
+<div class="orders-container">
+  <!-- Header Section -->
+  <div class="orders-header">
+    <div class="header-left">
+      <h1>Orders</h1>
+      <div class="date-selector">
+        <i class="fas fa-calendar-alt"></i>
+        <span>Jan 1 - Jan 30, 2024</span>
+        <i class="fas fa-chevron-down"></i>
+      </div>
+    </div>
+    <div class="header-right">
+      <button class="btn btn-outline">
+        <i class="fas fa-download"></i>
+        Export
+      </button>
+      <div class="dropdown">
+        <button class="btn btn-outline dropdown-toggle">
+          More actions
+          <i class="fas fa-chevron-down"></i>
+        </button>
+      </div>
+      <button class="btn btn-primary">Create order</button>
+    </div>
+  </div>
+
+  <!-- Stats Cards -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <h3>Total Orders</h3>
+      <div class="stat-value">
+        <span class="value">{{ orderStats.totalOrders }}</span>
+        <span class="change positive">
+          <i class="fas fa-arrow-up"></i>
+          {{ orderStats.totalOrdersChange }}% last week
+        </span>
+      </div>
+      <div class="chart-placeholder">
+        <svg width="80" height="30" viewBox="0 0 80 30">
+          <polyline points="0,25 15,20 30,15 45,10 60,8 75,5" stroke="#10b981" stroke-width="2" fill="none"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <h3>Order items over time</h3>
+      <div class="stat-value">
+        <span class="value">{{ orderStats.orderItemsOverTime }}</span>
+        <span class="change positive">
+          <i class="fas fa-arrow-up"></i>
+          {{ orderStats.orderItemsOverTimeChange }}% last week
+        </span>
+      </div>
+      <div class="chart-placeholder">
+        <svg width="80" height="30" viewBox="0 0 80 30">
+          <polyline points="0,20 15,18 30,12 45,8 60,6 75,3" stroke="#10b981" stroke-width="2" fill="none"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <h3>Returns Orders</h3>
+      <div class="stat-value">
+        <span class="value">{{ orderStats.returnsOrders }}</span>
+        <span class="change negative">
+          <i class="fas fa-arrow-down"></i>
+          {{ Math.abs(orderStats.returnsOrdersChange) }}% last week
+        </span>
+      </div>
+      <div class="chart-placeholder">
+        <svg width="80" height="30" viewBox="0 0 80 30">
+          <polyline points="0,15 15,17 30,20 45,22 60,25 75,27" stroke="#ef4444" stroke-width="2" fill="none"/>
+        </svg>
+      </div>
+    </div>
+
+    <div class="stat-card">
+      <h3>Fulfilled orders over time</h3>
+      <div class="stat-value">
+        <span class="value">{{ orderStats.fulfilledOrdersOverTime }}</span>
+        <span class="change positive">
+          <i class="fas fa-arrow-up"></i>
+          {{ orderStats.fulfilledOrdersOverTimeChange }}% last week
+        </span>
+      </div>
+      <div class="chart-placeholder">
+        <svg width="80" height="30" viewBox="0 0 80 30">
+          <polyline points="0,22 15,19 30,14 45,10 60,7 75,4" stroke="#10b981" stroke-width="2" fill="none"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Orders Table Section -->
+  <div class="orders-table-section">
+    <!-- Filter Tabs -->
+    <div class="filter-tabs">
+      <button 
+        *ngFor="let filter of filters" 
+        class="filter-tab"
+        [class.active]="activeFilter === filter"
+        (click)="setActiveFilter(filter)">
+        {{ filter }}
+      </button>
+      <button class="filter-tab add-filter">
+        <i class="fas fa-plus"></i>
+        Add
+      </button>
+    </div>
+
+    <!-- Table Controls -->
+    <div class="table-controls">
+      <div class="search-box">
+        <i class="fas fa-search"></i>
+        <input 
+          type="text" 
+          placeholder="Search orders..." 
+          [(ngModel)]="searchTerm"
+          (input)="onSearch()">
+      </div>
+      <div class="table-actions">
+        <button class="btn btn-icon">
+          <i class="fas fa-filter"></i>
+        </button>
+        <button class="btn btn-icon">
+          <i class="fas fa-sort"></i>
+        </button>
+        <button class="btn btn-icon">
+          <i class="fas fa-ellipsis-h"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- Orders Table -->
+    <div class="table-container">
+      <table class="orders-table">
+        <thead>
+          <tr>
+            <th>
+              <input type="checkbox" (change)="toggleSelectAll($event)">
+            </th>
+            <th>Order</th>
+            <th>Date <i class="fas fa-sort"></i></th>
+            <th>Customer</th>
+            <th>Payment</th>
+            <th>Total</th>
+            <th>Delivery</th>
+            <th>Items</th>
+            <th>Fulfillment</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let order of filteredOrders" [class.selected]="selectedOrders.includes(order.id)">
+            <td>
+              <input 
+                type="checkbox" 
+                [checked]="selectedOrders.includes(order.id)"
+                (change)="toggleOrderSelection(order.id, $event)">
+            </td>
+            <td class="order-id">{{ order.id }}</td>
+            <td>{{ order.date }}</td>
+            <td>{{ order.customer }}</td>
+            <td>
+              <span class="status-badge" [ngClass]="getPaymentStatusClass(order.payment)">
+                {{ order.payment }}
+              </span>
+            </td>
+            <td class="total">${{ order.total.toFixed(2) }}</td>
+            <td>{{ order.delivery }}</td>
+            <td>{{ order.items }} items</td>
+            <td>
+              <span class="status-badge" [ngClass]="getFulfillmentStatusClass(order.fulfillment)">
+                {{ order.fulfillment }}
+              </span>
+            </td>
+            <td>
+              <div class="action-buttons">
+                <button class="btn btn-icon" title="View">
+                  <i class="fas fa-eye"></i>
+                </button>
+                <button class="btn btn-icon" title="Edit">
+                  <i class="fas fa-edit"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>

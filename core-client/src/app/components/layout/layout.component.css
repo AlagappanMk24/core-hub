@@ -1,0 +1,17 @@
+.layout-container {
+  min-height: 100vh;
+}
+
+.content-area {
+  transition: margin-left 0.3s ease-in-out;
+}
+
+.sidebar-collapsed .content-area {
+  margin-left: 0;
+}
+
+@media (max-width: 1024px) {
+  .mobile-sidebar-overlay {
+    backdrop-filter: blur(4px);
+  }
+}

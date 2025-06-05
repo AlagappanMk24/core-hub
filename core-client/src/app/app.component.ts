@@ -1,16 +1,20 @@
+// app.component.ts
 import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterOutlet } from '@angular/router';
-import {MatButtonModule} from '@angular/material/button';
-import { NavbarComponent } from './components/navbar/navbar.component';
-
+import { OrdersComponent } from './pages/orders/orders.component';
+import { DashboardComponent } from "./pages/dashboard/dashboard.component";
+import { LayoutComponent } from "./components/layout/layout.component";
 @Component({
   selector: 'app-root',
   standalone: true,
-  imports: [RouterOutlet, CommonModule, MatButtonModule, NavbarComponent],
-  templateUrl: './app.component.html',
-  styleUrl: './app.component.css'
+  imports: [CommonModule,OrdersComponent, DashboardComponent,LayoutComponent],
+  templateUrl : './app.component.html',
+  styleUrls : ['./app.component.css']
 })
 export class AppComponent {
-  title = 'client';
+  selectedRoute: string = 'dashboard';
+
+  onMenuItemSelected(route: string): void {
+    this.selectedRoute = route;
+  }
 }
