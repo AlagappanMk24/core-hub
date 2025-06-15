@@ -1,138 +1,197 @@
-import { Component, OnInit, inject } from '@angular/core';
+// login.component.ts
+import { Component, inject, OnInit } from '@angular/core';
 import {
   FormBuilder,
   FormGroup,
   ReactiveFormsModule,
   Validators,
 } from '@angular/forms';
-import { MatIconModule } from '@angular/material/icon';
-import { MatInputModule } from '@angular/material/input';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
+import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
+import { LoginRequest } from '../../../interfaces/auth/auth-request/login-request';
 import { CommonModule } from '@angular/common';
 
 @Component({
   selector: 'app-login',
-  standalone: true,
-  imports: [
-    MatInputModule,
-    RouterLink,
-    MatSnackBarModule,
-    MatIconModule,
-    ReactiveFormsModule,
-    CommonModule,
-  ],
   templateUrl: './login.component.html',
-  styleUrl: './login.component.css',
+  styleUrls: ['./login.component.css'],
+  imports: [ReactiveFormsModule, RouterModule, CommonModule],
+  standalone: true,
 })
 export class LoginComponent implements OnInit {
   authService = inject(AuthService);
-  matSnackBar = inject(MatSnackBar);
   router = inject(Router);
-  hide = true;
-  form!: FormGroup;
+  activatedRoute = inject(ActivatedRoute);
   fb = inject(FormBuilder);
+
+  loginForm: FormGroup;
   loading: boolean = false;
   loginError: string = '';
+  loadingText: string = 'Signing in, please wait...';
+  showPassword: boolean = false;
 
-  constructor(
-    private activatedRoute: ActivatedRoute // FIXED: Changed `route` to `activatedRoute`
-  ) {}
-
-  login() {
-    this.loading = true;
-    this.authService.login(this.form.value).subscribe({
-      next: () => {
-        // Redirect to Verify OTP Page
-        this.router.navigate(['/auth/verify-otp'], {
-          queryParams: { email: this.form.value.email },
-        });
-      },
-      error: (error) => {
-        console.log(error, 'Error Response');
-  
-        this.loading = false;
-  
-        if (error.status === 400) {
-          if (error.error?.errors) {
-            // Extract validation errors
-            const validationErrors = error.error.errors;
-            this.loginError = Object.values(validationErrors).flat().join(' ');
-          } else if (error.error?.message) {
-            this.loginError = error.error.message;
-          } else {
-            this.loginError = 'Invalid login attempt. Please check your credentials.';
-          }
-        } else if (error.status === 403) {
-          console.log('403 Forbidden Error');
-          this.loginError = error.error?.message || 'Unauthorized access.';
-        } else if (error.status === 500) {
-          this.loginError = 'An error occurred while processing the request.';
-        } else {
-          this.loginError = error.error?.message || 'Login failed. Please try again.';
-        }
-      },
+  constructor() {
+    this.loginForm = this.fb.group({
+      email: [
+        '',
+        [Validators.required, Validators.email, Validators.maxLength(255)],
+      ],
+      password: [
+        '',
+        [
+          Validators.required,
+          Validators.minLength(8),
+          Validators.maxLength(100),
+          Validators.pattern(
+            /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$/
+          ),
+        ],
+      ],
     });
-  }
-  
-  // Initiate external login (Google, Microsoft, Facebook)
-  loginWithProvider(provider: string) {
-    this.loading = true; // Start loading effect
-
-    this.authService.getExternalLoginUrl(provider).subscribe({
-      next: (response: any) => {
-        window.location.href = response.redirectUrl; // Redirect to external login page
-      },
-      error: (error) => {
-        console.error('Login failed:', error);
-        this.loading = false;
-      },
-    });
-
-    // Keep loading state active until navigation is complete
-    this.router.events.subscribe((event) => {
-      if (event.constructor.name === 'NavigationEnd') {
-        this.loading = false;
-      }
-    });
-  }
-
-  logout() {
-    this.authService.logout();
-    localStorage.removeItem('authToken');
   }
 
   ngOnInit(): void {
-    this.form = this.fb.group({
-      email: ['', [Validators.required, Validators.email]],
-      password: ['', Validators.required],
-    });
     // Reset login error when user starts typing
-    this.form.valueChanges.subscribe(() => {
+    this.loginForm.valueChanges.subscribe(() => {
       this.loginError = '';
     });
-    this.activatedRoute.queryParams.subscribe(
-      (params: { [key: string]: string }) => {
-        // FIXED: Explicitly typed params
-        const authCode = params['code'];
-        const provider = params['state'];
-        if (authCode && provider) {
-          this.loading = true;
-          this.authService.externalLogin(authCode, provider).subscribe({
-            next: (response: any) => {
-              if (response.token) {
-                localStorage.setItem('authToken', response.token);
-                this.router.navigate(['/dashboard']); // Redirect after login
-              }
-            },
-            error: (error) => {
-              console.error('Login failed:', error);
+
+    // Handle external login callback
+    this.activatedRoute.queryParams.subscribe((params) => {
+      const authCode = params['code'];
+      const provider = params['state'];
+      if (authCode && provider) {
+        this.loading = true;
+        this.loadingText = 'Processing external login...';
+        this.authService.externalLogin(authCode, provider).subscribe({
+          next: (response) => {
+            if (response.isSuccess && response.token) {
+              this.loadingText = 'Navigating to dashboard...';
+              setTimeout(() => {
+                this.loading = false;
+                this.router.navigate(['/dashboard']);
+              }, 2000);
+            } else {
               this.loading = false;
-            },
-          });
-        }
+              this.loginError =
+                response.message || 'External login failed. Please try again.';
+            }
+          },
+          error: (error) => {
+            this.loading = false;
+            this.loginError =
+              error.error?.message ||
+              'An error occurred during external login.';
+            console.error('External login error:', error);
+          },
+        });
       }
-    );
+    });
+  }
+
+  onLogin(): void {
+    this.loginError = '';
+
+    if (this.loginForm.invalid) {
+      this.loginForm.markAllAsTouched();
+      this.setValidationError();
+      return;
+    }
+
+    this.loading = true;
+    this.loadingText = 'Signing in, please wait...';
+
+    const loginData: LoginRequest = {
+      email: this.loginForm.value.email,
+      password: this.loginForm.value.password,
+    };
+
+    setTimeout(() => {
+      this.authService.login(loginData).subscribe({
+        next: (response) => {
+          console.log(response, 'res');
+          if (response.isSucceeded) {
+            this.loadingText =
+              response.message || 'Login successful. Redirecting...';
+            setTimeout(() => {
+              this.loading = false;
+              this.router.navigate(['/auth/verify-otp'], {
+                queryParams: { email: this.loginForm.value.email },
+              });
+            }, 2000);
+          } else {
+            this.loading = false;
+            this.loginError =
+              response.message || 'Login failed. Please try again.';
+          }
+        },
+        error: (error) => {
+          this.loading = false;
+          if (error.status === 400) {
+            this.loginError =
+              error.error?.message || 'Invalid email or password.';
+          } else if (error.status === 403) {
+            this.loginError = error.error?.message || 'Unauthorized access.';
+          } else if (error.status === 500) {
+            this.loginError = 'An error occurred while processing the request.';
+          } else {
+            this.loginError =
+              error.error?.message || 'Login failed. Please try again.';
+          }
+          console.error('Login error:', error);
+        },
+      });
+    }, 2000);
+  }
+
+  loginWithProvider(provider: string): void {
+    this.loading = true;
+    this.loadingText = `Connecting to ${provider}...`;
+
+    this.authService.getExternalLoginUrl(provider).subscribe({
+      next: (response) => {
+        window.location.href = response.redirectUrl;
+      },
+      error: (error) => {
+        this.loading = false;
+        this.loginError = `Failed to connect to ${provider}. Please try again.`;
+        console.error(`External login failed for ${provider}:`, error);
+      },
+    });
+  }
+
+  togglePasswordVisibility(): void {
+    this.showPassword = !this.showPassword;
+  }
+
+  private setValidationError(): void {
+    const errors = [];
+    const emailControl = this.loginForm.get('email');
+    const passwordControl = this.loginForm.get('password');
+
+    if (emailControl?.errors) {
+      if (emailControl.errors['required']) errors.push('Email is required');
+      if (emailControl.errors['email']) errors.push('Invalid email format');
+      if (emailControl.errors['maxlength'])
+        errors.push('Email must be less than 255 characters');
+    }
+    if (passwordControl?.errors) {
+      if (passwordControl.errors['required'])
+        errors.push('Password is required');
+      if (
+        passwordControl.errors['minlength'] ||
+        passwordControl.errors['pattern']
+      ) {
+        errors.push(
+          'Password must be at least 8 characters with one uppercase, one lowercase, one number, and one special character'
+        );
+      }
+      if (passwordControl.errors['maxlength'])
+        errors.push('Password must be less than 100 characters');
+    }
+
+    if (errors.length > 0) {
+      this.loginError = `Please check the following: ${errors.join(', ')}`;
+    }
   }
 }

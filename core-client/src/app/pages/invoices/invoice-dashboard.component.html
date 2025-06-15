@@ -1,0 +1,127 @@
+<!-- invoice-dashboard.component.html -->
+<div class="dashboard-container">
+  <!-- Header -->
+  <div class="header">
+    <h1 class="title">Overview</h1>
+    <div class="header-right">
+      <div class="dropdown">
+        <select class="dropdown-select">
+          <option>Last 30 days</option>
+          <option>Last 60 days</option>
+          <option>Last 90 days</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Cards and Chart Section -->
+  <div class="stats-section">
+    <!-- Stats Cards -->
+    <div class="stats-cards">
+      <div class="stat-card">
+        <div class="stat-label">TOTAL</div>
+        <div class="stat-value">$41,910</div>
+        <div class="stat-count">213 Invoice</div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-label">PAID</div>
+        <div class="stat-value">$32,000</div>
+        <div class="stat-count">170 Invoice</div>
+      </div>
+      
+      <div class="stat-card">
+        <div class="stat-label">UNPAID</div>
+        <div class="stat-value">$12,231</div>
+        <div class="stat-count">087 Invoice</div>
+      </div>
+    </div>
+
+    <!-- Chart Section -->
+    <div class="chart-section">
+      <div class="chart-header">
+        <h3>Invoice Status</h3>
+      </div>
+      <div class="chart-container">
+        <canvas #chartCanvas width="200" height="200"></canvas>
+        <div class="chart-center-text">
+          <div class="chart-center-main">Paid</div>
+          <div class="chart-center-sub">42%</div>
+        </div>
+      </div>
+      <div class="chart-legend">
+        <div class="legend-item">
+          <span class="legend-dot draft"></span>
+          <span class="legend-text">Draft - 12%</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot pending"></span>
+          <span class="legend-text">Pending - 32%</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot sent"></span>
+          <span class="legend-text">Sent - 16%</span>
+        </div>
+        <div class="legend-item">
+          <span class="legend-dot overdue"></span>
+          <span class="legend-text">OverDue - 10%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Action Bar -->
+  <div class="action-bar">
+    <div class="filter-tabs">
+      <button class="tab-btn active">All Invoice <span class="tab-count">280</span></button>
+      <button class="tab-btn">Paid <span class="tab-count paid">228</span></button>
+      <button class="tab-btn">Pending <span class="tab-count pending">52</span></button>
+    </div>
+    
+    <div class="action-buttons">
+      <button class="btn-secondary">
+        Generate Reports
+        <i class="dropdown-icon">▼</i>
+      </button>
+      <button class="btn-secondary">
+        Export
+        <i class="export-icon">↓</i>
+      </button>
+      <button class="btn-primary">Create Invoice</button>
+    </div>
+  </div>
+
+  <!-- Invoice Table -->
+  <div class="invoice-table">
+    <div class="table-header">
+      <div class="col-id">Inv. ID</div>
+      <div class="col-client">Client Name</div>
+      <div class="col-product">Product</div>
+      <div class="col-date">Date</div>
+      <div class="col-amount">Amount</div>
+      <div class="col-status">Status</div>
+      <div class="col-actions"></div>
+    </div>
+
+    <div class="table-row" *ngFor="let invoice of invoices">
+      <div class="col-id">{{ invoice.id }}</div>
+      <div class="col-client">
+        <div class="client-info">
+          <img [src]="invoice.clientAvatar" [alt]="invoice.clientName" class="client-avatar">
+          <span>{{ invoice.clientName }}</span>
+        </div>
+      </div>
+      <div class="col-product">{{ invoice.product }}</div>
+      <div class="col-date">{{ invoice.date }}</div>
+      <div class="col-amount">{{ invoice.amount | currency }}</div>
+      <div class="col-status">
+        <span class="status-badge" [ngClass]="invoice.status.toLowerCase()">
+          {{ invoice.status }}
+        </span>
+      </div>
+      <div class="col-actions">
+        <button class="menu-btn">⋯</button>
+      </div>
+    </div>
+  </div>
+</div>

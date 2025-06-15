@@ -1,124 +1,210 @@
-<div
-  class="h-screen flex items-center justify-center bg-gradient-to-r from-purple-50 to-pink-50"
->
-  <div class="w-full max-w-2xl bg-white rounded-lg shadow-lg p-8">
-    <div class="text-center mb-6">
-      <h1 class="text-3xl font-bold text-purple-700 mb-2">Register</h1>
-      <p class="text-gray-600">Create your account</p>
+<div class="register-container">
+  <div class="register-card">
+    <!-- Header -->
+    <div class="header">
+      <div class="logo">
+        <span class="logo-text">
+          <span class="violet-first-letter">A</span>ngular
+          <span class="violet-first-letter">C</span>ore
+        </span>
+      </div>
+      <div class="existing-user">
+        <span>Already have an account? </span>
+         <a [routerLink]="['/auth/login']" class="sign-in-link">Sign In</a>
+      </div>
     </div>
 
-    <div
-      *ngIf="errorMessage"
-      class="mb-4 p-3 bg-red-100 text-red-700 border border-red-300 rounded-lg"
-      style="font-size: 12px"
-    >
-      {{ errorMessage }}
+    <!-- Main Content -->
+    <div class="main-content">
+      <!-- Registration Form Section -->
+      <div class="form-section" [class.has-errors]="errorMessage">
+        <div class="welcome-text">
+          <h2>Create Account!</h2>
+          <p>Sign up to get started</p>
+        </div>
+
+        <!-- Error Message -->
+        <div class="error-message global-error" *ngIf="errorMessage">{{ errorMessage }}</div>
+
+        <form class="register-form" (ngSubmit)="onRegister()" #registerForm="ngForm">
+          <!-- Full Name Input -->
+          <div class="input-group">
+            <div class="input-wrapper" [class.error]="fullNameInput.invalid && fullNameInput.touched">
+              <i class="icon user-icon"></i>
+              <input 
+                type="text" 
+                [(ngModel)]="fullName" 
+                name="fullName"
+                placeholder="Full Name" 
+                class="form-input"
+                required
+                maxlength="255"
+                #fullNameInput="ngModel">
+            </div>
+            <div class="error-message" *ngIf="fullNameInput.invalid && fullNameInput.touched">
+              <span *ngIf="fullNameInput.errors?.['required']">Full name is required</span>
+              <span *ngIf="fullNameInput.errors?.['maxlength']">Full name must be less than 255 characters</span>
+            </div>
+          </div>
+
+          <!-- Email Input -->
+          <div class="input-group">
+            <div class="input-wrapper" [class.error]="emailInput.invalid && emailInput.touched">
+              <i class="icon email-icon"></i>
+              <input 
+                type="email" 
+                [(ngModel)]="email" 
+                name="email"
+                placeholder="Email Address" 
+                class="form-input"
+                required
+                email
+                maxlength="255"
+                #emailInput="ngModel">
+            </div>
+            <div class="error-message" *ngIf="emailInput.invalid && emailInput.touched">
+              <span *ngIf="emailInput.errors?.['required']">Email is required</span>
+              <span *ngIf="emailInput.errors?.['email']">Please enter a valid email</span>
+              <span *ngIf="emailInput.errors?.['maxlength']">Email must be less than 255 characters</span>
+            </div>
+          </div>
+
+          <!-- Phone Number Input -->
+          <div class="input-group">
+            <div class="input-wrapper" [class.error]="phoneInput.invalid && phoneInput.touched">
+              <i class="icon phone-icon"></i>
+              <input 
+                type="tel" 
+                [(ngModel)]="phoneNumber" 
+                name="phoneNumber"
+                placeholder="Phone Number" 
+                class="form-input"
+                required
+                maxlength="20"
+                (input)="formatPhoneNumber()"
+                #phoneInput="ngModel">
+            </div>
+            <div class="error-message" *ngIf="phoneInput.invalid && phoneInput.touched">
+              <span *ngIf="phoneInput.errors?.['required']">Phone number is required</span>
+              <span *ngIf="!isPhoneNumberValid() && phoneInput.value">Invalid phone number format</span>
+            </div>
+          </div>
+
+          <!-- Password Input -->
+          <div class="input-group">
+            <div class="input-wrapper" [class.error]="passwordInput.invalid && passwordInput.touched">
+              <i class="icon lock-icon"></i>
+              <input 
+                [type]="showPassword ? 'text' : 'password'"
+                [(ngModel)]="password" 
+                name="password"
+                placeholder="Password" 
+                class="form-input"
+                required
+                minlength="8"
+                maxlength="100"
+                #passwordInput="ngModel">
+              <i class="toggle-password" 
+                 [class.show]="showPassword"
+                 (click)="togglePasswordVisibility()">👁</i>
+            </div>
+            <div class="error-message" *ngIf="passwordInput.invalid && passwordInput.touched">
+              <span *ngIf="passwordInput.errors?.['required']">Password is required</span>
+              <span *ngIf="!isPasswordValid() && passwordInput.value">Password must contain at least 8 characters, one uppercase, one lowercase, one number, and one special character</span>
+            </div>
+          </div>
+
+          <!-- Confirm Password Input -->
+          <div class="input-group">
+            <div class="input-wrapper" [class.error]="confirmPasswordInput.touched && !passwordsMatch()">
+              <i class="icon lock-icon"></i>
+              <input 
+                [type]="showConfirmPassword ? 'text' : 'password'"
+                [(ngModel)]="confirmPassword" 
+                name="confirmPassword"
+                placeholder="Confirm Password" 
+                class="form-input"
+                required
+                #confirmPasswordInput="ngModel">
+              <i class="toggle-password" 
+                 [class.show]="showConfirmPassword"
+                 (click)="toggleConfirmPasswordVisibility()">👁</i>
+            </div>
+            <div class="error-message" *ngIf="confirmPasswordInput.touched && !passwordsMatch()">
+              Passwords do not match
+            </div>
+          </div>
+
+          <!-- Terms and Conditions -->
+          <div class="checkbox-group">
+            <label class="checkbox-label">
+              <input 
+                type="checkbox" 
+                [(ngModel)]="agreeToTerms" 
+                name="agreeToTerms"
+                required
+                #termsInput="ngModel">
+              <span class="checkmark"></span>
+              <span class="checkbox-text">
+                I agree to the <a href="#" class="terms-link" (click)="onTermsClick($event)">Terms & Conditions</a> and 
+                <a href="#" class="privacy-link" (click)="onPrivacyClick($event)">Privacy Policy</a>
+              </span>
+            </label>
+            <div class="error-message" *ngIf="termsInput.invalid && termsInput.touched">
+              You must agree to the terms and conditions
+            </div>
+          </div>
+
+          <!-- Register Button -->
+          <button 
+            type="submit" 
+            class="register-btn"
+            [disabled]="isLoading || !registerForm.valid || !passwordsMatch()">
+            CREATE ACCOUNT
+          </button>
+        </form>
+
+        <!-- Loading Overlay -->
+        <div class="loading-overlay" *ngIf="isLoading">
+          <div class="violet-loader"></div>
+          <p class="loading-text">{{ loadingText }}</p>
+        </div>
+      </div>
+
+      <!-- Illustration Section -->
+      <div class="illustration-section">
+        <div class="illustration">
+          <!-- Welcome illustration -->
+          <div class="welcome-scene">
+            <!-- Person with laptop -->
+            <div class="character laptop-person">
+              <div class="person-head"></div>
+              <div class="person-body"></div>
+              <div class="person-arm-left"></div>
+              <div class="person-arm-right"></div>
+              <div class="laptop"></div>
+            </div>
+            
+            <!-- Floating elements -->
+            <div class="floating-element rocket"></div>
+            <div class="floating-element star star1"></div>
+            <div class="floating-element star star2"></div>
+            <div class="floating-element star star3"></div>
+            
+            <!-- Success icons -->
+            <div class="success-icons">
+              <div class="icon-circle">✓</div>
+              <div class="icon-heart">♥</div>
+              <div class="icon-bulb">💡</div>
+            </div>
+
+            <!-- Background shapes -->
+            <div class="bg-shape shape1"></div>
+            <div class="bg-shape shape2"></div>
+            <div class="bg-shape shape3"></div>
+          </div>
+        </div>
+      </div>
     </div>
-    <form [formGroup]="form" (ngSubmit)="register()">
-      <div class="grid grid-cols-2 gap-4">
-        <mat-form-field appearance="fill" class="w-full">
-          <mat-label>Fullname</mat-label>
-          <input matInput placeholder="Fullname" formControlName="fullname" />
-          <mat-icon matPrefix>person</mat-icon>
-        </mat-form-field>
-
-        <mat-form-field appearance="fill" class="w-full">
-          <mat-label>Email</mat-label>
-          <input matInput placeholder="Email" formControlName="email" />
-          <mat-icon matPrefix>email</mat-icon>
-        </mat-form-field>
-
-        <mat-form-field appearance="fill" class="w-full">
-          <mat-label>Street Address</mat-label>
-          <input
-            matInput
-            placeholder="Street Address"
-            formControlName="streetAddress"
-          />
-          <mat-icon matPrefix>location_on</mat-icon> 
-        </mat-form-field>
-
-        <mat-form-field appearance="fill" class="w-full">
-          <mat-label>City</mat-label>
-          <input matInput placeholder="City" formControlName="city" />
-          <mat-icon matPrefix>location_city</mat-icon> 
-        </mat-form-field>
-
-        <mat-form-field appearance="fill" class="w-full">
-          <mat-label>State</mat-label>
-          <input matInput placeholder="State" formControlName="state" />
-          <mat-icon matPrefix>map</mat-icon> 
-        </mat-form-field>
-
-        <mat-form-field appearance="fill" class="w-full">
-          <mat-label>Postal Code</mat-label>
-          <input
-            matInput
-            placeholder="Postal Code"
-            formControlName="postalCode"
-          />
-          <mat-icon matPrefix>pin</mat-icon>
-        </mat-form-field>
-        <mat-form-field appearance="fill" class="w-full">
-          <mat-label>Password</mat-label>
-          <input
-            matInput
-            [type]="hidePassword ? 'password' : 'text'"
-            formControlName="password"
-            placeholder="Password"
-          />
-          <mat-icon matPrefix>lock</mat-icon>
-          <mat-icon
-            (click)="hidePassword = !hidePassword"
-            matSuffix
-            class="cursor-pointer"
-          >
-            {{ hidePassword ? "visibility_off" : "visibility" }}
-          </mat-icon>
-        </mat-form-field>
-
-        <mat-form-field appearance="fill" class="w-full">
-          <mat-label>Confirm Password</mat-label>
-          <input
-            matInput
-            [type]="hideConfirmPassword ? 'password' : 'text'"
-            formControlName="confirmPassword"
-            placeholder="Confirm Password"
-          />
-          <mat-icon matPrefix>lock</mat-icon>
-          <mat-icon
-            (click)="hideConfirmPassword = !hideConfirmPassword"
-            matSuffix
-            class="cursor-pointer"
-          >
-            {{ hideConfirmPassword ? "visibility_off" : "visibility" }}
-          </mat-icon>
-          <mat-error *ngIf="form.get('confirmPassword')?.errors?.['notSame']"
-            >Passwords do not match</mat-error
-          >
-        </mat-form-field>
-      </div>
-      <button
-        type="submit"
-        [disabled]="!form.valid"
-        class="w-full bg-purple-700 hover:bg-purple-800 text-white font-bold py-2 px-4 rounded-lg disabled:bg-purple-300 transition duration-300 mt-4"
-      >
-        Register
-      </button>
-
-      <div class="mt-6 text-center">
-        <span class="text-gray-600">Already have an account?</span>
-        <a
-          class="text-purple-700 hover:underline ml-1"
-          [routerLink]="['/auth/login']"
-          >Login</a
-        >
-      </div>
-    </form>
   </div>
-</div>
-
-<!-- Full-screen Loading Overlay -->
-<div *ngIf="loading" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
-  <div class="animate-spin rounded-full h-16 w-16 border-t-4 border-purple-500"></div>
 </div>

@@ -2,8 +2,9 @@ import { Routes } from '@angular/router';
 import { HomeComponent } from './pages/home/home.component';
 
 // Auth Components
-import { LoginComponent } from './pages/auth/login/login.component';
-import { RegisterComponent } from './pages/auth/register/register.component';
+import { AuthComponent } from './pages/auth/auth.component';
+// import { LoginComponent } from './pages/auth/login/login.component';
+// import { RegisterComponent } from './pages/auth/register/register.component';
 import { ForgotPasswordComponent } from './pages/auth/forgot-password/forgot-password.component';
 import { ResetPasswordComponent } from './pages/auth/reset-password/reset-password.component';
 import { VerifyOtpComponent } from './pages/auth/verify-otp/verify-otp.component';
@@ -12,6 +13,13 @@ import { VerifyOtpComponent } from './pages/auth/verify-otp/verify-otp.component
 import { ChangePasswordComponent } from './pages/account/change-password/change-password.component';
 import { DashboardComponent } from './pages/dashboard/dashboard.component';
 import { NotFoundComponent } from './pages/not-found/not-found.component';
+import { LayoutComponent } from './components/layout/layout.component';
+import { AuthGuard } from './guards/auth.guard';
+import { OrdersComponent } from './pages/orders/orders.component';
+import { InvoiceDashboardComponent } from './pages/invoices/invoice-dashboard.component';
+import { CustomerComponent } from './pages/customers/customer.component';
+import { LoginComponent } from './pages/auth/login/login.component';
+import { RegisterComponent } from './pages/auth/register/register.component';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -20,30 +28,43 @@ export const routes: Routes = [
   {
     path: 'auth',
     children: [
+      // { path: 'login', component: AuthComponent, data: { mode: 'login' } }, // Set mode to login
+      // {
+      //   path: 'register',
+      //   component: AuthComponent,
+      //   data: { mode: 'register' },
+      // }, // Set mode to register
       { path: 'login', component: LoginComponent },
       { path: 'register', component: RegisterComponent },
       { path: 'verify-otp', component: VerifyOtpComponent },
       { path: 'forgot-password', component: ForgotPasswordComponent },
       { path: 'reset-password', component: ResetPasswordComponent },
-      { path: 'callback', component: LoginComponent }, // External login redirect
+      { path: 'callback', component: AuthComponent, data: { mode: 'login' } }, // External login redirect
     ],
   },
 
-  // Account Routes (User Profile, Settings)
+  // Authenticated routes (wrapped in LayoutComponent)
   {
-    path: 'account',
+    path: '',
+    component: LayoutComponent,
+    // canActivate: [AuthGuard], // Protect these routes
     children: [
-      // { path: 'profile', component: ProfileComponent },
-      // { path: 'edit-profile', component: EditProfileComponent },
-      { path: 'change-password', component: ChangePasswordComponent },
+      { path: 'dashboard', component: DashboardComponent },
+      { path: 'customers', component: CustomerComponent },
+      { path: 'orders', component: OrdersComponent },
+      { path: 'invoices', component: InvoiceDashboardComponent },
+      {
+        path: 'account',
+        children: [
+          { path: 'change-password', component: ChangePasswordComponent },
+        ],
+      },
     ],
   },
 
-  { path: 'dashboard', component: DashboardComponent },
   // 404 Page
   { path: 'notfound', component: NotFoundComponent },
 ];
-
 
 // export const routes: Routes = [
 //   {
@@ -58,9 +79,9 @@ export const routes: Routes = [
 //     path: 'login',
 //     component: LoginComponent,
 //   },
-//   { 
-//     path: 'verify-otp', 
-//     component: VerifyOtpComponent 
+//   {
+//     path: 'verify-otp',
+//     component: VerifyOtpComponent
 //   },
 //   {
 //     path: 'forgot-password',

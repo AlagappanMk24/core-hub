@@ -1,0 +1,395 @@
+<!-- auth.component.html -->
+<!-- <div class="page-wrapper">
+  <div class="container" id="container" [ngClass]="{ active: isSignUp }">
+    <div class="form-container sign-up">
+      <form [formGroup]="registerForm" (ngSubmit)="onRegister()">
+        <h1 class="form-heading">Create Account</h1>
+        <span class="form-subtitle">Join us to explore amazing features</span>
+        <div class="address-row">
+          <input
+            type="text"
+            placeholder="Full Name"
+            formControlName="fullname"
+            [class.text-danger]="
+              registerForm.get('fullname')?.invalid &&
+              registerForm.get('fullname')?.touched
+            "
+          />
+          <input
+            type="email"
+            placeholder="Email"
+            formControlName="email"
+            [class.text-danger]="
+              registerForm.get('email')?.invalid &&
+              registerForm.get('email')?.touched
+            "
+          />
+        </div>
+        <div class="address-row">
+          <input
+            type="text"
+            placeholder="Street Address"
+            formControlName="streetAddress"
+            [class.text-danger]="
+              registerForm.get('streetAddress')?.invalid &&
+              registerForm.get('streetAddress')?.touched
+            "
+          />
+          <input
+            type="text"
+            placeholder="City"
+            formControlName="city"
+            [class.text-danger]="
+              registerForm.get('city')?.invalid &&
+              registerForm.get('city')?.touched
+            "
+          />
+        </div>
+        <div class="address-row">
+          <input
+            type="text"
+            placeholder="State"
+            formControlName="state"
+            [class.text-danger]="
+              registerForm.get('state')?.invalid &&
+              registerForm.get('state')?.touched
+            "
+          />
+          <input
+            type="text"
+            placeholder="Postal Code"
+            formControlName="postalCode"
+            [class.text-danger]="
+              registerForm.get('postalCode')?.invalid &&
+              registerForm.get('postalCode')?.touched
+            "
+          />
+        </div>
+        <div class="address-row">
+          <div class="password-wrapper">
+            <input
+              type="password"
+              placeholder="Password"
+              [type]="hidePassword ? 'password' : 'text'"
+              formControlName="password"
+              [class.text-danger]="
+                registerForm.get('password')?.invalid &&
+                registerForm.get('password')?.touched
+              "
+            />
+            <i
+              class="material-icons toggle-password"
+              (click)="togglePassword()"
+            >
+              {{ hidePassword ? "visibility_off" : "visibility" }}
+            </i>
+          </div>
+          <div class="password-wrapper">
+            <input
+              type="password"
+              placeholder="Confirm Password"
+              [type]="hideConfirmPassword ? 'password' : 'text'"
+              formControlName="confirmPassword"
+              [class.text-danger]="(registerForm.get('confirmPassword')?.invalid || registerForm.errors?.['notSame']) && registerForm.get('confirmPassword')?.touched"
+            />
+            <i
+              class="material-icons toggle-password"
+              (click)="toggleConfirmPassword()"
+            >
+              {{ hideConfirmPassword ? "visibility_off" : "visibility" }}
+            </i>
+          </div>
+        </div>
+        <button type="submit">Sign Up</button>
+      </form>
+    </div>
+    <div class="form-container sign-in">
+      <form [formGroup]="loginForm" (ngSubmit)="onLogin()">
+        <h1 class="form-heading">Sign In</h1>
+        <span class="form-subtitle">Welcome back to Angular Core Hub</span>
+        <div class="social-container">
+          <div class="social-button">
+            <img src="assets/google.png" alt="Google" style="width: 20px" />
+          </div>
+          <div class="social-button">
+            <img
+              src="assets/microsoft.png"
+              alt="Microsoft"
+              style="width: 20px"
+            />
+          </div>
+          <div class="social-button">
+            <img src="assets/facebook.png" alt="Facebook" style="width: 20px" />
+          </div>
+          <div class="social-button">
+            <img src="assets/github.png" alt="Github" style="width: 20px" />
+          </div>
+        </div>
+        <span class="form-text">or use your email password</span>
+        <input
+          type="email"
+          placeholder="Email"
+          formControlName="email"
+          [class.text-danger]="
+            loginForm.get('email')?.invalid && loginForm.get('email')?.touched
+          "
+        />
+        <div class="password-wrapper">
+          <input
+            type="password"
+            placeholder="Password"
+            [type]="hidePassword ? 'password' : 'text'"
+            formControlName="password"
+            [class.text-danger]="
+              loginForm.get('password')?.invalid &&
+              loginForm.get('password')?.touched
+            "
+          />
+          <i class="material-icons toggle-password" (click)="togglePassword()">
+            {{ hidePassword ? "visibility_off" : "visibility" }}
+          </i>
+        </div>
+        <a href="/auth/forgot-password" class="forgot-password"
+          >Forgot Password?</a
+        >
+        <button type="submit">Sign In</button>
+      </form>
+    </div>
+    <div class="toggle-container">
+      <div class="toggle">
+        <div class="toggle-panel toggle-left">
+          <h1>Welcome Back!</h1>
+          <p>Enter your personal details to use all of site features</p>
+          <button type="button" (click)="toggleForm()">Sign In</button>
+        </div>
+        <div class="toggle-panel toggle-right">
+          <h1>Hello Friend!</h1>
+          <p>Register with your personal details to use all of site features</p>
+          <button type="button" (click)="toggleForm()">Sign Up</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div> -->
+
+<!-- <div class="page-wrapper">
+  <div class="container" id="container" [ngClass]="{ active: isSignUp }">
+    <div class="form-container sign-up">
+      <form [formGroup]="registerForm" (ngSubmit)="onRegister()">
+        <h1 class="form-heading">Create Account</h1>
+        <span class="form-subtitle">Join us to start shopping</span>
+        <div *ngIf="registerError" class="text-danger text-center mb-3">{{ registerError }}</div>
+        <div class="address-row">
+          <div class="w-100">
+            <input
+              type="text"
+              placeholder="Full Name"
+              formControlName="fullname"
+              [class.text-danger]="
+                registerForm.get('fullname')?.invalid &&
+                (registerForm.get('fullname')?.touched || registerForm.get('fullname')?.dirty)
+              "
+            />
+            <div *ngIf="registerForm.get('fullname')?.invalid && (registerForm.get('fullname')?.touched || registerForm.get('fullname')?.dirty)" class="text-danger text-sm">
+              Full Name is required
+            </div>
+          </div>
+          <div class="w-100">
+            <input
+              type="email"
+              placeholder="Email"
+              formControlName="email"
+              [class.text-danger]="
+                registerForm.get('email')?.invalid &&
+                (registerForm.get('email')?.touched || registerForm.get('email')?.dirty)
+              "
+            />
+            <div *ngIf="registerForm.get('email')?.invalid && (registerForm.get('email')?.touched || registerForm.get('email')?.dirty)" class="text-danger text-sm">
+              <span *ngIf="registerForm.get('email')?.errors?.['required']">Email is required</span>
+              <span *ngIf="registerForm.get('email')?.errors?.['email']">Please enter a valid email</span>
+            </div>
+          </div>
+        </div>
+        <div class="address-row">
+          <div class="w-100">
+            <input
+              type="text"
+              placeholder="Street Address"
+              formControlName="streetAddress"
+              [class.text-danger]="
+                registerForm.get('streetAddress')?.invalid &&
+                (registerForm.get('streetAddress')?.touched || registerForm.get('streetAddress')?.dirty)
+              "
+            />
+            <div *ngIf="registerForm.get('streetAddress')?.invalid && (registerForm.get('streetAddress')?.touched || registerForm.get('streetAddress')?.dirty)" class="text-danger text-sm">
+              Street Address is required
+            </div>
+          </div>
+          <div class="w-100">
+            <input
+              type="text"
+              placeholder="City"
+              formControlName="city"
+              [class.text-danger]="
+                registerForm.get('city')?.invalid &&
+                (registerForm.get('city')?.touched || registerForm.get('city')?.dirty)
+              "
+            />
+            <div *ngIf="registerForm.get('city')?.invalid && (registerForm.get('city')?.touched || registerForm.get('city')?.dirty)" class="text-danger text-sm">
+              City is required
+            </div>
+          </div>
+        </div>
+        <div class="address-row">
+          <div class="w-100">
+            <input
+              type="text"
+              placeholder="State"
+              formControlName="state"
+              [class.text-danger]="
+                registerForm.get('state')?.invalid &&
+                (registerForm.get('state')?.touched || registerForm.get('state')?.dirty)
+              "
+            />
+            <div *ngIf="registerForm.get('state')?.invalid && (registerForm.get('state')?.touched || registerForm.get('state')?.dirty)" class="text-danger text-sm">
+              State is required
+            </div>
+          </div>
+          <div class="w-100">
+            <input
+              type="text"
+              placeholder="Postal Code"
+              formControlName="postalCode"
+              [class.text-danger]="
+                registerForm.get('postalCode')?.invalid &&
+                (registerForm.get('postalCode')?.touched || registerForm.get('postalCode')?.dirty)
+              "
+            />
+            <div *ngIf="registerForm.get('postalCode')?.invalid && (registerForm.get('postalCode')?.touched || registerForm.get('postalCode')?.dirty)" class="text-danger text-sm">
+              Postal Code is required
+            </div>
+          </div>
+        </div>
+        <div class="address-row">
+          <div class="password-wrapper">
+            <input
+              type="password"
+              placeholder="Password"
+              [type]="hidePassword ? 'password' : 'text'"
+              formControlName="password"
+              [class.text-danger]="
+                registerForm.get('password')?.invalid &&
+                (registerForm.get('password')?.touched || registerForm.get('password')?.dirty)
+              "
+            />
+            <i
+              class="material-icons toggle-password"
+              (click)="togglePassword()"
+            >
+              {{ hidePassword ? "visibility_off" : "visibility" }}
+            </i>
+            <div *ngIf="registerForm.get('password')?.invalid && (registerForm.get('password')?.touched || registerForm.get('password')?.dirty)" class="text-danger text-sm">
+              <span *ngIf="registerForm.get('password')?.errors?.['required']">Password is required</span>
+              <span *ngIf="registerForm.get('password')?.errors?.['minlength']">Password must be at least 6 characters</span>
+            </div>
+          </div>
+          <div class="password-wrapper">
+            <input
+              type="password"
+              placeholder="Confirm Password"
+              [type]="hideConfirmPassword ? 'password' : 'text'"
+              formControlName="confirmPassword"
+              [class.text-danger]="
+                (registerForm.get('confirmPassword')?.invalid || registerForm.errors?.['notSame']) &&
+                (registerForm.get('confirmPassword')?.touched || registerForm.get('confirmPassword')?.dirty)
+              "
+            />
+            <i
+              class="material-icons toggle-password"
+              (click)="toggleConfirmPassword()"
+            >
+              {{ hideConfirmPassword ? "visibility_off" : "visibility" }}
+            </i>
+            <div *ngIf="(registerForm.get('confirmPassword')?.invalid || registerForm.errors?.['notSame']) && (registerForm.get('confirmPassword')?.touched || registerForm.get('confirmPassword')?.dirty)" class="text-danger text-sm">
+              <span *ngIf="registerForm.get('confirmPassword')?.errors?.['required']">Confirm Password is required</span>
+              <span *ngIf="registerForm.errors?.['notSame']">Passwords do not match</span>
+            </div>
+          </div>
+        </div>
+        <button type="submit" [disabled]="loading || registerForm.invalid">
+          <span class="button-content">
+            <span>{{ loading ? 'Signing Up...' : 'Sign Up' }}</span>
+            <span *ngIf="loading" class="loader"></span>
+          </span>
+        </button>
+        <div class="form-text">
+          Already have an account? <a href="#" (click)="switchToSignIn($event)">Sign In</a>
+        </div>
+      </form>
+    </div>
+    <div class="form-container sign-in">
+      <form [formGroup]="loginForm" (ngSubmit)="onLogin()">
+        <h1 class="form-heading">Sign In</h1>
+        <span class="form-subtitle">Welcome back to your shopping hub</span>
+        <div *ngIf="loginError" class="text-danger text-center mb-3">{{ loginError }}</div>
+        <div class="social-container">
+          <div class="social-button" (click)="loginWithProvider('google')">
+            <img src="assets/google.png" alt="Google" style="width: 20px" />
+          </div>
+          <div class="social-button" (click)="loginWithProvider('microsoft')">
+            <img src="assets/microsoft.png" alt="Microsoft" style="width: 20px" />
+          </div>
+          <div class="social-button" (click)="loginWithProvider('facebook')">
+            <img src="assets/facebook.png" alt="Facebook" style="width: 20px" />
+          </div>
+          <div class="social-button" (click)="loginWithProvider('github')">
+            <img src="assets/github.png" alt="Github" style="width: 20px" />
+          </div>
+        </div>
+        <span class="form-text">or use your email password</span>
+        <div class="w-100">
+          <input
+            type="email"
+            placeholder="Email"
+            formControlName="email"
+            [class.text-danger]="
+              loginForm.get('email')?.invalid && (loginForm.get('email')?.touched || loginForm.get('email')?.dirty)
+            "
+          />
+          <div *ngIf="loginForm.get('email')?.invalid && (loginForm.get('email')?.touched || loginForm.get('email')?.dirty)" class="text-danger text-sm">
+            <span *ngIf="loginForm.get('email')?.errors?.['required']">Email is required</span>
+            <span *ngIf="loginForm.get('email')?.errors?.['email']">Please enter a valid email</span>
+          </div>
+        </div>
+        <div class="password-wrapper">
+          <input
+            type="password"
+            placeholder="Password"
+            [type]="hidePassword ? 'password' : 'text'"
+            formControlName="password"
+            [class.text-danger]="
+              loginForm.get('password')?.invalid && (loginForm.get('password')?.touched || registerForm.get('password')?.dirty)
+            "
+          />
+          <i class="material-icons toggle-password" (click)="togglePassword()">
+            {{ hidePassword ? "visibility_off" : "visibility" }}
+          </i>
+          <div *ngIf="loginForm.get('password')?.invalid && (loginForm.get('password')?.touched || loginForm.get('password')?.dirty)" class="text-danger text-sm">
+            Password is required
+          </div>
+        </div>
+        <a href="/auth/forgot-password" class="forgot-password">Forgot Password?</a>
+        <button type="submit" [disabled]="loading || loginForm.invalid">
+          <span class="button-content">
+            <span>{{ loading ? 'Signing In...' : 'Sign In' }}</span>
+            <span *ngIf="loading" class="loader"></span>
+          </span>
+        </button>
+        <div class="form-text">
+          Don't have an account? <a href="#" (click)="switchToSignUp($event)">Sign Up</a>
+        </div>
+      </form>
+    </div>
+  </div>
+</div> -->
+

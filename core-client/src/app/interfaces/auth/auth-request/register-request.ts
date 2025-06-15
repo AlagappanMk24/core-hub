@@ -1,10 +1,9 @@
 // register-request.ts
 export interface RegisterRequest {
-  fullname: string;
+  fullName: string;
   email: string;
   password: string;
-  streetAddress: string;
-  city: string;
-  state: string;
-  postalCode: string;
+  confirmPassword : string;
+  phoneNumber: string;
+  roles : string[]
 }

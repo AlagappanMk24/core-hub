@@ -1,0 +1,512 @@
+/* verify-otp.component.css */
+.otp-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.otp-card {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  max-width: 1000px;
+  width: 100%;
+  min-height: 600px;
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 30px 40px 20px;
+}
+
+.logo-text {
+  font-size: 20px;
+  font-weight: bold;
+  color: #333;
+  position: relative;
+}
+
+.logo-text::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  background: #8b5cf6;
+  border-radius: 50%;
+  position: absolute;
+  left: -15px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.violet-first-letter {
+  color: violet;
+}
+
+.back-to-login {
+  font-size: 16px;
+  color: #666;
+}
+
+.back-link {
+  color: #8b5cf6;
+  text-decoration: none;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.back-link:hover {
+  text-decoration: underline;
+}
+
+/* Main Content */
+.main-content {
+  display: flex;
+  min-height: 500px;
+}
+
+/* Illustration Section */
+.illustration-section {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8fafc;
+  position: relative;
+  padding: 40px;
+}
+
+.illustration {
+  position: relative;
+  width: 350px;
+  height: 300px;
+}
+
+/* Character Styles */
+.character {
+  position: absolute;
+}
+
+.person-with-phone {
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+/* Person with Phone Character */
+.person-head {
+  width: 50px;
+  height: 50px;
+  background: #f4a261;
+  border-radius: 50%;
+  position: relative;
+  margin-bottom: 5px;
+  margin-left: 15px;
+}
+
+.person-head::before {
+  content: "";
+  width: 35px;
+  height: 20px;
+  background: #2a9d8f;
+  border-radius: 15px 15px 0 0;
+  position: absolute;
+  top: -10px;
+  left: 7px;
+}
+
+.person-body {
+  width: 60px;
+  height: 80px;
+  background: #8b5cf6;
+  border-radius: 30px 30px 0 0;
+  position: relative;
+  margin-left: 10px;
+}
+
+.person-arm-left {
+  width: 20px;
+  height: 40px;
+  background: #f4a261;
+  border-radius: 10px;
+  position: absolute;
+  top: 60px;
+  left: 0px;
+  transform: rotate(-45deg);
+}
+
+.person-arm-right {
+  width: 20px;
+  height: 40px;
+  background: #f4a261;
+  border-radius: 10px;
+  position: absolute;
+  top: 60px;
+  right: -10px;
+  transform: rotate(30deg);
+}
+
+.person-leg-left,
+.person-leg-right {
+  width: 25px;
+  height: 50px;
+  background: #264653;
+  border-radius: 0 0 12px 12px;
+  position: absolute;
+  top: 130px;
+}
+
+.person-leg-left {
+  left: 15px;
+}
+
+.person-leg-right {
+  right: 15px;
+}
+
+/* Phone */
+.phone {
+  position: absolute;
+  width: 25px;
+  height: 40px;
+  background: #333;
+  border-radius: 5px;
+  top: 45px;
+  left: -15px;
+  border: 2px solid #666;
+}
+
+.phone::before {
+  content: "";
+  width: 15px;
+  height: 25px;
+  background: #4ade80;
+  border-radius: 2px;
+  position: absolute;
+  top: 5px;
+  left: 3px;
+}
+
+/* Security Shield */
+.security-shield {
+  position: absolute;
+  top: 20px;
+  right: 50px;
+}
+
+.shield-body {
+  width: 40px;
+  height: 45px;
+  background: #10b981;
+  border-radius: 20px 20px 0 20px;
+  position: relative;
+}
+
+.shield-check {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: white;
+  font-size: 20px;
+  font-weight: bold;
+}
+
+/* Message Bubbles */
+.message-bubble {
+  position: absolute;
+  background: white;
+  border-radius: 15px;
+  padding: 8px 12px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  border: 2px solid #e5e7eb;
+}
+
+.bubble1 {
+  top: 80px;
+  left: 30px;
+  animation: float 3s ease-in-out infinite;
+}
+
+.bubble2 {
+  top: 120px;
+  right: 80px;
+  animation: float 3s ease-in-out infinite 1.5s;
+}
+
+.bubble-content {
+  font-size: 12px;
+  font-weight: 600;
+  color: #8b5cf6;
+}
+
+/* Floating Icons */
+.floating-icon {
+  position: absolute;
+  font-size: 20px;
+  animation: bounce 2s ease-in-out infinite;
+}
+
+.icon1 {
+  top: 40px;
+  left: 80px;
+  animation-delay: 0s;
+}
+
+.icon2 {
+  bottom: 60px;
+  right: 40px;
+  animation-delay: 0.5s;
+}
+
+.icon3 {
+  bottom: 40px;
+  left: 40px;
+  animation-delay: 1s;
+}
+
+/* Animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes bounce {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+/* Form Section */
+.form-section {
+  flex: 1;
+  padding: 40px 50px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.welcome-text {
+  margin-bottom: 40px;
+  text-align: center;
+}
+
+.welcome-text h2 {
+  font-size: 32px;
+  font-weight: bold;
+  color: #333;
+  margin: 0 0 8px 0;
+}
+
+.welcome-text p {
+  font-size: 16px;
+  color: #666;
+  margin: 5px 0;
+}
+
+.contact-info {
+  font-weight: 600;
+  color: #8b5cf6 !important;
+}
+
+/* OTP Form Styles */
+.otp-form {
+  width: 100%;
+}
+
+.otp-inputs {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-bottom: 30px;
+}
+
+.otp-input {
+  width: 50px;
+  height: 50px;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  text-align: center;
+  font-size: 20px;
+  font-weight: 600;
+  color: #333;
+  background: white;
+  transition: all 0.3s ease;
+}
+
+.otp-input:focus {
+  outline: none;
+  border-color: #8b5cf6;
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.otp-input.filled {
+  background: #f8fafc;
+  border-color: #10b981;
+}
+
+.otp-input.error {
+  border-color: #ef4444;
+  background: #fef2f2;
+}
+
+/* Timer Section */
+.timer-section {
+  text-align: center;
+  margin-bottom: 25px;
+  min-height: 24px;
+}
+
+.timer {
+  font-size: 14px;
+  color: #666;
+}
+
+.timer-text {
+  font-weight: 600;
+  color: #8b5cf6;
+}
+
+.resend-section {
+  font-size: 14px;
+  color: #666;
+}
+
+.resend-link {
+  color: #8b5cf6;
+  text-decoration: none;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.resend-link:hover {
+  text-decoration: underline;
+}
+
+/* Verify Button */
+.verify-btn {
+  width: 100%;
+  background: #8b5cf6;
+  color: white;
+  border: none;
+  padding: 15px;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-bottom: 20px;
+}
+
+.verify-btn:hover:not(:disabled) {
+  background: #7c3aed;
+  transform: translateY(-1px);
+}
+
+.verify-btn:disabled {
+  background: #d1d5db;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Change Contact */
+.change-contact {
+  text-align: center;
+  margin-bottom: 30px;
+}
+
+.change-link {
+  color: #8b5cf6;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.change-link:hover {
+  text-decoration: underline;
+}
+
+/* Help Section */
+.help-section {
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 20px;
+  border-left: 4px solid #8b5cf6;
+}
+
+.help-text p {
+  font-size: 14px;
+  color: #666;
+  margin: 5px 0;
+  display: flex;
+  align-items: center;
+}
+
+/* Loading State */
+.verify-btn.loading {
+  position: relative;
+  color: transparent;
+}
+
+.verify-btn.loading::after {
+  content: "";
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  top: 50%;
+  left: 50%;
+  margin-left: -10px;
+  margin-top: -10px;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  border-top-color: transparent;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .main-content {
+    flex-direction: column;
+  }
+
+  .illustration-section {
+    min-height: 200px;
+  }
+
+  .form-section {
+    padding: 30px;
+  }
+
+  .header {
+    padding: 20px 30px;
+  }
+
+  .illustration {
+    transform: scale(0.7);
+  }
+
+  .otp-inputs {
+    gap: 10px;
+  }
+
+  .otp-input {
+    width: 40px;
+    height: 40px;
+    font-size: 18px;
+  }
+
+  .welcome-text h2 {
+    font-size: 28px;
+  }
+}

@@ -4,16 +4,16 @@ import { CommonModule } from '@angular/common';
 import { HeaderComponent } from '../header/header.component';
 import { AuthService } from '../../services/auth.service';
 import { SidebarComponent } from '../sidebar/sidebar.component';
+import { RouterOutlet } from '@angular/router';
 
 @Component({
   selector: 'app-layout',
   standalone: true,
-  imports: [CommonModule, SidebarComponent, HeaderComponent],
+  imports: [CommonModule, SidebarComponent, HeaderComponent, RouterOutlet],
   templateUrl: './layout.component.html',
   styleUrls: ['./layout.component.css'],
 })
 export class LayoutComponent implements OnInit {
-  @Output() menuItemSelected = new EventEmitter<string>();
   isSidebarCollapsed = false;
   hasNotifications = true;
 
@@ -39,9 +39,9 @@ export class LayoutComponent implements OnInit {
     }
   }
 
-  onMenuItemSelected(route: string): void {
-    this.menuItemSelected.emit(route);
-  }
+  // onMenuItemSelected(route: string): void {
+  //   this.menuItemSelected.emit(route);
+  // }
 
   onThemeChanged(theme: string): void {
     console.log('Theme changed to:', theme);

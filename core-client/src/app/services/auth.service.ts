@@ -1,3 +1,5 @@
+// AuthService.ts
+
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
@@ -26,7 +28,7 @@ export class AuthService {
       .post<AuthResponse>(`${this.baseApiUrl}auth/login`, data)
       .pipe(
         map((response) => {
-          if (response.isSuccess) {
+          if (response.isSucceeded) {
             localStorage.setItem(this.tokenKey, response.token);
           }
           return response;
@@ -51,7 +53,7 @@ export class AuthService {
     return this.http.post(`${this.baseApiUrl}auth/validate-otp`, data);
   }
 
-  resendOtp(data: { email: string}): Observable<any> {
+  resendOtp(data: { email: string }): Observable<any> {
     return this.http.post(`${this.baseApiUrl}auth/resend-otp`, data);
   }
   /**
@@ -69,6 +71,9 @@ export class AuthService {
     };
   };
 
+  isAuthenticated(): boolean {
+    return this.isLoggedIn();
+  }
   /**
    * Check if the user is logged in
    */
@@ -93,15 +98,19 @@ export class AuthService {
     return isExpired;
   }
 
-   // Get external login URL
-   getExternalLoginUrl(provider: string): Observable<any> {
-    return this.http.get(`${this.baseApiUrl}auth/external-login-url?provider=${provider}`);
+  // Get external login URL
+  getExternalLoginUrl(provider: string): Observable<any> {
+    return this.http.get(
+      `${this.baseApiUrl}auth/external-login-url?provider=${provider}`
+    );
   }
 
   // Exchange authorization code for JWT token
   externalLogin(authCode: string, provider: string): Observable<any> {
-    return this.http.post(`${this.baseApiUrl}auth/external-login`, 
-      { authorizationCode: authCode, provider });
+    return this.http.post(`${this.baseApiUrl}auth/external-login`, {
+      authorizationCode: authCode,
+      provider,
+    });
   }
 
   /**
@@ -120,21 +129,21 @@ export class AuthService {
   /**
    * Forgot password
    */
-  forgotPassword(email : string): Observable<any> {
-    return this.http.post(`${this.baseApiUrl}auth/forgot-password`, {email });
+  forgotPassword(email: string): Observable<any> {
+    return this.http.post(`${this.baseApiUrl}auth/forgot-password`, { email });
   }
 
-   /**
+  /**
    * Reset password
    */
   resetPassword(data: ResetPasswordRequest): Observable<any> {
     return this.http.put(`${this.baseApiUrl}auth/reset-password`, data);
   }
 
-     /**
+  /**
    * Change password
    */
   changePassword(data: ChangePasswordRequest): Observable<any> {
-      return this.http.put(`${this.baseApiUrl}account/change-password`, data);
-    }
+    return this.http.put(`${this.baseApiUrl}account/change-password`, data);
+  }
 }

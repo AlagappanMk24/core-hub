@@ -3,7 +3,7 @@
   <!-- Sidebar -->
   <app-sidebar
     [class.hidden]="isSidebarCollapsed"
-    (menuItemSelected)="onMenuItemSelected($event)"
+    class="lg:block"
   >
   </app-sidebar>
 
@@ -20,8 +20,7 @@
 
     <!-- Dynamic Content Area -->
     <main class="flex-1 overflow-y-auto bg-gray-50">
-      <!-- This is where router-outlet or dashboard content goes -->
-      <ng-content></ng-content>
+    <router-outlet></router-outlet>
     </main>
   </div>
 </div>

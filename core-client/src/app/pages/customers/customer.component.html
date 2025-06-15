@@ -1,0 +1,148 @@
+<div class="customer-container">
+  <!-- Main Content -->
+  <div class="main-content" [class.drawer-open]="isDrawerOpen">
+    <!-- Header -->
+    <div class="header">
+      <h2 class="title">Customer List</h2>
+      <button class="add-btn" (click)="addCustomer()">
+        <i class="icon-plus">+</i>
+        Add Customer
+      </button>
+    </div>
+
+    <!-- Table Header -->
+    <div class="table-header">
+      <div class="header-cell name-col">
+        Name
+        <i class="sort-icon">↕</i>
+      </div>
+      <div class="header-cell email-col">
+        Email
+        <i class="sort-icon">↕</i>
+      </div>
+      <div class="header-cell phone-col">
+        Phone number
+        <i class="sort-icon">↕</i>
+      </div>
+      <div class="header-cell gender-col">
+        Gender
+        <i class="sort-icon">↕</i>
+      </div>
+      <div class="header-cell actions-col"></div>
+    </div>
+
+    <!-- Customer List -->
+    <div class="customer-list">
+      <div 
+        class="customer-row" 
+        *ngFor="let customer of customers"
+        (click)="selectCustomer(customer)"
+        [class.selected]="selectedCustomer?.id === customer.id">
+        
+        <div class="customer-cell name-col">
+          <div class="customer-info">
+            <img [src]="getAvatarUrl(customer)" [alt]="customer.name" class="avatar">
+            <span class="name">{{ customer.name }}</span>
+          </div>
+        </div>
+        
+        <div class="customer-cell email-col">
+          <span class="email">{{ customer.email }}</span>
+        </div>
+        
+        <div class="customer-cell phone-col">
+          <span class="phone">{{ customer.phone }}</span>
+        </div>
+        
+        <div class="customer-cell gender-col">
+          <span class="gender-badge" [ngClass]="getGenderBadgeClass(customer.gender)">
+            {{ customer.gender }}
+          </span>
+        </div>
+        
+        <div class="customer-cell actions-col">
+          <button class="action-btn">⋯</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Right Drawer -->
+  <div class="drawer" [class.open]="isDrawerOpen">
+    <div class="drawer-content" *ngIf="selectedCustomer">
+      <!-- Close Button -->
+      <button class="close-btn" (click)="closeDrawer()">×</button>
+
+      <!-- Customer Profile -->
+      <div class="customer-profile">
+        <img [src]="getAvatarUrl(selectedCustomer)" [alt]="selectedCustomer.name" class="profile-avatar">
+        <h3 class="profile-name">{{ selectedCustomer.name }}</h3>
+        <p class="profile-role">UI/UX Designer</p>
+      </div>
+
+      <!-- Contact Info -->
+      <div class="contact-section">
+        <h4 class="section-title">Contact Info</h4>
+        
+        <div class="contact-item">
+          <i class="contact-icon">📧</i>
+          <span class="contact-text">{{ selectedCustomer.email }}</span>
+        </div>
+        
+        <div class="contact-item">
+          <i class="contact-icon">📞</i>
+          <span class="contact-text">{{ selectedCustomer.phone }}</span>
+        </div>
+        
+        <div class="contact-item" *ngIf="selectedCustomer.address">
+          <i class="contact-icon">📍</i>
+          <span class="contact-text">{{ selectedCustomer.address }}</span>
+        </div>
+      </div>
+
+      <!-- Performance Section -->
+      <div class="performance-section">
+        <h4 class="section-title">Performance</h4>
+        
+        <!-- Chart Placeholder -->
+        <div class="chart-container">
+          <div class="chart-bars">
+            <div class="chart-bar" style="height: 60%"></div>
+            <div class="chart-bar" style="height: 40%"></div>
+            <div class="chart-bar" style="height: 80%"></div>
+            <div class="chart-bar" style="height: 35%"></div>
+            <div class="chart-bar" style="height: 55%"></div>
+            <div class="chart-bar" style="height: 70%"></div>
+            <div class="chart-bar" style="height: 45%"></div>
+          </div>
+          <div class="chart-labels">
+            <span>Jun</span>
+            <span>Jul</span>
+            <span>Aug</span>
+            <span>Sep</span>
+            <span>Oct</span>
+            <span>Nov</span>
+            <span>Dec</span>
+          </div>
+        </div>
+
+        <!-- Performance Metrics -->
+        <div class="metrics">
+          <div class="metric">
+            <div class="metric-circle" style="--progress: 70%">
+              <span class="metric-value">70%</span>
+            </div>
+          </div>
+          <div class="metric">
+            <div class="metric-circle blue" style="--progress: 60%">
+              <span class="metric-value">60%</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overlay -->
+  <div class="overlay" [class.show]="isDrawerOpen" (click)="closeDrawer()"></div>
+</div>
