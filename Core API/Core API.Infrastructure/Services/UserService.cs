@@ -30,8 +30,9 @@ namespace Core_API.Infrastructure.Service
        CoreAPIDbContext dbContext,
        IEmailService emailService,
        IOptions<AdminSettings> adminSettings,
+       IOptions<UserCleanupOptions> cleanupOptions,
        IConfiguration configuration) : IUserService
-    {
+       {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly UserManager<ApplicationUser> _userManager = userManager;
         private readonly ILogger<UserService> _logger = logger;
@@ -43,6 +44,7 @@ namespace Core_API.Infrastructure.Service
         private readonly IEmailService _emailService = emailService;
         private readonly IConfiguration _configuration = configuration;
         private readonly string _fallbackEmail = adminSettings.Value.FallbackEmail;
+        private readonly IOptions<UserCleanupOptions> _cleanupOptions = cleanupOptions;
         public async Task<PaginatedResult<UserDto>> GetUsersPaginatedAsync(UserQueryParameters queryParams)
         {
             try
@@ -518,12 +520,93 @@ namespace Core_API.Infrastructure.Service
             _logger.LogInformation("Released email {OldEmail} for user {UserId}", oldEmail, userId);
             return OperationResult<string>.SuccessResult("Email released successfully.");
         }
-
-        public Task CleanupSoftDeletedUsersAsync()
+        public async Task CleanupSoftDeletedUsersAsync()
         {
-            throw new NotImplementedException();
-        }
+            if (_cleanupOptions.Value.RetentionDays <= 0)
+            {
+                _logger.LogError("Invalid RetentionDays: {Days}. Cleanup aborted.", _cleanupOptions.Value.RetentionDays);
+                return;
+            }
+            try
+            {
+                using (var transaction = await _dbContext.Database.BeginTransactionAsync())
+                {
+                    var threshold = DateTime.UtcNow.AddDays(-_cleanupOptions.Value.RetentionDays);
+                    var cleanupTime = DateTime.UtcNow;
+                    int pageSize = 100;
+                    int page = 0;
+                    int deletedCount = 0;
+                    bool hasMore;
 
+                    do
+                    {
+                        var users = await _userManager.Users
+                            .Where(u => u.IsDeleted && u.DeletedDate < threshold)
+                            .OrderBy(u => u.DeletedDate)
+                            .Skip(page * pageSize)
+                            .Take(pageSize)
+                            .ToListAsync();
+                        hasMore = users.Count == pageSize;
+                        page++;
+
+                        foreach (var user in users)
+                        {
+                            var result = await HardDeleteUserAsync(user.Id);
+                            if (!result.IsSuccess)
+                            {
+                                _logger.LogWarning("Failed to hard-delete user {Email}: {Error}", user.Email, result.ErrorMessage);
+                            }
+                            else
+                            {
+                                _logger.LogInformation("Successfully hard-deleted user {Email}", user.Email);
+                                deletedCount++;
+                            }
+                        }
+                    } while (hasMore);
+
+                    if (deletedCount > 0)
+                    {
+                        // Retrieve admin users
+                        var adminUsers = await _userManager.GetUsersInRoleAsync("Admin");
+                        var adminEmails = adminUsers.Select(u => u.Email).ToList();
+
+                        if (!adminEmails.Any())
+                        {
+                            _logger.LogWarning("No admin users found to send cleanup report. Using fallback email: {FallbackEmail}", _fallbackEmail);
+                            adminEmails = new List<string> { _fallbackEmail };
+                        }
+                        else
+                        {
+                            _logger.LogInformation("Sending cleanup report to admin emails: {AdminEmails}", string.Join(", ", adminEmails));
+                        }
+                        // Create the cleanup report model
+                        var report = new CleanupReportModel
+                        {
+                            DeletedCount = deletedCount,
+                            CleanupTime = cleanupTime,
+                            RetentionDays = _cleanupOptions.Value.RetentionDays,
+                            Threshold = threshold
+                        };
+
+                        var emailRequest = new CleanupReportEmailRequest
+                        {
+                            Report = report,
+                            ToEmails = adminEmails
+                        };
+                        await _emailService.SendCleanupReportEmailAsync(emailRequest);
+
+                        // Log admin activity for the system (no specific admin ID since this is a scheduled task)
+                        //await LogAdminActivityAsync("System", "Cleanup Soft-Deleted Users", $"Deleted {deletedCount} users with retention period of {_cleanupOptions.Value.RetentionDays} days.");
+                    }
+                    _logger.LogInformation("Completed cleanup of soft-deleted users. Deleted {Count} users.", deletedCount);
+                    await transaction.CommitAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error during soft-deleted user cleanup. Operation aborted.");
+            }
+        }
         public Task<ApplicationUser> GetApplicationUser(string userId)
         {
             throw new NotImplementedException();
