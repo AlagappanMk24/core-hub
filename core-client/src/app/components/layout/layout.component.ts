@@ -2,7 +2,7 @@
 import { Component, EventEmitter, inject, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { HeaderComponent } from '../header/header.component';
-import { AuthService } from '../../services/auth.service';
+import { AuthService } from '../../services/auth/auth.service';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { RouterOutlet } from '@angular/router';
 
@@ -44,7 +44,6 @@ export class LayoutComponent implements OnInit {
   // }
 
   onThemeChanged(theme: string): void {
-    console.log('Theme changed to:', theme);
     // Here you would implement theme switching logic
     // this.themeService.setTheme(theme);
   }

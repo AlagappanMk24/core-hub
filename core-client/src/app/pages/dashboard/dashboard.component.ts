@@ -11,6 +11,5 @@ import { DashboardStatsComponent } from '../../components/dashboard-stats/dashbo
 })
 export class DashboardComponent {
   constructor() {
-    console.log('Dashboard component initialized');
   }
 }

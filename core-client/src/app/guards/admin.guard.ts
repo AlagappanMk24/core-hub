@@ -1,4 +1,3 @@
-// src/app/guards/auth.guard.ts
 import { Injectable } from '@angular/core';
 import { CanActivate, Router } from '@angular/router';
 import { AuthService } from '../services/auth/auth.service';
@@ -6,11 +5,12 @@ import { AuthService } from '../services/auth/auth.service';
 @Injectable({
   providedIn: 'root',
 })
-export class AuthGuard implements CanActivate {
+export class AdminGuard implements CanActivate {
   constructor(private authService: AuthService, private router: Router) {}
 
   canActivate(): boolean {
-    if (this.authService.isAuthenticated()) {
+    const user = this.authService.getUserDetail();
+    if (user && user.roles.includes('Admin')) {
       return true;
     }
     this.router.navigate(['/auth/login']);

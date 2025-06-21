@@ -1,66 +1,8 @@
-<!-- <div class="h-screen flex items-center justify-center bg-gradient-to-r from-blue-50 to-green-50"> -->
-<!-- <div
-  class="h-screen flex items-center justify-center bg-gradient-to-r from-purple-50 to-pink-50"
->
-  <div class="w-full max-w-md bg-white rounded-lg shadow-lg p-8">
-    <div class="text-center mb-6">
-      <h1 class="text-3xl font-bold text-purple-700 mb-2">Verify OTP</h1>
-      <p class="text-gray-600">Enter the 6-digit OTP sent to your email.</p>
-    </div>
-
-    <form [formGroup]="otpForm" (ngSubmit)="verifyOtp()">
-      <mat-form-field appearance="fill" class="w-full">
-        <mat-label>OTP</mat-label>
-        <input matInput placeholder="Enter OTP" formControlName="otp" />
-      </mat-form-field>
-      <p
-        *ngIf="otpValidationMessage"
-        class="text-red-500 text-sm font-semibold text-left mb-2"
-      >
-        {{ otpValidationMessage }}
-      </p>
-      <button
-        type="submit"
-        [disabled]="!otpForm.valid"
-        class="w-full py-2 px-3 bg-purple-700 text-white font-bold rounded-md disabled:bg-purple-400 py-2 px-3 bg-purple-700 text-white font-bold"
-      >
-        Verify OTP
-      </button>
-    </form>
-    <p class="text-center text-gray-600 mt-2">
-      Didn't receive the OTP?
-      <button
-        (click)="resendOtp()"
-        [disabled]="resending"
-        class="text-purple-700 font-bold"
-      >
-        Resend OTP
-      </button>
-    </p>
-    <p
-      *ngIf="otpResentMessage"
-      class="text-center text-green-600 font-bold mt-2"
-    >
-      {{ otpResentMessage }}
-    </p>
-  </div>
-</div>
-
-Full-screen Loading Overlay
-<div
-  *ngIf="loading"
-  class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50"
->
-  <div
-    class="animate-spin rounded-full h-16 w-16 border-t-4 border-purple-500"
-  ></div>
-</div> -->
-
 <!-- verify-otp.component.html -->
 <div class="otp-container">
   <div class="otp-card">
     <!-- Header -->
-    <div class="header">
+    <header class="header">
       <div class="logo">
         <span class="logo-text">
           <span class="violet-first-letter">A</span>ngular
@@ -68,9 +10,9 @@ Full-screen Loading Overlay
         </span>
       </div>
       <div class="back-to-login">
-        <a href="auth/login" class="back-link">← Back to Login</a>
+        <a [routerLink]="['/auth/login']" class="back-link">← Back to Login</a>
       </div>
-    </div>
+    </header>
 
     <!-- Main Content -->
     <div class="main-content">
@@ -110,11 +52,15 @@ Full-screen Loading Overlay
       </div>
 
       <!-- OTP Form Section -->
-      <div class="form-section">
+      <div class="form-section" [ngClass]="{ 'has-error': errorMessage }">
         <div class="welcome-text">
           <h2>Verify Your Account</h2>
           <p>Enter the 6-digit code sent to</p>
           <p class="contact-info">{{ maskedContact }}</p>
+        </div>
+
+        <div class="error-message global-error" *ngIf="errorMessage">
+          {{ errorMessage }}
         </div>
 
         <form class="otp-form" (ngSubmit)="onVerifyOTP()">
@@ -124,13 +70,17 @@ Full-screen Loading Overlay
               *ngFor="let digit of otpDigits; let i = index"
               type="text"
               maxlength="1"
-              [(ngModel)]="otpDigits[i]"
               [name]="'otp' + i"
-              (input)="onOtpInput($event, i)"
-              (keydown)="onKeyDown($event, i)"
-              (paste)="onPaste($event, i)"
+              [id]="'otp' + i"
               class="otp-input"
+              [(ngModel)]="otpDigits[i]"
+              (keydown)="onKeydown($event, i)"
+              (input)="onInput($event, i)"
+              (paste)="onPaste($event, i)"
               #otpInput
+              inputmode="numeric"
+              pattern="[0-9]"
+              autocomplete="one-time-code"
               required
             />
           </div>
@@ -138,25 +88,25 @@ Full-screen Loading Overlay
           <!-- Timer and Resend -->
           <div class="timer-section">
             <div class="timer" *ngIf="timeLeft > 0">
-              Resend code in <span class="timer-text">{{ formatTime(timeLeft) }}</span>
+              Resend code in
+              <span class="timer-text">{{ formatTime(timeLeft) }}</span>
             </div>
             <div class="resend-section" *ngIf="timeLeft === 0">
               <span>Didn't receive code? </span>
-              <a href="#" class="resend-link" (click)="onResendOTP($event)">Resend OTP</a>
+              <a href="#" class="resend-link" (click)="onResendOTP($event)"
+                >Resend OTP</a
+              >
             </div>
           </div>
 
           <!-- Verify Button -->
-          <button type="submit" class="verify-btn" [disabled]="!isOtpComplete()">
-            {{ isVerifying ? 'VERIFYING...' : 'VERIFY OTP' }}
+          <button
+            type="submit"
+            class="verify-btn"
+            [disabled]="!isOtpComplete() || isVerifying"
+          >
+            {{ isVerifying ? "VERIFYING..." : "VERIFY OTP" }}
           </button>
-
-          <!-- Change Contact -->
-          <div class="change-contact">
-            <a href="#" class="change-link" (click)="onChangeContact($event)">
-              Change {{ contactType === 'email' ? 'Email' : 'Phone Number' }}
-            </a>
-          </div>
         </form>
 
         <!-- Help Section -->
@@ -166,6 +116,12 @@ Full-screen Loading Overlay
             <p>• Ensure your phone has good signal</p>
             <p>• Contact support if issues persist</p>
           </div>
+        </div>
+
+        <!-- Loading Overlay -->
+        <div class="loading-overlay" *ngIf="isVerifying">
+          <div class="violet-loader"></div>
+          <p class="loading-text">{{ loadingText }}</p>
         </div>
       </div>
     </div>

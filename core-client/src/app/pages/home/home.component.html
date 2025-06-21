@@ -1,27 +1,155 @@
-<div class="flex items-center flex-col pt-56 h-screen">
-  <div class="h-screen">
-    <h1 class="text-4xl text-center font-bold my-10">Welcome to
+<!-- home.component.html -->
+<div class="home-container">
+  <!-- Background circles -->
+  <div class="bg-circle bg-circle-pink-large"></div>
+  <div class="bg-circle bg-circle-pink-small"></div>
+  <div class="bg-circle bg-circle-blue-large"></div>
+  <div class="bg-circle bg-circle-blue-small"></div>
 
-      <span class="text-5xl text-green-800">MyApp</span>
-    </h1>
+  <!-- Royalty Free Vector Badge -->
+  <div class="royalty-badge">ROYALTY-FREE VECTOR</div>
 
-    <div class="flex flex-col items-center gap-5 justify-center">
-      <!-- @if(authService.getUserDetail()){
-      <h1 class="text-2xl">
-        You are logged in as <span class="font-bold bg-blue-600 rounded-md p-2 text-white">
-          {{authService.getUserDetail()?.fullName}}
-        </span>
-      </h1>
-      }@else{
-        <h1 class="text-2xl">You are not logged in</h1>
-        <a routerLink="/auth/login">
-          <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md">
-            Login
-          </button>
-        </a>
-      } -->
-
+  <!-- Main Content Layout -->
+  <div class="content-wrapper">
+    <!-- Left Text Section -->
+    <div class="text-section">
+      <h1 class="main-heading">Online<br>shopping</h1>
+      <p class="description-text">
+        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod 
+        tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim 
+        veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea 
+        commodo consequat. Duis aute irure dolor in reprehenderit in voluptate 
+        velit esse cillum dolore eu fugiat nulla pariatur.
+      </p>
+      <button class="cta-button" (click)="onGetStarted()">GET STARTED</button>
     </div>
 
+    <!-- Right Illustration Section -->
+    <div class="illustration-section">
+      <!-- Main smartphone base -->
+      <div class="smartphone-base">
+        <!-- Phone screen -->
+        <div class="phone-screen">
+          <!-- Shop building on phone -->
+          <div class="shop-on-phone">
+            <div class="shop-roof"></div>
+            <div class="shop-body">
+              <div class="shop-windows">
+                <div class="window-row">
+                  <div class="shop-window"></div>
+                  <div class="shop-window"></div>
+                </div>
+                <div class="window-row">
+                  <div class="shop-window"></div>
+                  <div class="shop-window"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Phone shadow/base -->
+        <div class="phone-shadow"></div>
+      </div>
+
+      <!-- SHOP label on building -->
+      <div class="shop-label">SHOP</div>
+
+      <!-- Computer monitor -->
+      <div class="computer-monitor">
+        <div class="monitor-screen">
+          <div class="monitor-content">
+            <div class="content-header"></div>
+            <div class="content-body">
+              <div class="product-image"></div>
+              <div class="product-details">
+                <div class="detail-line"></div>
+                <div class="detail-line"></div>
+                <div class="detail-line short"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="monitor-stand"></div>
+      </div>
+
+      <!-- SALES badge -->
+      <div class="sales-badge">SALES</div>
+
+      <!-- Shopping characters -->
+      <div class="character char-1">
+        <div class="char-head"></div>
+        <div class="char-body blue-shirt"></div>
+        <div class="char-legs"></div>
+        <div class="shopping-bag pink-bag"></div>
+      </div>
+
+      <div class="character char-2">
+        <div class="char-head"></div>
+        <div class="char-body green-shirt"></div>
+        <div class="char-legs"></div>
+        <div class="shopping-bag yellow-bag"></div>
+      </div>
+
+      <div class="character char-3">
+        <div class="char-head"></div>
+        <div class="char-body pink-shirt"></div>
+        <div class="char-legs"></div>
+        <div class="shopping-bag blue-bag"></div>
+      </div>
+
+      <!-- Delivery truck -->
+      <div class="delivery-truck">
+        <div class="truck-front">
+          <div class="truck-windshield"></div>
+        </div>
+        <div class="truck-cargo"></div>
+        <div class="truck-wheels">
+          <div class="wheel front-wheel"></div>
+          <div class="wheel rear-wheel"></div>
+        </div>
+      </div>
+
+      <!-- Yellow/orange packages -->
+      <div class="package yellow-package pkg-1">
+        <div class="pkg-top"></div>
+        <div class="pkg-front"></div>
+        <div class="pkg-side"></div>
+      </div>
+
+      <div class="package yellow-package pkg-2">
+        <div class="pkg-top"></div>
+        <div class="pkg-front"></div>
+        <div class="pkg-side"></div>
+      </div>
+
+      <!-- Gift box with ribbon -->
+      <div class="gift-box">
+        <div class="gift-base"></div>
+        <div class="gift-ribbon-v"></div>
+        <div class="gift-ribbon-h"></div>
+        <div class="gift-bow"></div>
+      </div>
+
+      <!-- Credit card -->
+      <div class="credit-card">
+        <div class="card-body"></div>
+        <div class="card-chip"></div>
+        <div class="card-magnetic"></div>
+      </div>
+
+      <!-- Shopping cart -->
+      <div class="shopping-cart">
+        <div class="cart-basket"></div>
+        <div class="cart-handle"></div>
+        <div class="cart-wheels">
+          <div class="cart-wheel-left"></div>
+          <div class="cart-wheel-right"></div>
+        </div>
+      </div>
+
+      <!-- Percentage discount circle -->
+      <div class="discount-circle">%</div>
+    </div>
   </div>
 </div>

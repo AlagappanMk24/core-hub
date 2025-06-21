@@ -96,7 +96,6 @@
             </div>
           </div>
           <!-- Password Input -->
-          <!-- Password Input -->
           <div class="input-group">
             <div
               class="input-wrapper"
@@ -153,20 +152,16 @@
         </form>
         <!-- Social Login -->
         <div class="social-container">
-          <div class="social-button">
+          <div class="social-button" (click)="loginWithProvider('google')">
             <img src="assets/google.png" alt="Google" style="width: 20px" />
           </div>
-          <div class="social-button">
-            <img
-              src="assets/microsoft.png"
-              alt="Microsoft"
-              style="width: 20px"
-            />
+          <div class="social-button" (click)="loginWithProvider('microsoft')">
+            <img src="assets/microsoft.png" alt="Microsoft" style="width: 20px"/>
           </div>
-          <div class="social-button">
+          <div class="social-button" (click)="loginWithProvider('facebook')">
             <img src="assets/facebook.png" alt="Facebook" style="width: 20px" />
           </div>
-          <div class="social-button">
+          <div class="social-button" (click)="loginWithProvider('github')">
             <img src="assets/github.png" alt="Github" style="width: 20px" />
           </div>
         </div>

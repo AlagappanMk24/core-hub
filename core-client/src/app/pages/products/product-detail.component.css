@@ -1,0 +1,140 @@
+.product-detail-container {
+  padding: 20px;
+  background: #f8f9fa;
+  min-height: 100vh;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+h2 {
+  color: #333;
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+
+.product-detail {
+  display: flex;
+  gap: 20px;
+  background: white;
+  border-radius: 12px;
+  padding: 20px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.product-image {
+  width: 300px;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 8px;
+}
+
+.product-info {
+  flex: 1;
+}
+
+.product-info h3 {
+  color: #6b46c1;
+  font-size: 22px;
+  margin-bottom: 10px;
+}
+
+.product-info p {
+  margin: 8px 0;
+  color: #666;
+}
+
+.product-info strong {
+  color: #333;
+}
+
+.actions {
+  margin-top: 20px;
+  display: flex;
+  gap: 10px;
+}
+
+.edit-btn, .delete-btn, .save-btn, .cancel-btn {
+  padding: 10px 20px;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.2s;
+}
+
+.edit-btn, .save-btn {
+  background: #6b46c1;
+  color: white;
+}
+
+.edit-btn:hover, .save-btn:hover {
+  background: #553c9a;
+}
+
+.delete-btn {
+  background: #c62828;
+  color: white;
+}
+
+.delete-btn:hover {
+  background: #b71c1c;
+}
+
+.cancel-btn {
+  background: #e0e0e0;
+  color: #333;
+}
+
+.cancel-btn:hover {
+  background: #d5d5d5;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+form label {
+  font-weight: 500;
+  color: #333;
+}
+
+form input, form textarea {
+  padding: 10px;
+  border: 2px solid #e9ecef;
+  border-radius: 6px;
+  font-size: 14px;
+}
+
+form input:focus, form textarea:focus {
+  outline: none;
+  border-color: #6b46c1;
+}
+
+.error-toast, .success-toast {
+  padding: 10px 20px;
+  border-radius: 6px;
+  margin-bottom: 20px;
+  font-size: 14px;
+}
+
+.error-toast {
+  background: #ffebee;
+  color: #c62828;
+}
+
+.success-toast {
+  background: #e8f5e8;
+  color: #2e7d32;
+}
+
+@media (max-width: 768px) {
+  .product-detail {
+    flex-direction: column;
+  }
+
+  .product-image {
+    width: 100%;
+    height: auto;
+  }
+}

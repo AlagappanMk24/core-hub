@@ -46,7 +46,7 @@
 }
 
 .violet-first-letter {
-  color: violet;
+  color: #8b5cf6;
 }
 
 .back-to-login {
@@ -275,13 +275,23 @@
 
 /* Animations */
 @keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
 }
 
 @keyframes bounce {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.1); }
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
 }
 
 /* Form Section */
@@ -291,10 +301,19 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
+  max-height: 500px;
+  position: relative;
 }
 
+.form-section.has-error {
+  padding-bottom: 60px; /* Ensure error message doesn't overlap */
+}
+/* .form-section.has-errors {
+  overflow-y: auto;
+} */
+
 .welcome-text {
-  margin-bottom: 40px;
+  margin-bottom: 20px;
   text-align: center;
 }
 
@@ -314,6 +333,21 @@
 .contact-info {
   font-weight: 600;
   color: #8b5cf6 !important;
+}
+
+.error-message {
+  color: #ef4444;
+  font-size: 14px;
+  margin-bottom: 15px;
+  text-align: center;
+  padding: 8px;
+  background: #fef2f2;
+  border-radius: 8px;
+}
+
+.global-error {
+  margin-bottom: 15px;
+  margin-left: 0;
 }
 
 /* OTP Form Styles */
@@ -449,29 +483,41 @@
   align-items: center;
 }
 
-/* Loading State */
-.verify-btn.loading {
-  position: relative;
-  color: transparent;
+/* Loading Overlay */
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
 }
 
-.verify-btn.loading::after {
-  content: "";
-  position: absolute;
-  width: 20px;
-  height: 20px;
-  top: 50%;
-  left: 50%;
-  margin-left: -10px;
-  margin-top: -10px;
-  border: 2px solid #ffffff;
+.violet-loader {
+  width: 50px;
+  height: 50px;
+  border: 5px solid #e5e7eb;
+  border-top: 5px solid #8b5cf6;
   border-radius: 50%;
-  border-top-color: transparent;
   animation: spin 1s linear infinite;
 }
 
+.loading-text {
+  margin-top: 15px;
+  font-size: 16px;
+  color: #8b5cf6;
+  font-weight: 500;
+}
+
 @keyframes spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Responsive Design */
@@ -508,5 +554,53 @@
 
   .welcome-text h2 {
     font-size: 28px;
+  }
+  .welcome-text p {
+    font-size: 14px;
+  }
+
+  .error-message {
+    font-size: 13px;
+    padding: 6px;
+  }
+
+  .verify-btn {
+    padding: 12px;
+    font-size: 15px;
+  }
+
+  .violet-loader {
+    width: 40px;
+    height: 40px;
+    border-width: 4px;
+  }
+
+  .loading-text {
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .otp-inputs {
+    gap: 6px;
+  }
+
+  .otp-input {
+    width: 35px;
+    height: 35px;
+    font-size: 16px;
+  }
+
+  .welcome-text h2 {
+    font-size: 24px;
+  }
+
+  .timer-section,
+  .resend-section {
+    font-size: 13px;
+  }
+
+  .change-link {
+    font-size: 13px;
   }
 }

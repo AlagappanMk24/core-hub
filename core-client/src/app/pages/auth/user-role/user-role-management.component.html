@@ -1,0 +1,124 @@
+<div class="min-h-screen bg-gray-50 py-8 px-4 sm:px-6 lg:px-8">
+  <div class="max-w-5xl mx-auto bg-white shadow-lg rounded-xl overflow-hidden border border-gray-100 animate-fade-in">
+    <div class="bg-gradient-to-r from-purple-600 to-purple-800 px-6 py-4 sticky top-0 z-10">
+      <h2 class="text-2xl font-bold text-white flex items-center">
+        <i class="fas fa-user-shield mr-2"></i> User Role Management
+      </h2>
+    </div>
+    <form [formGroup]="roleForm" (ngSubmit)="onSave()" class="p-6">
+      <div class="mb-8">
+        <label for="roleId" class="block text-sm font-semibold text-gray-700 mb-2">
+          Select Role
+        </label>
+        <div class="relative">
+          <select
+            id="roleId"
+            formControlName="roleId"
+            class="w-full bg-gray-50 border-0 rounded-lg px-4 py-3 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-purple-500 appearance-none transition-all duration-200 hover:bg-gray-100"
+            (change)="onRoleChange($event)"
+            aria-label="Select a user role"
+          >
+            <option value="">-- Select Role --</option>
+            <option *ngFor="let role of roles" [value]="role.id">{{ role.name }}</option>
+          </select>
+          <i class="fas fa-chevron-down absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+        </div>
+      </div>
+      <div *ngIf="roleForm.get('roleId')?.value" class="space-y-6">
+        <div
+          *ngFor="let menu of menus; let i = index"
+          class="bg-gray-50 rounded-lg p-4 shadow-sm border border-gray-200 transition-all duration-300"
+          [ngClass]="{'animate-slide-in': !isCollapsed[i]}"
+        >
+          <div
+            class="flex justify-between items-center cursor-pointer"
+            (click)="toggleCollapse(i)"
+          >
+            <h3 class="text-lg font-semibold text-gray-800 flex items-center">
+              <i [class]="menu.icon" class="mr-2 text-purple-600"></i> {{ menu.name }}
+            </h3>
+            <div class="flex items-center space-x-4">
+              <label
+                class="flex items-center space-x-2 cursor-pointer"
+                [attr.data-tooltip]="'Enable or disable all permissions for ' + menu.name"
+              >
+                <span class="text-sm font-medium text-gray-600">Enable</span>
+                <div class="relative inline-block w-10 h-6">
+                  <input
+                    type="checkbox"
+                    [checked]="isMenuEnabled(menu.id)"
+                    (change)="toggleMenu(menu.id, $event)"
+                    class="opacity-0 w-0 h-0"
+                    aria-label="Enable menu permissions"
+                  />
+                  <span
+                    class="absolute inset-0 bg-gray-300 rounded-full transition-all duration-200"
+                    [ngClass]="{'bg-purple-600': isMenuEnabled(menu.id)}"
+                  ></span>
+                  <span
+                    class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-all duration-200 transform"
+                    [ngClass]="{'translate-x-4': isMenuEnabled(menu.id)}"
+                  ></span>
+                </div>
+              </label>
+              <i
+                class="fas fa-chevron-down text-gray-500 transition-transform duration-200"
+                [ngClass]="{'rotate-180': !isCollapsed[i]}"
+              ></i>
+            </div>
+          </div>
+          <div
+            *ngIf="!isCollapsed[i]"
+            class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 mt-4 animate-fade-in"
+          >
+            <div
+              *ngFor="let permission of permissions"
+              class="flex items-center space-x-2"
+            >
+              <input
+                type="checkbox"
+                [checked]="isPermissionChecked(menu.id, permission.id)"
+                (change)="togglePermission(menu.id, permission.id, $event)"
+                [disabled]="!isMenuEnabled(menu.id)"
+                class="h-5 w-5 text-purple-600 focus:ring-purple-500 border-gray-300 rounded transition-all duration-200"
+                [attr.aria-label]="permission.action + ' permission for ' + menu.name"
+              />
+              <span class="text-sm font-medium text-gray-700">{{ permission.action }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="mt-8 flex justify-end">
+        <button
+          type="submit"
+          [disabled]="!roleForm.valid || !permissionsChanged"
+          class="relative bg-gradient-to-r from-purple-600 to-purple-700 text-white px-8 py-3 rounded-lg font-semibold hover:from-purple-700 hover:to-purple-800 focus:outline-none focus:ring-2 focus:ring-purple-500 disabled:bg-gray-400 disabled:cursor-not-allowed transition-all duration-200 transform hover:scale-105 flex items-center"
+          [ngClass]="{'animate-pulse': saving}"
+        >
+          <span *ngIf="!saving">Save Changes</span>
+          <span *ngIf="saving" class="flex items-center">
+            <i class="fas fa-spinner fa-spin mr-2"></i> Saving...
+          </span>
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Success Toast -->
+  <div
+    class="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center"
+    *ngIf="showSuccessToast"
+    [@toast]
+  >
+    <i class="fas fa-check-circle mr-2"></i> Permissions saved successfully!
+  </div>
+
+  <!-- Error Toast -->
+  <div
+    class="fixed bottom-4 right-4 bg-red-500 text-white px-4 py-2 rounded-lg shadow-lg flex items-center"
+    *ngIf="showErrorToast"
+    [@toast]
+  >
+    <i class="fas fa-exclamation-circle mr-2"></i> {{ errorMessage }}
+  </div>
+</div>

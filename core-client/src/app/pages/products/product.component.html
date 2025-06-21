@@ -1,0 +1,173 @@
+<div class="product-container">
+  <div class="header">
+    <h2>Product List</h2>
+  </div>
+  
+  <!-- Search and Filter Controls -->
+  <div class="controls-section">
+    <div class="search-filter-row">
+      <div class="search-box">
+        <input 
+          type="text" 
+          placeholder="Search products..." 
+          [(ngModel)]="searchTerm"
+          (input)="onSearch()"
+          class="search-input">
+        <span class="search-icon">🔍</span>
+      </div>
+      
+      <div class="filter-controls">
+        <select [(ngModel)]="selectedCategory" (change)="onFilter()" class="filter-select">
+          <option value="">All Categories</option>
+          <option *ngFor="let category of categories" [value]="category">{{category}}</option>
+        </select>
+        
+        <select [(ngModel)]="selectedStatus" (change)="onFilter()" class="filter-select">
+          <option value="">All Status</option>
+          <option *ngFor="let status of statuses" [value]="status">{{status}}</option>
+        </select>
+        
+        <select [(ngModel)]="sortBy" (change)="onSort()" class="filter-select">
+          <option value="">Sort By</option>
+          <option value="name">Name</option>
+          <option value="price">Price</option>
+          <option value="rating">Rating</option>
+          <option value="totalOrder">Total Orders</option>
+        </select>
+        
+        <button (click)="toggleSortOrder()" class="sort-btn" [class.desc]="sortOrder === 'desc'">
+          {{sortOrder === 'asc' ? '↑' : '↓'}}
+        </button>
+      </div>
+    </div>
+    
+    <div class="results-info">
+      <span>Showing {{paginatedProducts.length}} of {{filteredProducts.length}} products</span>
+      <div class="pagination-size">
+        <label>Items per page:</label>
+        <select [(ngModel)]="itemsPerPage" (change)="onPageSizeChange()" class="page-size-select">
+          <option value="5">5</option>
+          <option value="10">10</option>
+          <option value="20">20</option>
+          <option value="50">50</option>
+        </select>
+      </div>
+    </div>
+  </div>
+  
+  <div class="table-container">
+    <table class="product-table">
+      <thead>
+        <tr>
+          <th>NO.</th>
+          <th>PRODUCT</th>
+          <th>CATEGORY</th>
+          <th>TOTAL ORDER</th>
+          <th>STATUS</th>
+          <th>PRICE</th>
+          <th>RATING</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr *ngFor="let product of paginatedProducts; let i = index" 
+            [class.highlighted]="product.highlighted"
+            (mouseenter)="onProductHover(product, $event)"
+            (mouseleave)="onProductLeave()"
+            class="product-row">
+          <td>{{ String((currentPage - 1) * itemsPerPage + i + 1).padStart(2, '0') }}</td>
+          <td class="product-cell">
+            <img [src]="product.image" [alt]="product.name" class="product-image">
+            <span>{{ product.name }}</span>
+          </td>
+          <td>{{ product.category }}</td>
+          <td>{{ product.totalOrder }}</td>
+          <td>
+            <span [class]="'status-badge status-' + product.status.toLowerCase().replace(' ', '-')">
+              {{ product.status }}
+            </span>
+          </td>
+          <td>{{ product.price }}</td>
+          <td class="rating-cell">
+            <span class="rating-value">{{ product.rating }}</span>
+            <span class="star">⭐</span>
+          </td>
+        </tr>
+        <tr *ngIf="paginatedProducts.length === 0" class="no-results">
+          <td colspan="9" class="no-results-cell">
+            <div class="no-results-content">
+              <span class="no-results-icon">📦</span>
+              <span>No products found</span>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  
+  <!-- Pagination -->
+  <div class="pagination-container" *ngIf="totalPages > 1">
+    <div class="pagination">
+      <button 
+        (click)="goToPage(1)" 
+        [disabled]="currentPage === 1"
+        class="page-btn">
+        First
+      </button>
+      <button 
+        (click)="goToPage(currentPage - 1)" 
+        [disabled]="currentPage === 1"
+        class="page-btn">
+        Previous
+      </button>
+      
+      <span class="page-numbers">
+        <button 
+          *ngFor="let page of getPageNumbers()" 
+          (click)="goToPage(page)"
+          [class.active]="page === currentPage"
+          class="page-number">
+          {{page}}
+        </button>
+      </span>
+      
+      <button 
+        (click)="goToPage(currentPage + 1)" 
+        [disabled]="currentPage === totalPages"
+        class="page-btn">
+        Next
+      </button>
+      <button 
+        (click)="goToPage(totalPages)" 
+        [disabled]="currentPage === totalPages"
+        class="page-btn">
+        Last
+      </button>
+    </div>
+    
+    <div class="pagination-info">
+      Page {{currentPage}} of {{totalPages}} ({{filteredProducts.length}} total items)
+    </div>
+  </div>
+  
+  <!-- Product Detail Card - Only shown on hover -->
+  <div 
+    class="product-detail-card" 
+    *ngIf="hoveredProduct && showDetailCard"
+    [style.left.px]="cardPosition.x"
+    [style.top.px]="cardPosition.y">
+    <img [src]="hoveredProduct.detailImage || hoveredProduct.image" [alt]="hoveredProduct.name" class="detail-image">
+    <div class="detail-content">
+      <h3 class="detail-title">{{ hoveredProduct.name }}</h3>
+      <div class="detail-price">{{ hoveredProduct.price }}</div>
+      <p class="detail-description">{{ hoveredProduct.description || 'No description available' }}</p>
+      <div class="detail-footer">
+        <strong>Product Details</strong><br>
+        <span class="detail-location">{{ hoveredProduct.location || hoveredProduct.category + ' Category' }}</span>
+      </div>
+    </div>
+    <div class="detail-rating">
+      <span class="detail-rating-value">{{ hoveredProduct.rating }}</span>
+      <span class="star">⭐</span>
+    </div>
+  </div>
+</div>

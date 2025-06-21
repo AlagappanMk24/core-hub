@@ -224,7 +224,7 @@ import { CommonModule } from '@angular/common';
 import { Component, inject, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router, RouterModule } from '@angular/router';
-import { AuthService } from '../../../services/auth.service';
+import { AuthService } from '../../../services/auth/auth.service';
 import { RegisterRequest } from '../../../interfaces/auth/auth-request/register-request';
 import { AuthResponse } from '../../../interfaces/auth/auth-response/auth-response';
 

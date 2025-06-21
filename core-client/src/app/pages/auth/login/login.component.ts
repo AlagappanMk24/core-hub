@@ -7,10 +7,13 @@ import {
   Validators,
 } from '@angular/forms';
 import { Router, RouterModule, ActivatedRoute } from '@angular/router';
-import { AuthService } from '../../../services/auth.service';
+import { AuthService } from '../../../services/auth/auth.service';
 import { LoginRequest } from '../../../interfaces/auth/auth-request/login-request';
 import { CommonModule } from '@angular/common';
 
+/**
+ * Component for handling user login with email/password and external providers.
+ */
 @Component({
   selector: 'app-login',
   templateUrl: './login.component.html',
@@ -19,10 +22,10 @@ import { CommonModule } from '@angular/common';
   standalone: true,
 })
 export class LoginComponent implements OnInit {
-  authService = inject(AuthService);
-  router = inject(Router);
-  activatedRoute = inject(ActivatedRoute);
-  fb = inject(FormBuilder);
+  private authService = inject(AuthService);
+  private router = inject(Router);
+  private activatedRoute = inject(ActivatedRoute);
+  private fb = inject(FormBuilder);
 
   loginForm: FormGroup;
   loading: boolean = false;
@@ -30,6 +33,9 @@ export class LoginComponent implements OnInit {
   loadingText: string = 'Signing in, please wait...';
   showPassword: boolean = false;
 
+  /**
+   * Initializes the login form with email and password validators.
+   */
   constructor() {
     this.loginForm = this.fb.group({
       email: [
@@ -50,6 +56,9 @@ export class LoginComponent implements OnInit {
     });
   }
 
+  /**
+   * Initializes query param subscription for external login callbacks.
+   */
   ngOnInit(): void {
     // Reset login error when user starts typing
     this.loginForm.valueChanges.subscribe(() => {
@@ -62,10 +71,12 @@ export class LoginComponent implements OnInit {
       const provider = params['state'];
       if (authCode && provider) {
         this.loading = true;
-        this.loadingText = 'Processing external login...';
+        this.loadingText = `Processing ${provider} login...`;
+        // Process external login
         this.authService.externalLogin(authCode, provider).subscribe({
           next: (response) => {
-            if (response.isSuccess && response.token) {
+            if (response.token) {
+              localStorage.setItem('authToken', response.token);
               this.loadingText = 'Navigating to dashboard...';
               setTimeout(() => {
                 this.loading = false;
@@ -89,9 +100,13 @@ export class LoginComponent implements OnInit {
     });
   }
 
+  /**
+   * Handles form submission for email/password login.
+   */
   onLogin(): void {
     this.loginError = '';
 
+    // Validate form
     if (this.loginForm.invalid) {
       this.loginForm.markAllAsTouched();
       this.setValidationError();
@@ -106,17 +121,18 @@ export class LoginComponent implements OnInit {
       password: this.loginForm.value.password,
     };
 
+    // Simulate delay for UX
     setTimeout(() => {
+      // Attempt login
       this.authService.login(loginData).subscribe({
         next: (response) => {
-          console.log(response, 'res');
           if (response.isSucceeded) {
             this.loadingText =
               response.message || 'Login successful. Redirecting...';
             setTimeout(() => {
               this.loading = false;
               this.router.navigate(['/auth/verify-otp'], {
-                queryParams: { email: this.loginForm.value.email },
+                queryParams: { otpIdentifier: response.model?.otpIdentifier},
               });
             }, 2000);
           } else {
@@ -127,11 +143,18 @@ export class LoginComponent implements OnInit {
         },
         error: (error) => {
           this.loading = false;
+          // Handle specific error codes
           if (error.status === 400) {
             this.loginError =
               error.error?.message || 'Invalid email or password.';
           } else if (error.status === 403) {
             this.loginError = error.error?.message || 'Unauthorized access.';
+          } else if (error.status === 429) {
+            const retryAfter = error.error?.retryAfterSeconds || 60;
+            this.loginError = `${
+              error.error?.message ||
+              'Too many login attempts. Please wait and try again.'
+            } Try again in ${retryAfter} seconds.`;
           } else if (error.status === 500) {
             this.loginError = 'An error occurred while processing the request.';
           } else {
@@ -144,10 +167,15 @@ export class LoginComponent implements OnInit {
     }, 2000);
   }
 
+  /**
+   * Initiates login with an external provider.
+   * @param provider The external provider (e.g., Google, GitHub).
+   */
   loginWithProvider(provider: string): void {
     this.loading = true;
     this.loadingText = `Connecting to ${provider}...`;
 
+    // Get OAuth2 redirect URL
     this.authService.getExternalLoginUrl(provider).subscribe({
       next: (response) => {
         window.location.href = response.redirectUrl;
@@ -160,21 +188,30 @@ export class LoginComponent implements OnInit {
     });
   }
 
+  /**
+   * Toggles password visibility in the form.
+   */
   togglePasswordVisibility(): void {
     this.showPassword = !this.showPassword;
   }
 
+  /**
+   * Sets validation error message based on form errors.
+   */
   private setValidationError(): void {
     const errors = [];
     const emailControl = this.loginForm.get('email');
     const passwordControl = this.loginForm.get('password');
 
+    // Collect email validation errors
     if (emailControl?.errors) {
       if (emailControl.errors['required']) errors.push('Email is required');
       if (emailControl.errors['email']) errors.push('Invalid email format');
       if (emailControl.errors['maxlength'])
         errors.push('Email must be less than 255 characters');
     }
+
+    // Collect password validation errors
     if (passwordControl?.errors) {
       if (passwordControl.errors['required'])
         errors.push('Password is required');
@@ -189,7 +226,7 @@ export class LoginComponent implements OnInit {
       if (passwordControl.errors['maxlength'])
         errors.push('Password must be less than 100 characters');
     }
-
+    // Set error message
     if (errors.length > 0) {
       this.loginError = `Please check the following: ${errors.join(', ')}`;
     }

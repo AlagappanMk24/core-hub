@@ -125,8 +125,6 @@ export class CustomerComponent implements OnInit {
   }
 
   addCustomer(): void {
-    // Implement add customer logic
-    console.log('Add customer clicked');
   }
 
   getAvatarUrl(customer: Customer): string {

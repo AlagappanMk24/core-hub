@@ -23,14 +23,15 @@ interface MenuItem {
 export class SidebarComponent implements OnInit {
   menuItems: MenuItem[] = [
     { label: 'Dashboard', icon: 'fas fa-th-large', route: '/dashboard', active: true },
-    { label: 'Customers', icon: 'fas fa-layers', route: '/customers', active: false, hasSubmenu: true },
+    { label: 'Customers', icon: '	fas fa-users', route: '/customers', active: false,},
     { label: 'Categories', icon: 'fas fa-star', route: '/categories', active: false },
     { label: 'Products', icon: 'fas fa-edit', route: '/products', active: false },
     { label: 'Orders', icon: 'fas fa-chart-bar', route: '/orders', active: false },
-    { label: 'Invoices', icon: 'fas fa-file-icon', route: '/invoices', active: false },
+    { label: 'Invoices', icon: 'fas fa-file-invoice', route: '/invoices', active: false },
     { label: 'Tables', icon: 'fas fa-table', route: '/tables', active: false },
     { label: 'Sample Pages', icon: 'fas fa-file-alt', route: '/sample-pages', active: false, hasSubmenu: true },
     { label: 'Projects', icon: 'fas fa-briefcase', route: '/projects', active: false },
+    { label: 'Role Management', icon: 'fas fa-user-shield', route: '/role-management', active: false },
   ];
 
   constructor(private router: Router) {}

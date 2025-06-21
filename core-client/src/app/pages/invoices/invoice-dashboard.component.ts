@@ -136,28 +136,13 @@ export class InvoiceDashboardComponent implements AfterViewInit {
     ctx.fill();
   }
 
-  onTabClick(tab: string): void {
-    // Handle tab click logic here
-    console.log('Tab clicked:', tab);
-  }
+  onTabClick(tab: string): void {}
 
-  onGenerateReports(): void {
-    // Handle generate reports logic here
-    console.log('Generate reports clicked');
-  }
+  onGenerateReports(): void {}
 
-  onExport(): void {
-    // Handle export logic here
-    console.log('Export clicked');
-  }
+  onExport(): void {}
 
-  onCreateInvoice(): void {
-    // Handle create invoice logic here
-    console.log('Create invoice clicked');
-  }
+  onCreateInvoice(): void {}
 
-  onInvoiceAction(invoiceId: string): void {
-    // Handle invoice action menu
-    console.log('Invoice action clicked for:', invoiceId);
-  }
+  onInvoiceAction(invoiceId: string): void {}
 }
