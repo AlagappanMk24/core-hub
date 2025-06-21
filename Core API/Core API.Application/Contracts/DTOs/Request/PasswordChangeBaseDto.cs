@@ -1,6 +1,5 @@
 ﻿using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
-using Core_API.Domain.Models.Entities;
 
 namespace Core_API.Application.Contracts.DTOs.Request
 {

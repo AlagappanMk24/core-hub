@@ -1,12 +1,18 @@
-﻿namespace Core_API.Application.Contracts.Persistence
+﻿using System.Linq.Expressions;
+
+namespace Core_API.Application.Contracts.Persistence
 {
     public interface IGenericRepository<T> where T : class
     {
-        public Task<T> GetByIdAsync(int id);
-        public Task<IEnumerable<T>> GetAllAsync();
-        public Task<T> GetByNameAsync(string name);
-        public Task<T> AddAsync(T model);
-        public Task<T> UpdateAsync(T model);
-        public Task<T> DeleteAsync(int Id);
+        //T - category
+        Task<IEnumerable<T>> GetAllAsync(Expression<Func<T, bool>>? filter = null, string? includeProperties = null);
+        Task<T> GetAsync(Expression<Func<T, bool>> filter, string? includeProperties = null, bool tracked = false);
+        Task AddAsync(T entity);
+        Task RemoveAsync(T entity);
+        Task RemoveRangeAsync(IEnumerable<T> entity);
+        Task<int> CountAsync(Expression<Func<T, bool>> filter = null);
+        IQueryable<T> Query();
+        void Update(T entity);
+        void Delete(T entity);
     }
 }

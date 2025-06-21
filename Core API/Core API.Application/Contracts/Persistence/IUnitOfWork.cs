@@ -2,7 +2,8 @@
 {
     public interface IUnitOfWork : IDisposable
     {
+        IAuthRepository AuthUsers {  get; }
         IUserRepository Users { get; }
-        Task<int> SaveChangesAsync();
+        Task SaveChangesAsync();
     }
 }

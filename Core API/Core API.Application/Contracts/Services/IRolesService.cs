@@ -1,0 +1,12 @@
+﻿using Core_API.Application.Contracts.DTOs.Request;
+
+namespace Core_API.Application.Contracts.Services
+{
+    public interface IRolesService
+    {
+        Task<List<RoleDto>> GetRolesAsync();
+        Task<List<PermissionDto>> GetPermissionsAsync();
+        Task<List<RoleMenuPermissionDto>> GetRoleMenuPermissionsAsync(string roleId);
+        Task SaveRoleMenuPermissionsAsync(List<RoleMenuPermissionDto> dtos);
+    }
+}

@@ -1,5 +1,7 @@
 ﻿using Core_API.Application.Contracts.DTOs.Request;
 using Core_API.Application.Contracts.Service;
+using Core_API.Application.Features.Users.DTOs;
+using Core_API.Web.Areas.Auth;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 

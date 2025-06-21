@@ -1,23 +1,11 @@
-﻿using Core_API.Domain.Models.Entities;
-using Microsoft.AspNetCore.Identity;
+﻿using Core_API.Domain.Entities.Identity;
 
 namespace Core_API.Application.Contracts.Persistence
 {
-    public interface IUserRepository
+    public interface IUserRepository : IGenericRepository<ApplicationUser>
     {
-        Task<ApplicationUser> FindByNameAsync(string name);
-        Task<ApplicationUser> FindByEmailAsync(string email);
-        Task<IdentityResult> CreateUserAsync(ApplicationUser user);
-        Task<IdentityResult> CreateAsync(ApplicationUser user, string password);
-        Task<IdentityResult> AddExternalLoginAsync(ApplicationUser user, UserLoginInfo loginInfo);
-        Task<IdentityResult> AddLoginAsync(ApplicationUser user, UserLoginInfo loginInfo);
-        Task AddToRoleAsync(ApplicationUser user, string role);
-        Task<IList<string>> GetRolesAsync(ApplicationUser user);
-        Task<bool> CheckPasswordAsync(ApplicationUser user, string password);
-        Task<IdentityResult> UpdateAsync(ApplicationUser user);
-        Task<IdentityResult> DeleteAsync(ApplicationUser user);
-        Task<IdentityResult> ChangePasswordAsync(ApplicationUser user, string currentPassword, string newPassword);
-        Task<string> GeneratePasswordResetTokenAsync(ApplicationUser user);
-        Task<IdentityResult> ResetPasswordAsync(ApplicationUser user, string token, string newPassword);
+        public void Update(ApplicationUser applicationUser);
+        Task<bool> UpdateUserAsync(ApplicationUser user);
+        Task<ApplicationUser> GetUserByIdAsync(string id);
     }
 }

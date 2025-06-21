@@ -1,6 +1,6 @@
 ﻿using Core_API.Application.Contracts.DTOs.Request;
 using Core_API.Application.Contracts.DTOs.Response;
-using Core_API.Domain.Models.Entities;
+using Core_API.Domain.Entities.Identity;
 
 namespace Core_API.Application.Contracts.Service
 {
@@ -9,7 +9,7 @@ namespace Core_API.Application.Contracts.Service
         Task<ResponseDto> RegisterAsync(RegisterDto registerDto);
         Task<ResponseDto> LoginAsync(LoginDto loginDto);
         Task<ResponseDto> ValidateOtpAsync(ValidateOtpDto dto);
-        Task<ResponseDto> ResendOtpAsync(string email);
+        Task<ResponseDto> ResendOtpAsync(ResendOtpDto dto);
         Task<ResponseDto> ForgotPasswordAsync(ForgotPasswordDto dto);
         Task<ResponseDto> ResetPasswordAsync(ResetPasswordDto dto);
         string GetExternalLoginUrl(string provider);

@@ -1,106 +1,139 @@
 ﻿using Core_API.Application.Contracts.Persistence;
 using Core_API.Infrastructure.Data.Context;
 using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
+using System.Linq;
 
 namespace Core_API.Infrastructure.Persistence.Repositories
 {
-    public class GenericRepository<T>(CoreAPIDbContext context) : IGenericRepository<T> where T : class
+    public class GenericRepository<T> : IGenericRepository<T> where T : class
     {
-        protected readonly CoreAPIDbContext _context = context;
-
-        /// <summary>
-        /// Retrieves an entity by its ID.
-        /// </summary>
-        /// <param name="id">The unique identifier of the entity.</param>
-        /// <returns>The entity if found; otherwise, null.</returns>
-        public async Task<T> GetByIdAsync(int id)
+        private readonly CoreAPIDbContext _dbContext;
+        internal DbSet<T> dbset;
+        public GenericRepository(CoreAPIDbContext dbContext)
         {
-            // Fetch entity using primary key
-            var model = await _context.Set<T>().FindAsync(id);
-            return model;
+            _dbContext = dbContext;
+            dbset = _dbContext.Set<T>();
+            //To include Categories
+            _dbContext.Products.Include(u => u.Category).Include(u => u.CategoryId);
         }
 
         /// <summary>
-        /// Retrieves all entities of type T.
+        /// Adds a new entity to the database asynchronously.
         /// </summary>
-        /// <returns>A list of all entities.</returns>
-        public async Task<IEnumerable<T>> GetAllAsync()
+        /// <param name="entity">The entity to be added.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        public async Task AddAsync(T entity)
         {
-            // Get all records without tracking changes
-            var models = await _context.Set<T>().AsNoTracking().ToListAsync();
-            return models;
+            await dbset.AddAsync(entity);
         }
 
         /// <summary>
-        /// Retrieves an entity by its name. Assumes the entity has a "Name" property.
+        /// Retrieves a single entity that matches the specified filter.
         /// </summary>
-        /// <param name="name">The name of the entity.</param>
-        /// <returns>The entity if found; otherwise, null.</returns>
-        public async Task<T?> GetByNameAsync(string name)
+        /// <param name="filter">The filter to apply when searching for the entity.</param>
+        /// <param name="includeProperties">Comma-separated list of related entities to include in the result.</param>
+        /// <param name="tracked">Indicates whether to track the retrieved entity.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the found entity or null if no entity matches the filter.</returns>
+        public async Task<T> GetAsync(Expression<Func<T, bool>> filter, string? includeProperties = null, bool tracked = false)
         {
-            return await _context.Set<T>().AsNoTracking()
-                .FirstOrDefaultAsync(e => EF.Property<string>(e, "Name") == name); // Correct way to query by name
-        }
-
-        /// <summary>
-        /// Adds a new entity to the database.
-        /// </summary>
-        /// <param name="model">The entity to be added.</param>
-        /// <returns>The added entity.</returns>
-        public async Task<T> AddAsync(T model)
-        {
-            // Add entity asynchronously
-            await _context.Set<T>().AddAsync(model);
-            return model;
-        }
-
-        /// <summary>
-        /// Updates an existing entity in the database.
-        /// </summary>
-        /// <param name="model">The entity with updated values.</param>
-        /// <returns>The updated entity if found; otherwise, null.</returns>
-        public async Task<T> UpdateAsync(T model)
-        {
-            var entity = await _context.Set<T>().FindAsync(GetPrimaryKeyValue(model)); // Find entity by primary key
-            if (entity != null)
+            IQueryable<T> query;
+            if (tracked)
             {
-                _context.Entry(entity).CurrentValues.SetValues(model); // Update entity values
-                return entity;
-            }
-            return null;
-        }
+                query = dbset;
 
-        /// <summary>
-        /// Deletes an entity by its ID.
-        /// </summary>
-        /// <param name="id">The unique identifier of the entity.</param>
-        /// <returns>The deleted entity if found; otherwise, null.</returns>
-        public async Task<T> DeleteAsync(int Id)
-        {
-            T entity = await _context.Set<T>().FindAsync(Id);
-            if (entity != null)
+            }
+            else
             {
-                _context.Set<T>().Remove(entity);
-                return entity;
+                query = dbset.AsNoTracking();
+
             }
-            return null;
+            query = query.Where(filter);
+            if (!string.IsNullOrEmpty(includeProperties))
+            {
+                foreach (var includeProp in includeProperties
+                    .Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    query = query.Include(includeProp);
+                }
+            }
+            return await query.FirstOrDefaultAsync();
+
         }
 
         /// <summary>
-        /// Extracts the primary key value from an entity.
+        /// Retrieves all entities that match the specified filter.
         /// </summary>
-        /// <param name="entity">The entity to extract the key from.</param>
-        /// <returns>The primary key value.</returns>
-        private object GetPrimaryKeyValue(T entity)
+        /// <param name="filter">The filter to apply when searching for entities.</param>
+        /// <param name="includeProperties">Comma-separated list of related entities to include in the results.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains a collection of entities that match the filter.</returns>
+        public async Task<IEnumerable<T>> GetAllAsync(Expression<Func<T, bool>>? filter, string? includeProperties = null)
         {
-            var keyName = _context.Model.FindEntityType(typeof(T))?.FindPrimaryKey()?.Properties
-                .Select(x => x.Name).FirstOrDefault();
-
-            if (keyName == null)
-                throw new InvalidOperationException("Primary key not found for entity.");
-
-            return entity.GetType().GetProperty(keyName)?.GetValue(entity)
-                ?? throw new InvalidOperationException("Primary key value not found.");
+            IQueryable<T> query = dbset;
+            if (filter != null)
+            {
+                query = query.Where(filter);
+            }
+            if (!string.IsNullOrEmpty(includeProperties))
+            {
+                foreach (var includeProp in includeProperties
+                    .Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                {
+                    query = query.Include(includeProp);
+                }
+            }
+            return await query.ToListAsync();
         }
+
+        /// <summary>
+        /// Removes an entity from the database asynchronously.
+        /// </summary>
+        /// <param name="entity">The entity to be removed.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        public async Task RemoveAsync(T entity)
+        {
+            dbset.Remove(entity);
+            await _dbContext.SaveChangesAsync(); // Ensure changes are saved
+        }
+
+        /// <summary>
+        /// Removes a range of entities from the database asynchronously.
+        /// </summary>
+        /// <param name="entities">The collection of entities to be removed.</param>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        public async Task RemoveRangeAsync(IEnumerable<T> entities)
+        {
+            dbset.RemoveRange(entities);
+            await _dbContext.SaveChangesAsync(); // Ensure changes are saved
+        }
+
+        /// <summary>
+        /// Counts the number of entities that match the specified filter.
+        /// </summary>
+        /// <param name="filter">The filter to apply when counting entities.</param>
+        /// <returns>A task that represents the asynchronous operation. The task result contains the count of entities that match the filter.</returns>
+        public async Task<int> CountAsync(Expression<Func<T, bool>> filter = null)
+        {
+            IQueryable<T> query = dbset;
+            if (filter != null)
+            {
+                query = query.Where(filter);
+            }
+            return await query.CountAsync();
+        }
+        public IQueryable<T> Query()
+        {
+            return dbset.AsQueryable();
+        }
+        public void Update(T entity)
+        {
+            dbset.Update(entity);
+        }
+
+        public void Delete(T entity)
+        {
+            dbset.Remove(entity);
+        }
+
     }
 }

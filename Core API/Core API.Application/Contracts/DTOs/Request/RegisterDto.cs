@@ -5,14 +5,19 @@ namespace Core_API.Application.Contracts.DTOs.Request
 {
     public class RegisterDto
     {
+        [Required(ErrorMessage = "Full name is required.")]
+        [StringLength(255, ErrorMessage = "Full name must be less than 255 characters.")]
+        public string FullName { get; set; } = string.Empty;
+
         [Required]
         [EmailAddress(ErrorMessage = "Invalid email address.")]
         [StringLength(255, ErrorMessage = "Email must be less than 255 characters.")]
         public string Email { get; set; } = string.Empty;
 
-        [Required(ErrorMessage = "Full name is required.")]
-        [StringLength(255, ErrorMessage = "Full name must be less than 255 characters.")]
-        public string FullName { get; set; } = string.Empty;
+        [Required(ErrorMessage = "Phone Number is required.")]
+        [Phone(ErrorMessage = "Invalid phone number format.")]
+        [StringLength(20, MinimumLength = 7, ErrorMessage = "Phone Number must be between 7 and 20 digits.")]
+        public string PhoneNumber { get; set; } = string.Empty;
 
         [Required(ErrorMessage = "Password is required.")]
         [MinLength(8, ErrorMessage = "Password must be at least 8 characters.")]
@@ -25,24 +30,6 @@ namespace Core_API.Application.Contracts.DTOs.Request
         [Compare("Password", ErrorMessage = "Passwords do not match.")]
         [NotMapped] // Important: This property should NOT be mapped to the database
         public string ConfirmPassword { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "Street address is required.")]
-        [StringLength(255, ErrorMessage = "Street address must be less than 255 characters.")]
-        public string? StreetAddress { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "City is required.")]
-        [StringLength(100, ErrorMessage = "City must be less than 100 characters.")]
-        public string? City { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "State is required.")]
-        [StringLength(50, ErrorMessage = "State must be less than 50 characters.")]
-        public string? State { get; set; } = string.Empty;
-
-        [Required(ErrorMessage = "Postal code is required.")]
-        [RegularExpression(@"^\d{6}(-\d{4})?$", ErrorMessage = "Invalid postal code. Use format XXXXXX or XXXXX-XXXX.")] // Example for US zip codes
-        [StringLength(10, ErrorMessage = "Postal code must be less than 10 characters.")]
-        public string? PostalCode { get; set; } = string.Empty;
-
         public List<string>? Roles { get; set; }
     }
 }

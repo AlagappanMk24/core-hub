@@ -2,6 +2,6 @@
 {
     public class ResendOtpDto
     {
-        public string Email { get; set; } = string.Empty;
+        public string OtpIdentifier { get; set; } = string.Empty;
     }
 }
