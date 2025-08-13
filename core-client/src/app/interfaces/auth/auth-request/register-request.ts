@@ -5,5 +5,6 @@ export interface RegisterRequest {
   password: string;
   confirmPassword : string;
   phoneNumber: string;
-  roles : string[]
+  roles : string[],
+  companyId: number | null;
 }

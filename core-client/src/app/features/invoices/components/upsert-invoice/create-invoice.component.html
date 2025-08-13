@@ -1,0 +1,871 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>{{ isEditMode ? "Edit Invoice" : "Create Invoice" }}</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+  </head>
+  <body class="bg-gray-100 font-sans">
+    <div
+      class="invoice-container max-w-7xl mx-auto p-4 sm:p-6 bg-gray-100 min-h-screen"
+    >
+      <!-- Header -->
+      <div
+        class="invoice-header flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 sm:p-6 bg-white rounded-lg shadow-sm mb-6"
+      >
+        <div class="header-left flex items-center gap-4">
+          <button
+            class="back-btn p-2 rounded-full hover:bg-gray-200 transition"
+            (click)="goBack()"
+          >
+            <svg
+              class="w-5 h-5 text-gray-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M15 19l-7-7 7-7"
+              />
+            </svg>
+          </button>
+          <h1
+            class="page-title text-2xl sm:text-3xl font-semibold text-gray-800"
+          >
+            {{ isEditMode ? "Edit Invoice" : "Create Invoice" }}
+          </h1>
+        </div>
+        <div class="header-right flex flex-col sm:flex-row gap-3 mt-4 sm:mt-0">
+          <button
+            class="icon-btn p-2 rounded-full hover:bg-gray-200 transition"
+            (click)="previewInvoice()"
+            title="Preview Invoice"
+          >
+            <svg
+              class="w-5 h-5 text-gray-600"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+              <circle cx="12" cy="12" r="3" />
+            </svg>
+          </button>
+          <button
+            class="draft-btn px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition"
+            (click)="saveToDraft()"
+            *ngIf="!isEditMode"
+          >
+            Save to Draft
+          </button>
+
+          <button
+            class="primary-btn px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+            (click)="saveAndContinue()"
+          >
+            {{ isEditMode ? "Update Invoice" : "Save and Continue" }}
+          </button>
+            <button *ngIf="isEditMode" class="send-btn px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition" (click)="sendInvoice()">
+          Send Invoice
+        </button>
+        </div>
+      </div>
+
+      <div class="invoice-content flex flex-col lg:flex-row gap-6">
+        <!-- Left Panel -->
+        <div class="left-panel flex-1 flex flex-col gap-6">
+          <!-- Company Info -->
+          <div
+            class="company-section bg-white p-4 sm:p-6 rounded-lg shadow-sm flex justify-between items-center"
+          >
+            <div class="company-info flex items-center gap-4">
+              <div
+                class="company-logo w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-lg"
+              >
+                AC
+              </div>
+              <div class="company-details">
+                <h3 class="company-name text-lg font-semibold text-gray-800">
+                  KL Infotech
+                </h3>
+                <p class="company-address text-sm text-gray-600">
+                  Besant Nagar, Chennai 45
+                </p>
+              </div>
+            </div>
+            <button
+              class="dropdown-toggle p-2 rounded-full hover:bg-gray-200 transition"
+            >
+              <svg
+                class="w-4 h-4 text-gray-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </button>
+          </div>
+
+          <!-- Invoice Section -->
+          <div class="invoice-section bg-white p-4 sm:p-6 rounded-lg shadow-sm">
+            <h2 class="section-title text-xl font-semibold text-gray-800 mb-4">
+              {{isEditMode ? 'Edit Invoice Details' : 'Invoice Details' }}
+            </h2>
+            <div class="field-group mb-4">
+              <label class="field-label text-sm font-medium text-gray-700"
+                >Invoice Type</label
+              >
+              <div
+                class="custom-dropdown relative"
+                [class.active]="showInvoiceTypeDropdown"
+              >
+                <div
+                  class="dropdown-trigger p-3 border rounded-lg flex justify-between items-center cursor-pointer hover:border-blue-500 transition"
+                  (click)="toggleInvoiceTypeDropdown()"
+                >
+                  <span class="selected-value text-sm">
+                    {{
+                      invoiceData.isAutomated === true ? "Automated" : "Manual"
+                    }}
+                  </span>
+                  <svg
+                    class="w-4 h-4 text-gray-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
+                <div
+                  class="dropdown-content absolute w-full bg-white border rounded-lg shadow-lg mt-1 z-10"
+                  *ngIf="showInvoiceTypeDropdown"
+                >
+                  <div
+                    class="option-item p-3 cursor-pointer hover:bg-gray-100 transition"
+                    (click)="selectInvoiceType(false)"
+                  >
+                    Manual
+                  </div>
+                  <div
+                    class="option-item p-3 cursor-pointer hover:bg-gray-100 transition"
+                    (click)="selectInvoiceType(true)"
+                  >
+                    Automated
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div
+              class="invoice-fields grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4"
+            >
+              <div class="field-group">
+                <label class="field-label text-sm font-medium text-gray-700"
+                  >Invoice Number</label
+                >
+                <div class="input-with-icon relative">
+                  <input
+                    type="text"
+                    class="form-input w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    [(ngModel)]="invoiceData.invoiceNumber"
+                    placeholder="003"
+                    [disabled]="invoiceData.isAutomated"
+                  />
+                  <svg
+                    class="w-4 h-4 text-gray-500 absolute right-3 top-1/2 transform -translate-y-1/2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle cx="12" cy="12" r="10" />
+                    <path d="M12 16v.01M12 12a2 2 0 0 0 2-2V8" />
+                  </svg>
+                </div>
+              </div>
+              <div class="field-group">
+                <label class="field-label text-sm font-medium text-gray-700"
+                  >P.O/S.O. Number</label
+                >
+                <input
+                  type="text"
+                  class="form-input w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  [(ngModel)]="invoiceData.poNumber"
+                  placeholder="INV1812230002"
+                />
+              </div>
+            </div>
+            <div class="field-group">
+              <label class="field-label text-sm font-medium text-gray-700"
+                >Project Detail</label
+              >
+              <input
+                type="text"
+                class="form-input w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                [(ngModel)]="invoiceData.projectDetail"
+                placeholder="Summary (e.g. project name, description of invoice)"
+              />
+            </div>
+          </div>
+
+          <!-- Items Section -->
+          <div class="items-section bg-white p-4 sm:p-6 rounded-lg shadow-sm">
+            <div
+              class="items-header grid grid-cols-12 gap-4 pb-3 border-b text-sm font-medium text-gray-600"
+            >
+              <span class="col-span-1">#</span>
+              <span class="col-span-5">Items</span>
+              <span class="col-span-2 text-center">QTY</span>
+              <span class="col-span-2 text-center">Cost</span>
+              <span class="col-span-2 text-right">Amount</span>
+            </div>
+            <div class="items-list flex flex-col gap-4 pt-4">
+              <div
+                class="item-row grid grid-cols-12 gap-4 items-start py-4 border-b"
+                *ngFor="let item of invoiceData.items; let i = index"
+              >
+                <div
+                  class="item-number col-span-1 w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-xs text-gray-600"
+                >
+                  {{ i + 1 }}
+                </div>
+                <div class="item-details col-span-5 flex flex-col gap-3">
+                  <input
+                    type="text"
+                    class="item-input w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    [(ngModel)]="item.description"
+                    placeholder="Enter item description"
+                  />
+                  <div class="tax-section flex items-center gap-2">
+                    <span class="tax-label text-sm text-gray-600">Tax</span>
+                    <select
+                      class="tax-select p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      [(ngModel)]="item.taxType"
+                      (ngModelChange)="onTaxTypeChange()"
+                    >
+                      <option value="">No Tax</option>
+                      <option *ngFor="let tax of taxTypes" [value]="tax.name">
+                        {{ tax.name }} 
+                      </option>
+                    </select>
+                    <span class="tax-amount text-sm text-gray-600">
+                      Tax Amount: {{ invoiceData.currency }} {{ item.taxAmount.toFixed(2) }}
+                    </span>
+                  </div>
+                </div>
+                <div class="item-qty col-span-2">
+                  <input
+                    type="number"
+                    class="qty-input w-full p-2 border rounded-lg text-center focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    [(ngModel)]="item.quantity"
+                    (ngModelChange)="onItemQuantityChange()"
+                    min="1"
+                  />
+                </div>
+                <div class="item-cost col-span-2">
+                  <div
+                    class="cost-input-group flex border rounded-lg overflow-hidden"
+                  >
+                    <span class="currency p-2 bg-gray-100 text-gray-600">{{
+                      invoiceData.currency
+                    }}</span>
+                    <input
+                      type="number"
+                      class="cost-input w-full p-2 border-l focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      [(ngModel)]="item.unitPrice"
+                      (ngModelChange)="onItemCostChange()"
+                      min="0"
+                      step="0.01"
+                    />
+                  </div>
+                </div>
+                <div
+                  class="item-amount col-span-2 flex items-center justify-between"
+                >
+                  <span class="amount-text text-sm font-medium text-gray-800"
+                    >{{ invoiceData.currency }}
+                    {{ (item.quantity * item.unitPrice).toFixed(2) }}</span
+                  >
+                  <button
+                    class="delete-item-btn p-2 rounded-full hover:bg-red-100 transition"
+                    (click)="removeItem(i)"
+                  >
+                    <svg
+                      class="w-5 h-5 text-red-500"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 4v12m4-12v12"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+            </div>
+            <button
+              class="add-item-btn flex items-center gap-2 mt-4 text-purple-600 hover:text-purple-700 font-medium"
+              (click)="addItem()"
+            >
+              <svg
+                class="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 4v16m8-8H4"
+                />
+              </svg>
+              Add Item
+            </button>
+          </div>
+
+          <!-- Notes Section -->
+          <div class="notes-section bg-white p-4 sm:p-6 rounded-lg shadow-sm">
+            <label class="field-label text-sm font-medium text-gray-700"
+              >Notes / Terms</label
+            >
+            <textarea
+              class="notes-textarea w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y"
+              [(ngModel)]="invoiceData.notes"
+              placeholder="Enter note or terms of services"
+            ></textarea>
+          </div>
+        </div>
+
+        <!-- Right Panel -->
+        <div class="right-panel w-full lg:w-96 flex flex-col gap-6">
+          <div class="payment-section bg-white p-4 sm:p-6 rounded-lg shadow-sm">
+            <h2 class="section-title text-xl font-semibold text-gray-800 mb-4">
+              Invoice Information & Payment
+            </h2>
+            <!-- Send To -->
+            <div class="field-group mb-4">
+              <label class="field-label text-sm font-medium text-gray-700"
+                >Send To</label
+              >
+              <div
+                class="recipient-dropdown relative"
+                [class.active]="showCustomerDropdown"
+              >
+                <div
+                  class="dropdown-trigger p-3 border rounded-lg flex justify-between items-center cursor-pointer hover:border-blue-500 transition"
+                  (click)="toggleCustomerDropdown()"
+                >
+                  <span
+                    class="selected-recipient text-sm"
+                    *ngIf="selectedCustomer; else placeholderText"
+                    >{{ selectedCustomer.name }}</span
+                  >
+                  <ng-template #placeholderText>
+                    <span class="placeholder text-sm text-gray-500"
+                      >Select a customer</span
+                    >
+                  </ng-template>
+                  <svg
+                    class="w-4 h-4 text-gray-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
+                <div
+                  class="recipient-dropdown-content absolute w-full bg-white border rounded-lg shadow-lg mt-1 z-10"
+                  *ngIf="showCustomerDropdown"
+                >
+                  <div class="recipient-header p-4 border-b">
+                    <h3 class="text-base font-semibold text-gray-800">
+                      Select Customer
+                    </h3>
+                  </div>
+                  <div class="search-box p-4 border-b relative">
+                    <svg
+                      class="w-4 h-4 text-gray-500 absolute left-8 top-1/2 transform -translate-y-1/2"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle cx="11" cy="11" r="8" />
+                      <path d="M21 21l-4.35-4.35" />
+                    </svg>
+                    <input
+                      type="text"
+                      class="w-full p-2 pl-10 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                      placeholder="Search"
+                      [(ngModel)]="customerSearch"
+                      (ngModelChange)="searchCustomers()"
+                    />
+                  </div>
+                  <div class="recipient-list max-h-48 overflow-y-auto">
+                    <div
+                      class="recipient-item p-4 flex items-center gap-3 cursor-pointer hover:bg-gray-100 transition"
+                      *ngFor="let customer of filteredCustomers"
+                      (click)="selectCustomer(customer)"
+                    >
+                      <div
+                        class="recipient-avatar w-8 h-8 rounded-full flex items-center justify-center text-white font-semibold text-sm"
+                        [style.background-color]="customer.color"
+                      >
+                        {{ customer.initials }}
+                      </div>
+                      <div class="recipient-info">
+                        <div
+                          class="recipient-name text-sm font-medium text-gray-800"
+                        >
+                          {{ customer.name }}
+                        </div>
+                        <div class="recipient-location text-xs text-gray-600">
+                          {{ customer.address }}
+                        </div>
+                      </div>
+                    </div>
+                      <div
+                      class="create-customer-item p-4 flex items-center gap-3 cursor-pointer hover:bg-blue-100 transition border-t"
+                      (click)="openCreateCustomerDialog()"
+                    >
+                      <svg
+                        class="w-5 h-5 text-purple-600"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          stroke-width="2"
+                          d="M12 4v16m8-8H4"
+                        />
+                      </svg>
+                      <span class="text-sm font-medium text-purple-600"
+                        >Create New Customer</span
+                      >
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="helper-text text-xs text-gray-600 mt-1">
+                *Select one customer
+              </div>
+            </div>
+            <!-- Currency -->
+            <div class="field-group mb-4">
+              <label class="field-label text-sm font-medium text-gray-700"
+                >Currency</label
+              >
+              <div
+                class="custom-dropdown relative"
+                [class.active]="showCurrencyDropdown"
+              >
+                <div
+                  class="dropdown-trigger p-3 border rounded-lg flex justify-between items-center cursor-pointer hover:border-blue-500 transition"
+                  (click)="toggleCurrencyDropdown()"
+                >
+                  <span class="selected-value text-sm">{{
+                    invoiceData.currency
+                  }}</span>
+                  <svg
+                    class="w-4 h-4 text-gray-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
+                <div
+                  class="dropdown-content absolute w-full bg-white border rounded-lg shadow-lg mt-1 z-10"
+                  *ngIf="showCurrencyDropdown"
+                >
+                  <div
+                    class="option-item p-3 cursor-pointer hover:bg-gray-100 transition"
+                    (click)="selectCurrency('USD')"
+                  >
+                    USD ($)
+                  </div>
+                  <div
+                    class="option-item p-3 cursor-pointer hover:bg-gray-100 transition"
+                    (click)="selectCurrency('EUR')"
+                  >
+                    EUR (€)
+                  </div>
+                  <div
+                    class="option-item p-3 cursor-pointer hover:bg-gray-100 transition"
+                    (click)="selectCurrency('INR')"
+                  >
+                    INR (₹)
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Payment Method -->
+            <div class="field-group mb-4">
+              <label class="field-label text-sm font-medium text-gray-700"
+                >Payment Method</label
+              >
+              <div
+                class="custom-dropdown relative"
+                [class.active]="showPaymentMethodDropdown"
+              >
+                <div
+                  class="dropdown-trigger p-3 border rounded-lg flex justify-between items-center cursor-pointer hover:border-blue-500 transition"
+                  (click)="togglePaymentMethodDropdown()"
+                >
+                  <span
+                    class="selected-value text-sm"
+                    *ngIf="
+                      invoiceData.paymentMethod;
+                      else selectPaymentPlaceholder
+                    "
+                    >{{
+                      getPaymentMethodDisplayName(invoiceData.paymentMethod)
+                    }}</span
+                  >
+                  <ng-template #selectPaymentPlaceholder>
+                    <span class="placeholder text-sm text-gray-500"
+                      >Select</span
+                    >
+                  </ng-template>
+                  <svg
+                    class="w-4 h-4 text-gray-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
+                <div
+                  class="dropdown-content absolute w-full bg-white border rounded-lg shadow-lg mt-1 z-10"
+                  *ngIf="showPaymentMethodDropdown"
+                >
+                  <div
+                    class="option-item p-3 cursor-pointer hover:bg-gray-100 transition"
+                    (click)="selectPaymentMethod('paypal')"
+                  >
+                    💳 PayPal
+                  </div>
+                  <div
+                    class="option-item p-3 cursor-pointer hover:bg-gray-100 transition"
+                    (click)="selectPaymentMethod('bank')"
+                  >
+                    🏦 Bank Transfer
+                  </div>
+                  <div
+                    class="option-item p-3 cursor-pointer hover:bg-gray-100 transition"
+                    (click)="selectPaymentMethod('cash')"
+                  >
+                    💵 Cash
+                  </div>
+                  <div
+                    class="option-item p-3 cursor-pointer hover:bg-gray-100 transition"
+                    (click)="selectPaymentMethod('credit_card')"
+                  >
+                    💳 Credit Card
+                </div>
+                </div>
+              </div>
+              <div class="helper-text text-xs text-gray-600 mt-1">
+                *You can add more than one method
+              </div>
+            </div>
+            <!-- Dates -->
+            <div class="date-fields grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+              <div class="field-group">
+                <label class="field-label text-sm font-medium text-gray-700"
+                  >Issued Date</label
+                >
+                <div class="date-input-wrapper relative">
+                  <input
+                    type="text"
+                    class="date-input w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
+                    [(ngModel)]="invoiceData.issuedDate"
+                    (ngModelChange)="onIssueDateChange()"
+                    placeholder="dd/mm/yyyy"
+                    (click)="toggleCalendar('issued')"
+                  />
+                  <svg
+                    class="w-4 h-4 text-gray-500 absolute right-3 top-1/2 transform -translate-y-1/2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                  </svg>
+                </div>
+              </div>
+              <div class="field-group">
+                <label class="field-label text-sm font-medium text-gray-700"
+                  >Due Date</label
+                >
+                <div class="date-input-wrapper relative">
+                  <input
+                    type="text"
+                    class="date-input w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
+                    [(ngModel)]="invoiceData.dueDate"
+                    (ngModelChange)="onDueDateChange()"
+                    placeholder="dd/mm/yyyy"
+                    (click)="toggleCalendar('due')"
+                  />
+                  <svg
+                    class="w-4 h-4 text-gray-500 absolute right-3 top-1/2 transform -translate-y-1/2"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                    <line x1="16" y1="2" x2="16" y2="6" />
+                    <line x1="8" y1="2" x2="8" y2="6" />
+                    <line x1="3" y1="10" x2="21" y2="10" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            <!-- Calendar -->
+            <div class="calendar-wrapper" *ngIf="showCalendar">
+              <div class="calendar bg-white border rounded-lg p-4 shadow-lg">
+                <div
+                  class="calendar-header flex justify-between items-center mb-4"
+                >
+                  <h3 class="text-base font-semibold text-gray-800">
+                    Calendar
+                  </h3>
+                  <div class="calendar-controls flex gap-2">
+                    <select
+                      class="month-select p-2 border rounded-lg"
+                      [(ngModel)]="currentMonth"
+                    >
+                      <option
+                        *ngFor="let month of months; let i = index"
+                        [value]="i"
+                      >
+                        {{ month }}
+                      </option>
+                    </select>
+                    <select
+                      class="year-select p-2 border rounded-lg"
+                      [(ngModel)]="currentYear"
+                    >
+                      <option *ngFor="let year of years" [value]="year">
+                        {{ year }}
+                      </option>
+                    </select>
+                  </div>
+                </div>
+                <div class="calendar-grid">
+                  <div
+                    class="weekday-header grid grid-cols-7 gap-1 text-center text-xs font-medium text-gray-600 mb-2"
+                  >
+                    <div class="weekday" *ngFor="let day of weekdays">
+                      {{ day }}
+                    </div>
+                  </div>
+                  <div class="calendar-days grid grid-cols-7 gap-1 text-center">
+                    <div
+                      class="calendar-day w-8 h-8 flex items-center justify-center rounded-full cursor-pointer transition"
+                      *ngFor="let day of getCalendarDays()"
+                      [class.selected]="day === selectedDay"
+                      [class.current-month]="day > 0"
+                      [class.other-month]="day <= 0"
+                      [class.text-gray-300]="day <= 0"
+                      [class.text-gray-800]="day > 0"
+                      [class.bg-blue-600]="day === selectedDay"
+                      [class.text-white]="day === selectedDay"
+                      [class.hover:bg-gray-200]="day > 0"
+                      (click)="selectDay(day)"
+                    >
+                      {{ day > 0 ? day : "" }}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Tax Type Creation -->
+            <div class="field-group mb-4">
+              <label class="field-label text-sm font-medium text-gray-700"
+                >Add New Tax Type</label
+              >
+              <div class="tax-type-form grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <input
+                  type="text"
+                  class="form-input p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  [(ngModel)]="newTaxType.name"
+                  placeholder="Tax Name (e.g., GST 10%)"
+                />
+                <input
+                  type="number"
+                  class="form-input p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  [(ngModel)]="newTaxType.rate"
+                  placeholder="Rate (%)"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                />
+                <button
+                  class="add-tax-btn px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+                  (click)="addTaxType()"
+                >
+                  Add Tax
+                </button>
+              </div>
+            </div>
+            <!-- Discount Section -->
+            <div class="discount-section mb-4">
+              <h3
+                class="section-title text-base font-semibold text-gray-800 mb-3"
+              >
+                Discounts
+              </h3>
+              <div class="discount-list flex flex-col gap-4">
+                <div
+                  class="discount-row grid grid-cols-12 gap-4 items-center"
+                  *ngFor="let discount of invoiceData.discounts; let i = index"
+                >
+                  <input
+                    type="text"
+                    class="form-input col-span-4 p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    [(ngModel)]="discount.description"
+                    placeholder="Description"
+                  />
+                  <input
+                    type="number"
+                    class="form-input col-span-3 p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    [(ngModel)]="discount.amount"
+                    placeholder="Amount"
+                    min="0"
+                    step="0.01"
+                    (ngModelChange)="updateDiscounts()"
+                  />
+                  <select
+                    class="form-select col-span-3 p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    [(ngModel)]="discount.isPercentage"
+                    (ngModelChange)="updateDiscounts()"
+                  >
+                    <option [value]="false">Fixed</option>
+                    <option [value]="true">Percentage</option>
+                  </select>
+                  <button
+                    class="delete-discount-btn col-span-2 p-2 rounded-full hover:bg-red-100 transition"
+                    (click)="removeDiscount(i)"
+                  >
+                    <svg
+                      class="w-5 h-5 text-red-500"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 4v12m4-12v12"
+                      />
+                    </svg>
+                  </button>
+                </div>
+                <button
+                  class="add-discount-btn flex items-center gap-2 mt-2 text-purple-600 hover:text-purple-700 font-medium"
+                  (click)="addDiscount()"
+                >
+                  <svg
+                    class="w-4 h-4"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M12 4v16m8-8H4"
+                    />
+                  </svg>
+                  Add Discount
+                </button>
+              </div>
+            </div>
+            <!-- Summary -->
+            <div class="summary-section border-t pt-4">
+              <div
+                class="summary-row flex justify-between text-sm text-gray-600 mb-2"
+              >
+                <span class="summary-label">Subtotal</span>
+                <span class="summary-value font-medium text-gray-800"
+                  >{{ invoiceData.currency }} {{ getSubtotal() }}</span
+                >
+              </div>
+              <div
+                class="summary-row flex justify-between text-sm text-gray-600 mb-2"
+              >
+                <span class="summary-label">Tax</span>
+                <span class="summary-value font-medium text-gray-800"
+                  >{{ invoiceData.currency }} {{ getTaxAmount() }}</span
+                >
+              </div>
+              <div
+                class="summary-row flex justify-between text-sm text-gray-600 mb-2"
+              >
+                <span class="summary-label">Discount</span>
+                <span class="summary-value font-medium text-gray-800"
+                  >{{ invoiceData.currency }} {{ getDiscountAmount() }}</span
+                >
+              </div>
+              <div
+                class="total-row flex justify-between pt-4 border-t text-base font-semibold text-gray-800"
+              >
+                <span class="total-label">Total</span>
+                <span class="total-value text-purple-600"
+                  >{{ invoiceData.currency }} {{ getTotal() }}</span
+                >
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

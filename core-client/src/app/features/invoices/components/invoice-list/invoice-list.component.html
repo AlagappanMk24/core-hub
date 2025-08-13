@@ -1,0 +1,403 @@
+<div class="invoice-container">
+  <div class="content-wrapper" [class.blurred]="exportingFormat">
+    <!-- Header Section -->
+    <div class="header">
+      <h1 class="title">Invoices</h1>
+      <div class="header-actions">
+        <button *ngIf="isAdmin" mat-stroked-button class="action-btn export-btn" [matMenuTriggerFor]="exportMenu" [disabled]="exportingFormat">
+          <mat-icon>file_download</mat-icon> Export
+        </button>
+        <mat-menu #exportMenu="matMenu">
+          <button mat-menu-item (click)="onExport('excel')" [disabled]="exportingFormat">
+            <mat-icon>table_chart</mat-icon> Export as Excel
+          </button>
+          <button mat-menu-item (click)="onExport('pdf')" [disabled]="exportingFormat">
+            <mat-icon>picture_as_pdf</mat-icon> Export as PDF
+          </button>
+        </mat-menu>
+        <button *ngIf="isAdmin" mat-stroked-button class="action-btn import-btn" (click)="onImport()" [disabled]="exportingFormat">
+          <mat-icon>file_upload</mat-icon> Import
+        </button>
+        <button *ngIf="isAdmin || isUser"  mat-raised-button color="primary" class="action-btn create-btn" (click)="onCreateInvoice()" [disabled]="exportingFormat">
+          <mat-icon>add</mat-icon> Create Invoice
+        </button>
+      </div>
+    </div>
+
+    <!-- Stats Cards Section -->
+    <!-- <div class="stats-section">
+      <div class="stat-card" [class.active]="selectedStatus === 'All'" (click)="onSelectStatus('All')">
+        <div class="stat-header">
+          <mat-icon>description</mat-icon>
+          <span class="stat-label">All Invoices ({{ stats.all.count }})</span>
+        </div>
+        <div class="stat-amount">{{ stats.all.amount | currency:'USD' }}</div>
+        <div class="stat-change" [ngClass]="stats.all.change >= 0 ? 'positive' : 'negative'">
+          {{ stats.all.change >= 0 ? '+' : '' }}{{ stats.all.change | number:'1.1-1' }}%
+        </div>
+      </div>
+      <div class="stat-card" [class.active]="selectedStatus === 'Draft'" (click)="onSelectStatus('Draft')">
+        <div class="stat-header">
+          <mat-icon>edit_note</mat-icon>
+          <span class="stat-label">Draft ({{ stats.draft.count }})</span>
+        </div>
+        <div class="stat-amount">{{ stats.draft.amount | currency:'USD' }}</div>
+        <div class="stat-change" [ngClass]="stats.draft.change >= 0 ? 'positive' : 'negative'">
+          {{ stats.draft.change >= 0 ? '+' : '' }}{{ stats.draft.change | number:'1.1-1' }}%
+        </div>
+      </div>
+      <div class="stat-card" [class.active]="selectedStatus === 'Open Invoice'" (click)="onSelectStatus('Open Invoice')">
+        <div class="stat-header">
+          <mat-icon>folder_open</mat-icon>
+          <span class="stat-label">Open Invoice ({{ stats.open.count }})</span>
+        </div>
+        <div class="stat-amount">{{ stats.open.amount | currency:'USD' }}</div>
+        <div class="stat-change" [ngClass]="stats.open.change >= 0 ? 'positive' : 'negative'">
+          {{ stats.open.change >= 0 ? '+' : '' }}{{ stats.open.change | number:'1.1-1' }}%
+        </div>
+      </div>
+      <div class="stat-card" [class.active]="selectedStatus === 'Overdue'" (click)="onSelectStatus('Overdue')">
+        <div class="stat-header">
+          <mat-icon>warning</mat-icon>
+          <span class="stat-label">Overdue ({{ stats.overdue.count }})</span>
+        </div>
+        <div class="stat-amount">{{ stats.overdue.amount | currency:'USD' }}</div>
+        <div class="stat-change" [ngClass]="stats.overdue.change >= 0 ? 'positive' : 'negative'">
+          {{ stats.overdue.change >= 0 ? '+' : '' }}{{ stats.overdue.change | number:'1.1-1' }}%
+        </div>
+      </div>
+      <div class="stat-card" [class.active]="selectedStatus === 'Paid'" (click)="onSelectStatus('Paid')">
+        <div class="stat-header">
+          <mat-icon>check_circle</mat-icon>
+          <span class="stat-label">Paid ({{ stats.paid.count }})</span>
+        </div>
+        <div class="stat-amount">{{ stats.paid.amount | currency:'USD' }}</div>
+        <div class="stat-change" [ngClass]="stats.paid.change >= 0 ? 'positive' : 'negative'">
+          {{ stats.paid.change >= 0 ? '+' : '' }}{{ stats.paid.change | number:'1.1-1' }}%
+        </div>
+      </div>
+    </div> -->
+  <!-- <div class="stats-section">
+      <div class="stat-card all" [class.active]="selectedStatus === 'All'" (click)="onSelectStatus('All')" @scaleIn [@pulse]="selectedStatus === 'All' ? 'active' : 'inactive'">
+        <div class="stat-header">
+          <mat-icon class="stat-icon">description</mat-icon>
+          <span class="stat-label">All Invoices ({{ stats.all.count }})</span>
+        </div>
+        <div class="stat-amount">{{ stats.all.amount | currency:'USD' }}</div>
+        <div class="stat-change" [ngClass]="stats.all.change >= 0 ? 'positive' : 'negative'">
+          {{ stats.all.change >= 0 ? '+' : '' }}{{ stats.all.change | number:'1.1-1' }}%
+          <mat-icon class="change-icon">{{ stats.all.change >= 0 ? 'trending_up' : 'trending_down' }}</mat-icon>
+        </div>
+      </div>
+      <div class="stat-card draft" [class.active]="selectedStatus === 'Draft'" (click)="onSelectStatus('Draft')" @scaleIn [@pulse]="selectedStatus === 'Draft' ? 'active' : 'inactive'">
+        <div class="stat-header">
+          <mat-icon class="stat-icon">edit_note</mat-icon>
+          <span class="stat-label">Draft ({{ stats.draft.count }})</span>
+        </div>
+        <div class="stat-amount">{{ stats.draft.amount | currency:'USD' }}</div>
+        <div class="stat-change" [ngClass]="stats.draft.change >= 0 ? 'positive' : 'negative'">
+          {{ stats.draft.change >= 0 ? '+' : '' }}{{ stats.draft.change | number:'1.1-1' }}%
+          <mat-icon class="change-icon">{{ stats.draft.change >= 0 ? 'trending_up' : 'trending_down' }}</mat-icon>
+        </div>
+      </div>
+      <div class="stat-card open" [class.active]="selectedStatus === 'Open Invoice'" (click)="onSelectStatus('Open Invoice')" @scaleIn [@pulse]="selectedStatus === 'Open Invoice' ? 'active' : 'inactive'">
+        <div class="stat-header">
+          <mat-icon class="stat-icon">folder_open</mat-icon>
+          <span class="stat-label">Open Invoice ({{ stats.open.count }})</span>
+        </div>
+        <div class="stat-amount">{{ stats.open.amount | currency:'USD' }}</div>
+        <div class="stat-change" [ngClass]="stats.open.change >= 0 ? 'positive' : 'negative'">
+          {{ stats.open.change >= 0 ? '+' : '' }}{{ stats.open.change | number:'1.1-1' }}%
+          <mat-icon class="change-icon">{{ stats.open.change >= 0 ? 'trending_up' : 'trending_down' }}</mat-icon>
+        </div>
+      </div>
+      <div class="stat-card overdue" [class.active]="selectedStatus === 'Overdue'" (click)="onSelectStatus('Overdue')" @scaleIn [@pulse]="selectedStatus === 'Overdue' ? 'active' : 'inactive'">
+        <div class="stat-header">
+          <mat-icon class="stat-icon">warning</mat-icon>
+          <span class="stat-label">Overdue ({{ stats.overdue.count }})</span>
+        </div>
+        <div class="stat-amount">{{ stats.overdue.amount | currency:'USD' }}</div>
+        <div class="stat-change" [ngClass]="stats.overdue.change >= 0 ? 'positive' : 'negative'">
+          {{ stats.overdue.change >= 0 ? '+' : '' }}{{ stats.overdue.change | number:'1.1-1' }}%
+          <mat-icon class="change-icon">{{ stats.overdue.change >= 0 ? 'trending_up' : 'trending_down' }}</mat-icon>
+        </div>
+      </div>
+      <div class="stat-card paid" [class.active]="selectedStatus === 'Paid'" (click)="onSelectStatus('Paid')" @scaleIn [@pulse]="selectedStatus === 'Paid' ? 'active' : 'inactive'">
+        <div class="stat-header">
+          <mat-icon class="stat-icon">check_circle</mat-icon>
+          <span class="stat-label">Paid ({{ stats.paid.count }})</span>
+        </div>
+        <div class="stat-amount">{{ stats.paid.amount | currency:'USD' }}</div>
+        <div class="stat-change" [ngClass]="stats.paid.change >= 0 ? 'positive' : 'negative'">
+          {{ stats.paid.change >= 0 ? '+' : '' }}{{ stats.paid.change | number:'1.1-1' }}%
+          <mat-icon class="change-icon">{{ stats.paid.change >= 0 ? 'trending_up' : 'trending_down' }}</mat-icon>
+        </div>
+      </div>
+    </div> -->
+<!-- Stats Cards Section -->
+        <div class="stats-section">
+          <div class="stat-card all" [class.active]="selectedInvoiceStatus === 'All'" (click)="onSelectInvoiceStatus('All')" @scaleIn [@pulse]="selectedInvoiceStatus === 'All' ? 'active' : 'inactive'">
+            <div class="stat-header">
+              <mat-icon class="stat-icon">description</mat-icon>
+              <span class="stat-label">All Invoices ({{ stats.all.count }})</span>
+            </div>
+            <div class="stat-amount">{{ stats.all.amount | currency:'USD' }}</div>
+            <div class="stat-change" [ngClass]="stats.all.change >= 0 ? 'positive' : 'negative'">
+              {{ stats.all.change >= 0 ? '+' : '' }}{{ stats.all.change | number:'1.1-1' }}%
+              <mat-icon class="change-icon">{{ stats.all.change >= 0 ? 'trending_up' : 'trending_down' }}</mat-icon>
+            </div>
+          </div>
+          <div class="stat-card draft" [class.active]="selectedInvoiceStatus === 'Draft'" (click)="onSelectInvoiceStatus('Draft')" @scaleIn [@pulse]="selectedInvoiceStatus === 'Draft' ? 'active' : 'inactive'">
+            <div class="stat-header">
+              <mat-icon class="stat-icon">edit_note</mat-icon>
+              <span class="stat-label">Draft ({{ stats.draft.count }})</span>
+            </div>
+            <div class="stat-amount">{{ stats.draft.amount | currency:'USD' }}</div>
+            <div class="stat-change" [ngClass]="stats.draft.change >= 0 ? 'positive' : 'negative'">
+              {{ stats.draft.change >= 0 ? '+' : '' }}{{ stats.draft.change | number:'1.1-1' }}%
+              <mat-icon class="change-icon">{{ stats.draft.change >= 0 ? 'trending_up' : 'trending_down' }}</mat-icon>
+            </div>
+          </div>
+          <div class="stat-card sent" [class.active]="selectedInvoiceStatus === 'Sent'" (click)="onSelectInvoiceStatus('Sent')" @scaleIn [@pulse]="selectedInvoiceStatus === 'Sent' ? 'active' : 'inactive'">
+            <div class="stat-header">
+              <mat-icon class="stat-icon">send</mat-icon>
+              <span class="stat-label">Sent ({{ stats.sent.count }})</span>
+            </div>
+            <div class="stat-amount">{{ stats.sent.amount | currency:'USD' }}</div>
+            <div class="stat-change" [ngClass]="stats.sent.change >= 0 ? 'positive' : 'negative'">
+              {{ stats.sent.change >= 0 ? '+' : '' }}{{ stats.sent.change | number:'1.1-1' }}%
+              <mat-icon class="change-icon">{{ stats.sent.change >= 0 ? 'trending_up' : 'trending_down' }}</mat-icon>
+            </div>
+          </div>
+          <div class="stat-card approved" [class.active]="selectedInvoiceStatus === 'Approved'" (click)="onSelectInvoiceStatus('Approved')" @scaleIn [@pulse]="selectedInvoiceStatus === 'Approved' ? 'active' : 'inactive'">
+            <div class="stat-header">
+              <mat-icon class="stat-icon">check_circle</mat-icon>
+              <span class="stat-label">Approved ({{ stats.approved.count }})</span>
+            </div>
+            <div class="stat-amount">{{ stats.approved.amount | currency:'USD' }}</div>
+            <div class="stat-change" [ngClass]="stats.approved.change >= 0 ? 'positive' : 'negative'">
+              {{ stats.approved.change >= 0 ? '+' : '' }}{{ stats.approved.change | number:'1.1-1' }}%
+              <mat-icon class="change-icon">{{ stats.approved.change >= 0 ? 'trending_up' : 'trending_down' }}</mat-icon>
+            </div>
+          </div>
+          <div class="stat-card cancelled" [class.active]="selectedInvoiceStatus === 'Cancelled'" (click)="onSelectInvoiceStatus('Cancelled')" @scaleIn [@pulse]="selectedInvoiceStatus === 'Cancelled' ? 'active' : 'inactive'">
+            <div class="stat-header">
+              <mat-icon class="stat-icon">cancel</mat-icon>
+              <span class="stat-label">Cancelled ({{ stats.cancelled.count }})</span>
+            </div>
+            <div class="stat-amount">{{ stats.cancelled.amount | currency:'USD' }}</div>
+            <div class="stat-change" [ngClass]="stats.cancelled.change >= 0 ? 'positive' : 'negative'">
+              {{ stats.cancelled.change >= 0 ? '+' : '' }}{{ stats.cancelled.change | number:'1.1-1' }}%
+              <mat-icon class="change-icon">{{ stats.cancelled.change >= 0 ? 'trending_up' : 'trending_down' }}</mat-icon>
+            </div>
+          </div>
+          <div class="stat-card pending" [class.active]="selectedPaymentStatus === 'Pending'" (click)="onSelectPaymentStatus('Pending')" @scaleIn [@pulse]="selectedPaymentStatus === 'Pending' ? 'active' : 'inactive'">
+            <div class="stat-header">
+              <mat-icon class="stat-icon">hourglass_empty</mat-icon>
+              <span class="stat-label">Pending Payment ({{ stats.pending.count }})</span>
+            </div>
+            <div class="stat-amount">{{ stats.pending.amount | currency:'USD' }}</div>
+            <div class="stat-change" [ngClass]="stats.pending.change >= 0 ? 'positive' : 'negative'">
+              {{ stats.pending.change >= 0 ? '+' : '' }}{{ stats.pending.change | number:'1.1-1' }}%
+              <mat-icon class="change-icon">{{ stats.pending.change >= 0 ? 'trending_up' : 'trending_down' }}</mat-icon>
+            </div>
+          </div>
+          <div class="stat-card completed" [class.active]="selectedPaymentStatus === 'Completed'" (click)="onSelectPaymentStatus('Completed')" @scaleIn [@pulse]="selectedPaymentStatus === 'Completed' ? 'active' : 'inactive'">
+            <div class="stat-header">
+              <mat-icon class="stat-icon">check_circle</mat-icon>
+              <span class="stat-label">Completed Payment ({{ stats.completed.count }})</span>
+            </div>
+            <div class="stat-amount">{{ stats.completed.amount | currency:'USD' }}</div>
+            <div class="stat-change" [ngClass]="stats.completed.change >= 0 ? 'positive' : 'negative'">
+              {{ stats.completed.change >= 0 ? '+' : '' }}{{ stats.completed.change | number:'1.1-1' }}%
+              <mat-icon class="change-icon">{{ stats.completed.change >= 0 ? 'trending_up' : 'trending_down' }}</mat-icon>
+            </div>
+          </div>
+          <div class="stat-card partially-paid" [class.active]="selectedPaymentStatus === 'PartiallyPaid'" (click)="onSelectPaymentStatus('PartiallyPaid')" @scaleIn [@pulse]="selectedPaymentStatus === 'PartiallyPaid' ? 'active' : 'inactive'">
+            <div class="stat-header">
+              <mat-icon class="stat-icon">payments</mat-icon>
+              <span class="stat-label">Partially Paid ({{ stats.partiallyPaid.count }})</span>
+            </div>
+            <div class="stat-amount">{{ stats.partiallyPaid.amount | currency:'USD' }}</div>
+            <div class="stat-change" [ngClass]="stats.partiallyPaid.change >= 0 ? 'positive' : 'negative'">
+              {{ stats.partiallyPaid.change >= 0 ? '+' : '' }}{{ stats.partiallyPaid.change | number:'1.1-1' }}%
+              <mat-icon class="change-icon">{{ stats.partiallyPaid.change >= 0 ? 'trending_up' : 'trending_down' }}</mat-icon>
+            </div>
+          </div>
+          <div class="stat-card overdue" [class.active]="selectedPaymentStatus === 'Overdue'" (click)="onSelectPaymentStatus('Overdue')" @scaleIn [@pulse]="selectedPaymentStatus === 'Overdue' ? 'active' : 'inactive'">
+            <div class="stat-header">
+              <mat-icon class="stat-icon">warning</mat-icon>
+              <span class="stat-label">Overdue Payment ({{ stats.overdue.count }})</span>
+            </div>
+            <div class="stat-amount">{{ stats.overdue.amount | currency:'USD' }}</div>
+            <div class="stat-change" [ngClass]="stats.overdue.change >= 0 ? 'positive' : 'negative'">
+              {{ stats.overdue.change >= 0 ? '+' : '' }}{{ stats.overdue.change | number:'1.1-1' }}%
+              <mat-icon class="change-icon">{{ stats.overdue.change >= 0 ? 'trending_up' : 'trending_down' }}</mat-icon>
+            </div>
+          </div>
+          <div class="stat-card refunded" [class.active]="selectedPaymentStatus === 'Refunded'" (click)="onSelectPaymentStatus('Refunded')" @scaleIn [@pulse]="selectedPaymentStatus === 'Refunded' ? 'active' : 'inactive'">
+            <div class="stat-header">
+              <mat-icon class="stat-icon">money_off</mat-icon>
+              <span class="stat-label">Refunded Payment ({{ stats.refunded.count }})</span>
+            </div>
+            <div class="stat-amount">{{ stats.refunded.amount | currency:'USD' }}</div>
+            <div class="stat-change" [ngClass]="stats.refunded.change >= 0 ? 'positive' : 'negative'">
+              {{ stats.refunded.change >= 0 ? '+' : '' }}{{ stats.refunded.change | number:'1.1-1' }}%
+              <mat-icon class="change-icon">{{ stats.refunded.change >= 0 ? 'trending_up' : 'trending_down' }}</mat-icon>
+            </div>
+          </div>
+        </div>
+
+    <!-- Filters Section -->
+    <div class="filters-section">
+      <div class="search-container">
+        <mat-icon class="search-icon">search</mat-icon>
+        <input type="text" class="search-input" placeholder="Search" [(ngModel)]="searchTerm" (ngModelChange)="onSearch($event)" [disabled]="exportingFormat !== null">
+      </div>
+      <div class="date-filter" (click)="onDateFilter()" [class.disabled]="exportingFormat || isLoading">
+        <span>1/1/2023 - 12/31/2023</span>
+        <mat-icon>calendar_today</mat-icon>
+      </div>
+      <div class="more-filters">
+        <button *ngIf="isAdmin" mat-stroked-button class="filter-btn" (click)="onMoreFilters()" [disabled]="exportingFormat || isLoading">
+          <mat-icon>tune</mat-icon> More filters
+        </button>
+        <button *ngIf="isAdmin" mat-stroked-button class="settings-btn" (click)="onSettings()" [disabled]="exportingFormat || isLoading">
+          <mat-icon>settings</mat-icon>
+        </button>
+      </div>
+    </div>
+
+    <!-- Invoice Table -->
+    <div class="table-container">
+      <table class="invoice-table">
+        <thead>
+          <tr>
+            <th>Customer</th>
+            <th>Invoice</th>
+         <th>Invoice Status</th>
+                <th>Payment Status</th>
+            <th>Amount</th>
+            <th>Issue Date</th>
+            <th>Due Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <ng-container *ngIf="isLoading; else invoiceData">
+            <tr class="skeleton-row" *ngFor="let _ of [1, 2, 3, 4, 5,6]">
+              <td><div class="skeleton skeleton-avatar"></div></td>
+              <td><div class="skeleton skeleton-text"></div></td>
+              <td><div class="skeleton skeleton-badge"></div></td>
+              <td><div class="skeleton skeleton-text"></div></td>
+              <td><div class="skeleton skeleton-text"></div></td>
+              <td><div class="skeleton skeleton-text"></div></td>
+                <td><div class="skeleton skeleton-text"></div></td>
+              <td><div class="skeleton skeleton-actions"></div></td>
+            </tr>
+          </ng-container>
+          <ng-template #invoiceData>
+            <tr *ngFor="let invoice of invoices; trackBy: trackByInvoice" class="invoice-row">
+              <td class="customer-column">
+                <div class="customer-info">
+                  <div class="customer-avatar" [style.background]="getAvatarColor(invoice.customerName)">
+                    {{ getInitials(invoice.customerName) }}
+                  </div>
+                  <span class="customer-name">{{ invoice.customerName }}</span>
+                </div>
+              </td>
+              <td class="invoice-number">{{ invoice.invoiceNumber }}</td>
+              <td>
+                <!-- <span class="status-badge" [ngClass]="getStatusClass(invoice.status)">
+                  {{ invoice.status }}
+                </span> -->
+                <span
+                  class="px-2 py-1 text-xs font-medium rounded-full text-white"
+                   [ngClass]="getStatusClass(invoice.invoiceStatus, 'invoice')"
+                >
+                   {{ getStatusText(invoice.invoiceStatus) }}
+              </span>
+              </td>
+                <td>
+                    <span
+                      class="px-2 py-1 text-xs font-medium rounded-full text-white"
+                      [ngClass]="getStatusClass(invoice.paymentStatus, 'payment')"
+                    >
+                      {{ getStatusText(invoice.paymentStatus) }}
+                    </span>
+                  </td>
+              <td class="amount">{{ invoice.totalAmount | currency:'USD' }}</td>
+              <td class="date">{{ invoice.issueDate | date:'dd MMM yyyy' }}</td>
+              <td class="date">{{ invoice.dueDate | date:'dd MMM yyyy' }}</td>
+              <td class="actions">
+                <button *ngIf="isAdmin || isUser" mat-icon-button class="action-icon edit-btn" (click)="onEditInvoice(invoice)" title="Edit Invoice" [disabled]="exportingFormat || isLoading">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button mat-icon-button class="action-icon view-btn" (click)="onViewInvoice(invoice)" title="View Invoice" [disabled]="exportingFormat || isLoading">
+                  <mat-icon>visibility</mat-icon>
+                </button>
+                <button *ngIf="isAdmin" mat-icon-button class="action-icon delete-btn" (click)="onDeleteInvoice(invoice)" title="Delete Invoice" [disabled]="exportingFormat">
+                  <mat-icon>delete</mat-icon>
+                </button>
+                <button mat-icon-button class="action-icon more-btn" [matMenuTriggerFor]="actionMenu" title="More Actions" [disabled]="exportingFormat || isLoading">
+                  <mat-icon>more_vert</mat-icon>
+                </button>
+                <mat-menu #actionMenu="matMenu">
+                  <button mat-menu-item class="send-menu-item" (click)="onSendInvoice(invoice)" [disabled]="exportingFormat || isLoading">
+                    <mat-icon>send</mat-icon>
+                    Send Invoice
+                  </button>
+                  <button *ngIf="isAdmin" mat-menu-item class="duplicate-menu-item" (click)="onDuplicateInvoice(invoice)" [disabled]="exportingFormat || isLoading">
+                    <mat-icon>content_copy</mat-icon>
+                    Duplicate
+                  </button>
+                  <button mat-menu-item class="download-menu-item" (click)="onDownloadInvoice(invoice)" [disabled]="exportingFormat || isLoading">
+                    <mat-icon>download</mat-icon>
+                    Download PDF
+                  </button>
+                </mat-menu>
+              </td>
+            </tr>
+          </ng-template>
+        </tbody>
+      </table>
+      <!-- No Invoices Message -->
+      <div class="no-invoices" *ngIf="!isLoading && invoices.length === 0">
+        <img src="assets/no-invoices.png" alt="No Invoices" class="no-invoices-icon" />
+        <h2>No Invoices Found</h2>
+        <p>Start by creating your first invoice to manage your payments efficiently!</p>
+        <button *ngIf="isAdmin || isUser" mat-raised-button color="primary" class="create-btn" (click)="onCreateInvoice()" [disabled]="exportingFormat || isLoading">
+          <mat-icon>add</mat-icon> Create Your Invoice
+        </button>
+      </div>
+    </div>
+
+    <!-- Pagination Controls -->
+    <div class="pagination-container">
+      <div class="pagination-info">
+        <span>Showing {{ ((currentPage - 1) * itemsPerPage) + 1 }} to {{ currentPage * itemsPerPage > totalItems ? totalItems : currentPage * itemsPerPage }} of {{ totalItems }} entries</span>
+      </div>
+      <div class="pagination-controls">
+        <button mat-icon-button class="pagination-btn" [disabled]="currentPage === 1 || exportingFormat || isLoading" (click)="previousPage()">
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+        <button mat-button class="pagination-btn page-number" *ngFor="let page of getVisiblePages()" [class.active]="page === currentPage" (click)="goToPage(page)" [disabled]="exportingFormat || isLoading">
+          {{ page }}
+        </button>
+        <button mat-icon-button class="pagination-btn" [disabled]="currentPage === totalPages || exportingFormat || isLoading" (click)="nextPage()">
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading Spinner -->
+  <!-- <div *ngIf="exportingFormat" class="progress-container" @fadeIn>
+    <mat-spinner diameter="32" color="accent"></mat-spinner>
+    <span>{{ exportingFormat === 'excel' ? 'Exporting as Excel...' : 'Exporting as PDF...' }}</span>
+  </div> -->
+  <div *ngIf="exportingFormat" class="progress-container" @fadeIn>
+    <mat-spinner diameter="32" color="accent"></mat-spinner>
+    <span>{{ exportingFormat === 'excel' ? 'Exporting as Excel...' : (isIndividualDownload ? 'Downloading Invoice PDF...' : 'Exporting as PDF...') }}</span>
+  </div>
+</div>

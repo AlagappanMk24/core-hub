@@ -6,6 +6,7 @@
   padding: 20px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   background: #F9FAFB;
+  overflow-y: auto;
 }
 
 .register-card {
@@ -15,7 +16,9 @@
   overflow: hidden;
   max-width: 1200px;
   width: 100%;
-  min-height: 720px;
+  min-height: 780px;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Header */
@@ -64,6 +67,7 @@
 /* Main Content */
 .main-content {
   display: flex;
+  flex: 1;
   min-height: 600px;
 }
 
@@ -74,8 +78,10 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  max-height: 600px;
+max-height: none; /* Remove max-height to prevent content hiding */
+  overflow-y: auto; /* Allow scrolling within form section */
   position: relative;
+  margin : 20px 20px;
 }
 
 .form-section.has-errors {
@@ -111,6 +117,7 @@
 
 .input-group {
   margin-bottom: 20px;
+  position: relative;
 }
 
 .input-wrapper {
@@ -122,6 +129,7 @@
   padding: 0 15px;
   background: white;
   transition: border-color 0.3s ease;
+  min-height: 50px;
 }
 
 .input-wrapper:focus-within {
@@ -130,6 +138,213 @@
 
 .input-wrapper.error {
   border-color: #EF4444;
+}
+
+.custom-dropdown-wrapper {
+  position: relative;
+  width: 100%;
+
+  .custom-dropdown-trigger {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    border-radius: 0.5rem; /* Tailwind rounded-lg */
+    width: 100%;
+    background-color: #fff;
+    font-size: 0.875rem; /* Tailwind text-sm */
+    color: #4b5563; /* Tailwind text-gray-700 */
+    outline: none;
+    transition: all 0.2s ease-in-out;
+
+    &:hover {
+      border-color: #3b82f6; /* Tailwind border-blue-500 */
+    }
+
+    .placeholder-text {
+      color: #6b7280; /* Tailwind text-gray-500 */
+    }
+  }
+
+  .dropdown-arrow-icon {
+    width: 16px; /* w-4 */
+    height: 16px; /* h-4 */
+    color: #6b7280; /* text-gray-600 */
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    transition: transform 0.2s ease-in-out;
+  }
+
+  .custom-dropdown-trigger.active .dropdown-arrow-icon {
+    transform: rotate(180deg);
+  }
+
+  .custom-dropdown-content {
+    position: absolute;
+    top: 100%; /* Position right below the trigger */
+    left: 0;
+    width: 100%;
+    background-color: #fff;
+    border: 1px solid #d1d5db;
+    border-radius: 0.5rem;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); /* Tailwind shadow-lg */
+    z-index: 20; /* Higher z-index to appear above other elements */
+    max-height: 200px; /* Optional: limit height with scrollbar */
+    overflow-y: auto;
+    margin-top: 4px;
+  }
+
+  .search-box {
+    position: relative;
+    padding: 12px;
+    border-bottom: 1px solid #e5e7eb; /* Tailwind border-gray-200 */
+
+    .search-input {
+      width: 100%;
+      padding: 8px 12px 8px 36px; /* Left padding for icon */
+      border: 1px solid #d1d5db;
+      border-radius: 0.5rem;
+      outline: none;
+      font-size: 0.875rem;
+      transition: all 0.2s ease-in-out;
+
+      &:focus {
+        border-color: #3b82f6;
+        box-shadow: 0 0 0 1px #3b82f6;
+      }
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 16px;
+      height: 16px;
+      color: #6b7280;
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 2;
+    }
+  }
+
+  .options-list {
+    padding: 0;
+    margin: 0;
+    list-style: none; /* Remove default list styling */
+
+    .option-item {
+      padding: 12px;
+      cursor: pointer;
+      font-size: 0.875rem;
+      color: #374151; /* Tailwind text-gray-800 */
+      transition: background-color 0.1s ease-in-out;
+
+      &:hover {
+        background-color: #f3f4f6; /* Tailwind bg-gray-100 */
+      }
+    }
+
+    .no-results {
+      padding: 12px;
+      text-align: center;
+      color: #6b7280;
+      font-size: 0.875rem;
+    }
+  }
+}
+
+/* Add New Company Form */
+.add-company-form {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 6px;
+}
+
+.add-company-form input {
+  flex: 1;
+  padding: 12px;
+  border: 2px solid #E5E7EB;
+  border-radius: 10px;
+  font-size: 16px;
+}
+
+.add-company-btn {
+ background: #10B981;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 60px;
+  height: 46px;
+}
+
+.add-company-btn:hover:not(:disabled) {
+  background: #059669;
+}
+
+.add-company-btn:disabled {
+  background: #D1D5DB;
+  cursor: not-allowed;
+}
+
+.cancel-btn {
+  background: #EF4444;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.3s ease;
+  min-width: 80px; /* Minimum width */
+  height: 46px; /* Fixed height */
+}
+
+.cancel-btn:hover {
+  background: #DC2626;
+}
+
+/* Localized Loader for Add Company Button */
+.loader {
+  width: 20px;
+  height: 20px;
+  border: 3px solid #fff;
+  border-top: 3px solid #059669;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 0 auto;
+}
+
+/* Add New Option in Dropdown */
+.add-new-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  cursor: pointer;
+  font-size: 0.875rem;
+  color: #374151;
+  transition: background-color 0.1s ease-in-out;
+}
+
+.add-new-option:hover {
+  background-color: #f3f4f6;
+}
+
+.add-new-option i {
+  color: #10B981;
+}
+
+.add-company-btn .loader {
+  display: block;
 }
 
 .icon {
@@ -156,6 +371,10 @@
 .lock-icon {
   background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23666"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>');
 }
+.company-icon {
+  background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23666"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>');
+}
+
 
 .form-input {
   flex: 1;
@@ -191,6 +410,8 @@
   font-size: 12px;
   margin-top: 5px;
   margin-left: 15px;
+  max-width: 100%; /* Prevent overflow */
+  word-wrap: break-word; /* Ensure text wraps */
 }
 
 .global-error {
@@ -198,6 +419,10 @@
   margin-left: 0;
   font-size: 16px;
   text-align: center;
+  padding: 10px;
+  background-color: #fef2f2;
+  border: 1px solid #f87171;
+  border-radius: 5px;
 }
 
 /* Checkbox Styles */
@@ -246,6 +471,7 @@
 
 .checkbox-text {
   flex: 1;
+  font-size: 16px;
 }
 
 .terms-link, .privacy-link {
@@ -295,8 +521,8 @@
   align-items: center;
   justify-content: center;
   z-index: 10;
-  backdrop-filter: blur(0px); 
-  -webkit-backdrop-filter: blur(5px); /* For Safari support */
+  /* backdrop-filter: blur(0px); 
+  -webkit-backdrop-filter: blur(5px); For Safari support */
 }
 
 .violet-loader {

@@ -1,0 +1,33 @@
+<div class="container">
+  <h2>Your Cart</h2>
+
+  <div *ngIf="isLoading" class="loading">Loading cart...</div>
+  <div *ngIf="errorMessage" class="error">{{ errorMessage }}</div>
+
+  <div class="cart-items" *ngIf="cart && cart.items.length">
+    <div *ngFor="let item of cart.items" class="cart-item">
+      <img [src]="item.imageUrl || 'assets/images/placeholder.jpg'" [alt]="item.productName" class="cart-item-image" />
+      <div class="cart-item-details">
+        <h3>{{ item.productName }}</h3>
+        <p>Price: ${{ (item.discountPrice ?? item.price) | number:'1.2-2' }}</p>
+        <div class="quantity-control">
+          <button (click)="updateCartItemCount(item, item.count - 1)" [disabled]="item.count <= 1">-</button>
+          <input type="number" [(ngModel)]="item.count" (change)="updateCartItemCount(item, item.count)" min="1" max="1000" />
+          <button (click)="updateCartItemCount(item, item.count + 1)">+</button>
+        </div>
+        <button class="remove-btn" (click)="removeFromCart(item.id)">Remove</button>
+      </div>
+    </div>
+  </div>
+
+  <div *ngIf="cart && !cart.items.length" class="empty-cart">
+    Your cart is empty. <a routerLink="/products">Shop now</a>.
+  </div>
+
+  <div class="summary" *ngIf="cart && cart.items.length">
+    <p>Cart Items: {{ getCartItemCount() }}</p>
+    <p>Cart Total: ${{ getCartTotal() | number:'1.2-2' }}</p>
+  </div>
+
+  <a routerLink="/products" class="back-link">Continue Shopping</a>
+</div>

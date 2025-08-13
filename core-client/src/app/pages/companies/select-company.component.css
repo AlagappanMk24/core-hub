@@ -1,0 +1,513 @@
+.select-company-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.select-company-card {
+  background: white;
+  border-radius: 20px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+  max-width: 1000px;
+  width: 100%;
+  min-height: 600px;
+}
+
+/* Header */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 30px 40px 20px;
+}
+
+.logo-text {
+  font-size: 20px;
+  font-weight: bold;
+  color: #333;
+  position: relative;
+}
+
+.logo-text::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  background: #8b5cf6;
+  border-radius: 50%;
+  position: absolute;
+  left: -15px;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.violet-first-letter {
+  color: #8b5cf6;
+}
+
+.new-user {
+  font-size: 18px;
+  color: #666;
+}
+
+.sign-up-link {
+  color: #8b5cf6;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.sign-up-link:hover {
+  text-decoration: underline;
+}
+
+/* Main Content */
+.main-content {
+  display: flex;
+  min-height: 500px;
+}
+
+/* Illustration Section */
+.illustration-section {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8fafc;
+  position: relative;
+  padding: 40px;
+}
+
+.illustration {
+  position: relative;
+  width: 300px;
+  height: 300px;
+}
+
+/* Character Styles */
+.character {
+  position: absolute;
+}
+
+.man {
+  left: 50px;
+  top: 50px;
+}
+
+.woman {
+  right: 50px;
+  top: 80px;
+}
+
+/* Man Character */
+.man-head {
+  width: 50px;
+  height: 50px;
+  background: #f4a261;
+  border-radius: 50%;
+  position: relative;
+  margin-bottom: 5px;
+}
+
+.man-head::before {
+  content: "";
+  width: 30px;
+  height: 20px;
+  background: #2a9d8f;
+  border-radius: 10px 10px 0 0;
+  position: absolute;
+  top: -10px;
+  left: 10px;
+}
+
+.man-body {
+  width: 60px;
+  height: 80px;
+  background: #70b7d6;
+  border-radius: 30px 30px 0 0;
+  position: relative;
+}
+
+.man-arm-left,
+.man-arm-right {
+  width: 20px;
+  height: 40px;
+  background: #f4a261;
+  border-radius: 10px;
+  position: absolute;
+  top: 60px;
+}
+
+.man-arm-left {
+  left: -10px;
+  transform: rotate(-20deg);
+}
+
+.man-arm-right {
+  right: -10px;
+  transform: rotate(20deg);
+}
+
+.man-leg-left,
+.man-leg-right {
+  width: 25px;
+  height: 50px;
+  background: #264653;
+  border-radius: 0 0 12px 12px;
+  position: absolute;
+  top: 130px;
+}
+
+.man-leg-left {
+  left: 5px;
+}
+
+.man-leg-right {
+  right: 5px;
+}
+
+/* Woman Character */
+.woman-head {
+  width: 45px;
+  height: 45px;
+  background: #f4a261;
+  border-radius: 50%;
+  position: relative;
+  margin-bottom: 5px;
+}
+
+.woman-head::before {
+  content: "";
+  width: 35px;
+  height: 25px;
+  background: #e76f51;
+  border-radius: 15px 15px 0 0;
+  position: absolute;
+  top: -12px;
+  left: 5px;
+}
+
+.woman-body {
+  width: 55px;
+  height: 75px;
+  background: #f9c74f;
+  border-radius: 27px 27px 0 0;
+  position: relative;
+}
+
+.woman-arm-left,
+.woman-arm-right {
+  width: 18px;
+  height: 35px;
+  background: #f4a261;
+  border-radius: 9px;
+  position: absolute;
+  top: 55px;
+}
+
+.woman-arm-left {
+  left: -8px;
+  transform: rotate(-15deg);
+}
+
+.woman-arm-right {
+  right: -8px;
+  transform: rotate(15deg);
+}
+
+.woman-leg-left,
+.woman-leg-right {
+  width: 22px;
+  height: 45px;
+  background: #6f4e37;
+  border-radius: 0 0 11px 11px;
+  position: absolute;
+  top: 120px;
+}
+
+.woman-leg-left {
+  left: 7px;
+}
+
+.woman-leg-right {
+  right: 7px;
+}
+
+/* Decorative Elements */
+.plant-pot {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  width: 30px;
+  height: 25px;
+  background: #e76f51;
+  border-radius: 5px;
+}
+
+.plant-pot::before {
+  content: "";
+  width: 35px;
+  height: 15px;
+  background: #e76f51;
+  border-radius: 17px;
+  position: absolute;
+  top: -7px;
+  left: -2px;
+}
+
+.leaves {
+  position: absolute;
+  width: 15px;
+  height: 25px;
+  background: #2a9d8f;
+  border-radius: 50% 0;
+}
+
+.leaf1 {
+  bottom: 40px;
+  left: 25px;
+  transform: rotate(-30deg);
+}
+
+.leaf2 {
+  bottom: 45px;
+  left: 35px;
+  transform: rotate(30deg);
+}
+
+.crown {
+  position: absolute;
+  top: 30px;
+  right: 30px;
+  width: 20px;
+  height: 15px;
+  background: #f9c74f;
+}
+
+.crown::before {
+  content: "♔";
+  color: #f9c74f;
+  font-size: 20px;
+  position: absolute;
+  top: -5px;
+  left: -2px;
+}
+
+/* Form Section */
+.form-section {
+  flex: 1;
+  padding: 20px 50px 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  max-height: 600px;
+  position: relative;
+}
+
+.welcome-text {
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.welcome-text h2 {
+  font-size: 32px;
+  font-weight: bold;
+  color: #333;
+  margin: 0 0 8px 0;
+}
+
+.welcome-text p {
+  font-size: 16px;
+  color: #666;
+  margin: 0;
+}
+
+/* Form Styles */
+.select-company-form {
+  width: 100%;
+}
+
+.input-group {
+  margin-bottom: 20px;
+}
+
+.input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  border: 2px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 0 15px;
+  background: white;
+  transition: border-color 0.3s ease;
+}
+
+.input-wrapper:focus-within {
+  border-color: #8b5cf6;
+}
+
+.input-wrapper.error {
+  border-color: #ef4444;
+}
+
+.icon {
+  width: 20px;
+  height: 20px;
+  margin-right: 12px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+}
+
+/* .company-icon {
+  background-image: url('assets/company-icon.png');
+} */
+.company-icon {
+  background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23666"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/></svg>');
+}
+
+.form-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 15px 0;
+  font-size: 16px;
+  background: transparent;
+  width: 100%;
+}
+
+.form-input::placeholder {
+  color: #9ca3af;
+}
+
+.select-btn {
+  width: 100%;
+  background: #8b5cf6;
+  color: white;
+  border: none;
+  padding: 15px;
+  border-radius: 10px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  margin-top: 10px;
+}
+
+.select-btn:hover {
+  background: #7c3aed;
+}
+
+.select-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+}
+
+.error-message {
+  color: #ef4444;
+  font-size: 16px;
+  margin-top: 5px;
+  margin-left: 15px;
+}
+
+.global-error {
+  margin-bottom: 15px;
+  margin-left: 0;
+  font-size: 16px;
+  text-align: center;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .main-content {
+    flex-direction: column;
+  }
+
+  .illustration-section {
+    min-height: 200px;
+  }
+
+  .form-section {
+    padding: 30px;
+  }
+
+  .header {
+    padding: 20px 30px;
+  }
+
+  .illustration {
+    transform: scale(0.7);
+  }
+}
+
+/* Loading Overlay */
+.loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  backdrop-filter: blur(0px);
+  -webkit-backdrop-filter: blur(5px);
+}
+
+.violet-loader {
+  width: 50px;
+  height: 50px;
+  border: 5px solid #e5e7eb;
+  border-top: 5px solid #8b5cf6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+.loading-text {
+  margin-top: 15px;
+  font-size: 18px;
+  color: #8b5cf6;
+  font-weight: 500;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@media (max-width: 480px) {
+  .select-company-container {
+    padding: 10px;
+  }
+
+  .form-section {
+    padding: 20px;
+  }
+
+  .input-wrapper {
+    padding: 0 12px;
+  }
+
+  .form-input {
+    padding: 12px 0;
+  }
+
+  .violet-loader {
+    width: 40px;
+    height: 40px;
+    border-width: 4px;
+  }
+
+  .loading-text {
+    font-size: 14px;
+  }
+}

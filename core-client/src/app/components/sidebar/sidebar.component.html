@@ -1,29 +1,25 @@
-<div class="w-64 bg-white shadow-lg flex flex-col h-full">
+<div class="w-68 bg-white shadow-lg flex flex-col h-full">
   <!-- Sidebar Header -->
   <div class="p-6 border-b border-gray-200">
     <div class="flex items-center space-x-3">
-      <div
-        class="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center"
-      >
-        <span class="text-white font-bold text-sm">🔥</span>
+      <div class="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
+        <span class="text-white font-bold text-sm">📄</span>
       </div>
       <div>
-        <h2 class="text-lg font-bold text-gray-800">Angular Core</h2>
+        <h2 class="text-lg font-bold text-gray-800">Invoicing App</h2>
       </div>
     </div>
   </div>
 
   <!-- User Profile Section -->
   <div class="p-4 border-b border-gray-200">
-    <div class="flex items-center space-x-3">
-      <div
-        class="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center"
-      >
-        <span class="text-white font-medium text-sm">DG</span>
+    <div class="flex items-center space-x-3" *ngIf="user">
+      <div class="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center">
+        <span class="text-white font-medium text-sm">{{ getInitials(user.fullName) }}</span>
       </div>
-      <div class="flex-1">
-        <h3 class="text-sm font-medium text-gray-800">David Grey, H</h3>
-        <p class="text-xs text-gray-500">Developer</p>
+      <div class="flex-1 truncate">
+        <h3 class="text-sm font-medium text-gray-800 truncate" [title]="user.fullName">{{ user.fullName }}</h3>
+        <p class="text-xs text-gray-500">{{ user.roles.includes('Admin') ? 'Admin' : user.roles.includes('User') ? 'User' : 'Customer' }}</p>
       </div>
       <div class="w-3 h-3 bg-green-400 rounded-full"></div>
     </div>
@@ -33,32 +29,58 @@
   <nav class="flex-1 p-4 space-y-1">
     <div
       *ngFor="let item of menuItems"
-      class="flex items-center space-x-3 px-3 py-2 rounded-lg cursor-pointer transition-colors"
-      [class.bg-purple-50]="item.active"
-      [class.text-purple-600]="item.active"
-      [class.hover:bg-gray-50]="!item.active"
-      (click)="onMenuItemClick(item)"
+      class="menu-item"
+      [ngClass]="{'bg-purple-50 text-purple-600': item.active, 'hover:bg-gray-50': !item.active}"
     >
-      <i
-        [ngClass]="{
-          'text-lg': true,
-          'text-purple-600': !item.active,
-          'text-purple-800': item.active
-        }"
-        [class]="item.icon"
-      ></i>
-      <span class="font-medium" [class.text-purple-600]="item.active">{{
-        item.label
-      }}</span>
-      <div class="ml-auto">
-        <div
-          *ngIf="item.label === 'Dashboard'"
-          class="w-2 h-2 bg-purple-600 rounded-full"
-        ></div>
+      <div
+        class="flex items-center space-x-3 px-3 py-2 rounded-lg cursor-pointer transition-colors"
+        (click)="onMenuItemClick(item)"
+      >
         <i
-          *ngIf="item.hasSubmenu"
-          class="fas fa-chevron-down text-xs text-gray-400"
+          [ngClass]="{
+            'text-lg': true,
+            'text-purple-600': !item.active,
+            'text-purple-800': item.active
+          }"
+          [class]="item.icon"
         ></i>
+        <span class="font-medium" [ngClass]="{'text-purple-600': item.active}">{{ item.label }}</span>
+        <div class="ml-auto">
+          <div
+            *ngIf="item.label === 'Dashboard'"
+            class="w-2 h-2 bg-purple-600 rounded-full"
+          ></div>
+          <i
+            *ngIf="item.hasSubmenu"
+            class="fas fa-chevron-down transform transition-transform duration-200"
+            [ngClass]="{'rotate-180': item.submenuOpen}"
+          ></i>
+        </div>
+      </div>
+      <!-- Submenu -->
+      <div
+        *ngIf="item.hasSubmenu && item.submenuOpen"
+        class="submenu pl-6 space-y-1 mt-1"
+      >
+        <div
+          *ngFor="let subItem of item.subItems"
+          class="flex items-center space-x-3 px-3 py-2 rounded-lg cursor-pointer transition-colors"
+          [ngClass]="{
+            'bg-purple-100 text-purple-700': subItem.active,
+            'hover:bg-gray-50': !subItem.active
+          }"
+          (click)="onMenuItemClick(subItem)"
+        >
+          <i
+            [ngClass]="{
+              'text-base': true,
+              'text-purple-600': !subItem.active,
+              'text-purple-800': subItem.active
+            }"
+            [class]="subItem.icon"
+          ></i>
+          <span class="text-sm font-medium" [ngClass]="{'text-purple-600': subItem.active}">{{ subItem.label }}</span>
+        </div>
       </div>
     </div>
   </nav>
@@ -67,18 +89,9 @@
   <div class="p-4 border-t border-gray-200">
     <button
       class="w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
+      (click)="logout()"
     >
-      + Add a project
+      <i class="fas fa-sign-out-alt mr-2"></i> Logout
     </button>
-    <div class="mt-4 space-y-2">
-      <div class="flex items-center text-xs text-gray-500">
-        <div class="w-2 h-2 border border-gray-400 rounded-sm mr-2"></div>
-        <span>Free</span>
-      </div>
-      <div class="flex items-center text-xs text-gray-500">
-        <div class="w-2 h-2 bg-blue-500 rounded-sm mr-2"></div>
-        <span>Pro</span>
-      </div>
-    </div>
   </div>
 </div>

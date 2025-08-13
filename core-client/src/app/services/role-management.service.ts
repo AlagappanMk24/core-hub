@@ -12,7 +12,7 @@ import { RoleMenuPermission } from '../interfaces/auth/role/role-menu-permission
 })
 
 export class RoleManagementService {
-  private apiUrl = environment.apiUrl;
+  private apiUrl = environment.apiBaseUrl;
   private menus: Menu[] = [
     { id: 'dashboard', name: 'Dashboard', icon: 'fas fa-tachometer-alt' },
     { id: 'users', name: 'Users', icon: 'fas fa-users' },

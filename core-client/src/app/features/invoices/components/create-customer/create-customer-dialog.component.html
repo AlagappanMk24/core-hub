@@ -1,0 +1,285 @@
+<div class="dialog-container bg-white rounded-xl shadow-2xl overflow-hidden" @dialogFadeIn>
+  <div class="dialog-header flex justify-between items-center p-6 bg-white">
+    <h2 class="text-xl font-bold text-purple-600">Create New Customer</h2>
+    <button
+      class="text-gray-600 hover:text-purple-600 transition-transform duration-300 transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
+      (click)="onCancel()"
+      aria-label="Close dialog"
+      [disabled]="isSaving"
+    >
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+  <div class="dialog-content p-6 max-h-[60vh] overflow-y-auto relative bg-white">
+    <div class="content-wrapper transition-all duration-300" [class.blur-sm]="isSaving">
+      <form id="customerForm" class="customer-form flex flex-col gap-5 p-4 bg-gray-50 rounded-lg shadow-sm" #customerForm="ngForm" (ngSubmit)="onSave(customerForm)">
+        <!-- Name Field -->
+        <div class="form-row flex items-start gap-4">
+          <label class="form-label w-32 text-sm font-semibold text-gray-800 flex items-center mt-2" for="name-input">Name *</label>
+          <div class="flex-1 flex flex-col">
+            <input
+              type="text"
+              id="name-input"
+              class="p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white text-gray-800 placeholder-gray-400"
+              [(ngModel)]="customer.name"
+              name="name"
+              required
+              minlength="2"
+              maxlength="100"
+              placeholder="Enter customer name"
+              #nameInput="ngModel"
+            />
+            <div
+              *ngIf="nameInput.invalid && (nameInput.dirty || nameInput.touched)"
+              class="text-red-500 text-sm mt-1"
+            >
+              <span *ngIf="nameInput.errors?.['required']">Name is required.</span>
+              <span *ngIf="nameInput.errors?.['minlength']">Name must be at least 2 characters.</span>
+              <span *ngIf="nameInput.errors?.['maxlength']">Name cannot exceed 100 characters.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Email Field -->
+        <div class="form-row flex items-start gap-4">
+          <label class="form-label w-32 text-sm font-semibold text-gray-800 flex items-center mt-2" for="email-input">Email *</label>
+          <div class="flex-1 flex flex-col">
+            <input
+              type="email"
+              id="email-input"
+              class="p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white text-gray-800 placeholder-gray-400"
+              [(ngModel)]="customer.email"
+              name="email"
+              required
+              appEmailValidator
+              maxlength="100"
+              placeholder="Enter email (e.g., user@example.com)"
+              #emailInput="ngModel"
+            />
+            <div
+              *ngIf="emailInput.invalid && (emailInput.dirty || emailInput.touched)"
+              class="text-red-500 text-sm mt-1"
+            >
+              <span *ngIf="emailInput.errors?.['required']">Email is required.</span>
+              <span *ngIf="emailInput.errors?.['invalidEmail']">Invalid email format.</span>
+              <span *ngIf="emailInput.errors?.['maxlength']">Email cannot exceed 100 characters.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Phone Number Field -->
+        <div class="form-row flex items-start gap-4">
+          <label class="form-label w-32 text-sm font-semibold text-gray-800 flex items-center mt-2" for="phone-input">Phone Number *</label>
+          <div class="flex-1 flex flex-col">
+            <input
+              type="tel"
+              id="phone-input"
+              class="p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white text-gray-800 placeholder-gray-400"
+              [(ngModel)]="customer.phoneNumber"
+              name="phoneNumber"
+              required
+              appPhoneValidator
+              maxlength="20"
+              placeholder="Enter phone number (e.g., 9090909090 or +9090909090)"
+              #phoneInput="ngModel"
+            />
+            <div
+              *ngIf="phoneInput.invalid && (phoneInput.dirty || phoneInput.touched)"
+              class="text-red-500 text-sm mt-1"
+            >
+              <span *ngIf="phoneInput.errors?.['required']">Phone number is required.</span>
+              <span *ngIf="phoneInput.errors?.['invalidPhone']">Phone number must be 7-20 digits, optionally starting with + (e.g., 9090909090).</span>
+              <span *ngIf="phoneInput.errors?.['maxlength']">Phone number cannot exceed 20 characters.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Address Line 1 Field -->
+        <div class="form-row flex items-start gap-4">
+          <label class="form-label w-32 text-sm font-semibold text-gray-800 flex items-center mt-2" for="address1-input">Address Line 1 *</label>
+          <div class="flex-1 flex flex-col">
+            <input
+              type="text"
+              id="address1-input"
+              class="p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white text-gray-800 placeholder-gray-400"
+              [(ngModel)]="customer.address1"
+              name="address1"
+              required
+              minlength="5"
+              maxlength="100"
+              placeholder="Enter address line 1"
+              #address1Input="ngModel"
+            />
+            <div
+              *ngIf="address1Input.invalid && (address1Input.dirty || address1Input.touched)"
+              class="text-red-500 text-sm mt-1"
+            >
+              <span *ngIf="address1Input.errors?.['required']">Address Line 1 is required.</span>
+              <span *ngIf="address1Input.errors?.['minlength']">Address Line 1 must be at least 5 characters.</span>
+              <span *ngIf="address1Input.errors?.['maxlength']">Address Line 1 cannot exceed 100 characters.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Address Line 2 Field -->
+        <div class="form-row flex items-start gap-4">
+          <label class="form-label w-32 text-sm font-semibold text-gray-800 flex items-center mt-2" for="address2-input">Address Line 2</label>
+          <div class="flex-1 flex flex-col">
+            <input
+              type="text"
+              id="address2-input"
+              class="p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white text-gray-800 placeholder-gray-400"
+              [(ngModel)]="customer.address2"
+              name="address2"
+              maxlength="100"
+              placeholder="Enter address line 2 (optional)"
+              #address2Input="ngModel"
+            />
+            <div
+              *ngIf="address2Input.errors?.['maxlength'] && (address2Input.dirty || address2Input.touched)"
+              class="text-red-500 text-sm mt-1"
+            >
+              <span>Address Line 2 cannot exceed 100 characters.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- City Field -->
+        <div class="form-row flex items-start gap-4">
+          <label class="form-label w-32 text-sm font-semibold text-gray-800 flex items-center mt-2" for="city-input">City *</label>
+          <div class="flex-1 flex flex-col">
+            <input
+              type="text"
+              id="city-input"
+              class="p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white text-gray-800 placeholder-gray-400"
+              [(ngModel)]="customer.city"
+              name="city"
+              required
+              minlength="2"
+              maxlength="50"
+              placeholder="Enter city"
+              #cityInput="ngModel"
+            />
+            <div
+              *ngIf="cityInput.invalid && (cityInput.dirty || cityInput.touched)"
+              class="text-red-500 text-sm mt-1"
+            >
+              <span *ngIf="cityInput.errors?.['required']">City is required.</span>
+              <span *ngIf="cityInput.errors?.['minlength']">City must be at least 2 characters.</span>
+              <span *ngIf="cityInput.errors?.['maxlength']">City cannot exceed 50 characters.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- State Field -->
+        <div class="form-row flex items-start gap-4">
+          <label class="form-label w-32 text-sm font-semibold text-gray-800 flex items-center mt-2" for="state-input">State</label>
+          <div class="flex-1 flex flex-col">
+            <input
+              type="text"
+              id="state-input"
+              class="p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white text-gray-800 placeholder-gray-400"
+              [(ngModel)]="customer.state"
+              name="state"
+              maxlength="50"
+              placeholder="Enter state (optional)"
+              #stateInput="ngModel"
+            />
+            <div
+              *ngIf="stateInput.errors?.['maxlength'] && (stateInput.dirty || stateInput.touched)"
+              class="text-red-500 text-sm mt-1"
+            >
+              <span>State cannot exceed 50 characters.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Country Field -->
+        <div class="form-row flex items-start gap-4">
+          <label class="form-label w-32 text-sm font-semibold text-gray-800 flex items-center mt-2" for="country-input">Country *</label>
+          <div class="flex-1 flex flex-col">
+            <input
+              type="text"
+              id="country-input"
+              class="p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white text-gray-800 placeholder-gray-400"
+              [(ngModel)]="customer.country"
+              name="country"
+              required
+              minlength="2"
+              maxlength="50"
+              placeholder="Enter country"
+              #countryInput="ngModel"
+            />
+            <div
+              *ngIf="countryInput.invalid && (cityInput.dirty || countryInput.touched)"
+              class="text-red-500 text-sm mt-1"
+            >
+              <span *ngIf="countryInput.errors?.['required']">Country is required.</span>
+              <span *ngIf="countryInput.errors?.['minlength']">Country must be at least 2 characters.</span>
+              <span *ngIf="countryInput.errors?.['maxlength']">Country cannot exceed 50 characters.</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- ZipCode Field -->
+        <div class="form-row flex items-start gap-4">
+          <label class="form-label w-32 text-sm font-semibold text-gray-800 flex items-center mt-2" for="zipcode-input">Zip Code *</label>
+          <div class="flex-1 flex flex-col">
+            <input
+              type="text"
+              id="zipcode-input"
+              class="p-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent bg-white text-gray-800 placeholder-gray-400"
+              [(ngModel)]="customer.zipCode"
+              name="zipCode"
+              required
+              minlength="3"
+              maxlength="10"
+              appZipCodeValidator
+              placeholder="Enter zip code (e.g., 12345 or A1B-2C3)"
+              #zipCodeInput="ngModel"
+            />
+            <div
+              *ngIf="zipCodeInput.invalid && (zipCodeInput.dirty || zipCodeInput.touched)"
+              class="text-red-500 text-sm mt-1"
+            >
+              <span *ngIf="zipCodeInput.errors?.['required']">Zip Code is required.</span>
+              <span *ngIf="zipCodeInput.errors?.['minlength']">Zip Code must be at least 3 characters.</span>
+              <span *ngIf="zipCodeInput.errors?.['maxlength']">Zip Code cannot exceed 10 characters.</span>
+              <span *ngIf="zipCodeInput.errors?.['invalidZipCode']">Zip Code must be alphanumeric with optional hyphens (e.g., 12345 or A1B-2C3).</span>
+            </div>
+          </div>
+        </div>
+      </form>
+    </div>
+    <div
+      *ngIf="isSaving"
+      class="progress-container flex items-center gap-3 justify-center p-4 bg-white/95 rounded-lg absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10 shadow-lg"
+      @fadeIn
+      aria-live="polite"
+    >
+      <mat-spinner diameter="24" class="text-purple-500"></mat-spinner>
+      <span class="text-gray-800 text-sm font-medium">Saving customer...</span>
+    </div>
+  </div>
+  <div class="dialog-actions p-6 bg-white border-t border-gray-200 flex justify-end gap-3">
+    <button
+      class="cancel-btn px-4 py-2 border-2 border-purple-400 text-purple-600 rounded-lg text-sm font-medium hover:bg-purple-50 hover:border-purple-500 hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+      (click)="onCancel()"
+      [disabled]="isSaving"
+    >
+      Cancel
+    </button>
+    <button
+      class="save-btn px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium flex items-center gap-2 hover:bg-purple-700 hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+      type="submit"
+      form="customerForm"
+      [disabled]="customerForm.invalid || isSaving"
+      [matTooltip]="customerForm.invalid ? 'Please fill all required fields correctly' : 'Save customer'"
+      matTooltipPosition="above"
+    >
+      <mat-icon *ngIf="!isSaving">save</mat-icon>
+      <mat-spinner *ngIf="isSaving" diameter="18"></mat-spinner>
+      Save
+    </button>
+  </div>
+</div>

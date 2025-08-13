@@ -10,36 +10,30 @@
       </div>
       <div class="existing-user">
         <span>Already have an account? </span>
-         <a [routerLink]="['/auth/login']" class="sign-in-link">Sign In</a>
+        <a [routerLink]="['/auth/login']" class="sign-in-link">Sign In</a>
       </div>
     </div>
 
     <!-- Main Content -->
     <div class="main-content">
       <!-- Registration Form Section -->
-      <div class="form-section" [class.has-errors]="errorMessage">
+      <div class="form-section" #formSection [class.has-errors]="errorMessage">
         <div class="welcome-text">
           <h2>Create Account!</h2>
           <p>Sign up to get started</p>
         </div>
 
         <!-- Error Message -->
-        <div class="error-message global-error" *ngIf="errorMessage">{{ errorMessage }}</div>
+        <div class="error-message global-error" *ngIf="errorMessage">
+          {{ errorMessage }}
+        </div>
 
-        <form class="register-form" (ngSubmit)="onRegister()" #registerForm="ngForm">
+        <form class="register-form" #registerForm="ngForm" (ngSubmit)="onRegister()">
           <!-- Full Name Input -->
           <div class="input-group">
             <div class="input-wrapper" [class.error]="fullNameInput.invalid && fullNameInput.touched">
               <i class="icon user-icon"></i>
-              <input 
-                type="text" 
-                [(ngModel)]="fullName" 
-                name="fullName"
-                placeholder="Full Name" 
-                class="form-input"
-                required
-                maxlength="255"
-                #fullNameInput="ngModel">
+              <input type="text" [(ngModel)]="fullName" name="fullName" placeholder="Full Name" class="form-input" required maxlength="255" #fullNameInput="ngModel" />
             </div>
             <div class="error-message" *ngIf="fullNameInput.invalid && fullNameInput.touched">
               <span *ngIf="fullNameInput.errors?.['required']">Full name is required</span>
@@ -51,16 +45,7 @@
           <div class="input-group">
             <div class="input-wrapper" [class.error]="emailInput.invalid && emailInput.touched">
               <i class="icon email-icon"></i>
-              <input 
-                type="email" 
-                [(ngModel)]="email" 
-                name="email"
-                placeholder="Email Address" 
-                class="form-input"
-                required
-                email
-                maxlength="255"
-                #emailInput="ngModel">
+              <input type="email" [(ngModel)]="email" name="email" placeholder="Email Address" class="form-input" required email maxlength="255" #emailInput="ngModel" />
             </div>
             <div class="error-message" *ngIf="emailInput.invalid && emailInput.touched">
               <span *ngIf="emailInput.errors?.['required']">Email is required</span>
@@ -73,16 +58,7 @@
           <div class="input-group">
             <div class="input-wrapper" [class.error]="phoneInput.invalid && phoneInput.touched">
               <i class="icon phone-icon"></i>
-              <input 
-                type="tel" 
-                [(ngModel)]="phoneNumber" 
-                name="phoneNumber"
-                placeholder="Phone Number" 
-                class="form-input"
-                required
-                maxlength="20"
-                (input)="formatPhoneNumber()"
-                #phoneInput="ngModel">
+              <input type="tel" [(ngModel)]="phoneNumber" name="phoneNumber" placeholder="Phone Number" class="form-input" required maxlength="20" (input)="formatPhoneNumber()" #phoneInput="ngModel" />
             </div>
             <div class="error-message" *ngIf="phoneInput.invalid && phoneInput.touched">
               <span *ngIf="phoneInput.errors?.['required']">Phone number is required</span>
@@ -90,23 +66,51 @@
             </div>
           </div>
 
+          <!-- Company Input -->
+          <div class="input-group">
+            <div class="input-wrapper custom-dropdown-wrapper" [class.error]="!companyId && registerForm.submitted">
+              <i class="icon company-icon"></i>
+              <div class="custom-dropdown-trigger form-input" [class.active]="showCompanyDropdown" (click)="toggleCompanyDropdown()">
+                <span *ngIf="selectedCompanyDisplayName; else selectCompanyPlaceholder">
+                  {{ selectedCompanyDisplayName }}
+                </span>
+                <ng-template #selectCompanyPlaceholder>
+                  <span class="placeholder-text">Select Company</span>
+                </ng-template>
+                <svg class="dropdown-arrow-icon" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+              </div>
+
+              <div class="custom-dropdown-content" *ngIf="showCompanyDropdown">
+                <div class="search-box">
+                  <input type="text" placeholder="Search Company" [(ngModel)]="companySearchTerm" (ngModelChange)="filterCompanies()" name="companySearch" class="search-input">
+                  <svg class="search-icon" viewBox="0 0 24 24">
+                    <circle cx="11" cy="11" r="8" />
+                    <path d="M21 21l-4.35-4.35" />
+                  </svg>
+                </div>
+                <div class="options-list">
+                  <div class="option-item" *ngFor="let company of filteredCompanies" (click)="selectCompany(company)">
+                    {{ company.name }}
+                  </div>
+                  <div class="no-results" *ngIf="filteredCompanies.length === 0 && companySearchTerm">
+                    No matching companies found. <a href="#" (click)="requestCompany()">Request</a> your company or contact the administrator.
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div class="error-message" *ngIf="!companyId && registerForm.submitted">
+              Company selection is required. If your company is not listed, <a href="#" (click)="requestCompany()">request</a> it or contact the administrator.
+            </div>
+          </div>
+
           <!-- Password Input -->
           <div class="input-group">
             <div class="input-wrapper" [class.error]="passwordInput.invalid && passwordInput.touched">
               <i class="icon lock-icon"></i>
-              <input 
-                [type]="showPassword ? 'text' : 'password'"
-                [(ngModel)]="password" 
-                name="password"
-                placeholder="Password" 
-                class="form-input"
-                required
-                minlength="8"
-                maxlength="100"
-                #passwordInput="ngModel">
-              <i class="toggle-password" 
-                 [class.show]="showPassword"
-                 (click)="togglePasswordVisibility()">👁</i>
+              <input [type]="showPassword ? 'text' : 'password'" [(ngModel)]="password" name="password" placeholder="Password" class="form-input" required minlength="8" maxlength="100" #passwordInput="ngModel" />
+              <i class="toggle-password" [class.show]="showPassword" (click)="togglePasswordVisibility()">👁</i>
             </div>
             <div class="error-message" *ngIf="passwordInput.invalid && passwordInput.touched">
               <span *ngIf="passwordInput.errors?.['required']">Password is required</span>
@@ -118,17 +122,8 @@
           <div class="input-group">
             <div class="input-wrapper" [class.error]="confirmPasswordInput.touched && !passwordsMatch()">
               <i class="icon lock-icon"></i>
-              <input 
-                [type]="showConfirmPassword ? 'text' : 'password'"
-                [(ngModel)]="confirmPassword" 
-                name="confirmPassword"
-                placeholder="Confirm Password" 
-                class="form-input"
-                required
-                #confirmPasswordInput="ngModel">
-              <i class="toggle-password" 
-                 [class.show]="showConfirmPassword"
-                 (click)="toggleConfirmPasswordVisibility()">👁</i>
+              <input [type]="showConfirmPassword ? 'text' : 'password'" [(ngModel)]="confirmPassword" name="confirmPassword" placeholder="Confirm Password" class="form-input" required #confirmPasswordInput="ngModel" />
+              <i class="toggle-password" [class.show]="showConfirmPassword" (click)="toggleConfirmPasswordVisibility()">👁</i>
             </div>
             <div class="error-message" *ngIf="confirmPasswordInput.touched && !passwordsMatch()">
               Passwords do not match
@@ -138,15 +133,12 @@
           <!-- Terms and Conditions -->
           <div class="checkbox-group">
             <label class="checkbox-label">
-              <input 
-                type="checkbox" 
-                [(ngModel)]="agreeToTerms" 
-                name="agreeToTerms"
-                required
-                #termsInput="ngModel">
+              <input type="checkbox" [(ngModel)]="agreeToTerms" name="agreeToTerms" required #termsInput="ngModel" />
               <span class="checkmark"></span>
               <span class="checkbox-text">
-                I agree to the <a href="#" class="terms-link" (click)="onTermsClick($event)">Terms & Conditions</a> and 
+                I agree to the
+                <a href="#" class="terms-link" (click)="onTermsClick($event)">Terms & Conditions</a>
+                and
                 <a href="#" class="privacy-link" (click)="onPrivacyClick($event)">Privacy Policy</a>
               </span>
             </label>
@@ -156,10 +148,7 @@
           </div>
 
           <!-- Register Button -->
-          <button 
-            type="submit" 
-            class="register-btn"
-            [disabled]="isLoading || !registerForm.valid || !passwordsMatch()">
+          <button type="submit" class="register-btn" [disabled]="isLoading || !registerForm.valid || !passwordsMatch()">
             CREATE ACCOUNT
           </button>
         </form>
@@ -174,9 +163,7 @@
       <!-- Illustration Section -->
       <div class="illustration-section">
         <div class="illustration">
-          <!-- Welcome illustration -->
           <div class="welcome-scene">
-            <!-- Person with laptop -->
             <div class="character laptop-person">
               <div class="person-head"></div>
               <div class="person-body"></div>
@@ -184,21 +171,15 @@
               <div class="person-arm-right"></div>
               <div class="laptop"></div>
             </div>
-            
-            <!-- Floating elements -->
             <div class="floating-element rocket"></div>
             <div class="floating-element star star1"></div>
             <div class="floating-element star star2"></div>
             <div class="floating-element star star3"></div>
-            
-            <!-- Success icons -->
             <div class="success-icons">
               <div class="icon-circle">✓</div>
               <div class="icon-heart">♥</div>
               <div class="icon-bulb">💡</div>
             </div>
-
-            <!-- Background shapes -->
             <div class="bg-shape shape1"></div>
             <div class="bg-shape shape2"></div>
             <div class="bg-shape shape3"></div>

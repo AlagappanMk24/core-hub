@@ -1,0 +1,29 @@
+@import 'https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css';
+
+form {
+  transition: all 0.3s ease-in-out;
+}
+
+input:focus {
+  outline: none;
+}
+
+.action-buttons {
+      display: flex;
+      gap: 12px;
+      margin-top: 24px;
+      justify-content: flex-end;
+    }
+
+/* Optional: If you want to ensure the text "Saving..." has enough space when the spinner is present */
+.action-buttons button .ml-1 {
+  margin-left: 0.25rem; /* Tailwind's ml-1 */
+}
+
+/* Responsive styles */
+@media (max-width: 768px) {
+  .action-buttons {
+    flex-direction: column-reverse;
+    gap: 8px;
+  }
+}

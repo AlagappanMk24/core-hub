@@ -1,0 +1,104 @@
+<div class="select-company-container">
+  <div class="select-company-card">
+    <!-- Header -->
+    <div class="header">
+      <div class="logo">
+        <span class="logo-text">
+          <span class="violet-first-letter">A</span>ngular
+          <span class="violet-first-letter">C</span>ore
+        </span>
+      </div>
+      <div class="new-user">
+        <span>Already selected a company? </span>
+        <a [routerLink]="['/auth/login']" class="sign-up-link">Sign In</a>
+      </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <!-- Illustration Section -->
+      <div class="illustration-section">
+        <div class="illustration">
+          <!-- Man illustration -->
+          <div class="character man">
+            <div class="man-head"></div>
+            <div class="man-body"></div>
+            <div class="man-arm-left"></div>
+            <div class="man-arm-right"></div>
+            <div class="man-leg-left"></div>
+            <div class="man-leg-right"></div>
+          </div>
+
+          <!-- Woman illustration -->
+          <div class="character woman">
+            <div class="woman-head"></div>
+            <div class="woman-body"></div>
+            <div class="woman-arm-left"></div>
+            <div class="woman-arm-right"></div>
+            <div class="woman-leg-left"></div>
+            <div class="woman-leg-right"></div>
+          </div>
+
+          <!-- Decorative elements -->
+          <div class="plant-pot"></div>
+          <div class="leaves leaf1"></div>
+          <div class="leaves leaf2"></div>
+          <div class="crown"></div>
+        </div>
+      </div>
+
+      <!-- Form Section -->
+      <div class="form-section" [class.has-errors]="errorMessage">
+        <div class="welcome-text">
+          <h2>Select Your Company</h2>
+          <p>Choose the company you are associated with</p>
+        </div>
+        <div class="error-message global-error" *ngIf="errorMessage">
+          {{ errorMessage }}
+        </div>
+        <form class="select-company-form" (ngSubmit)="saveCompany()" #form="ngForm">
+          <!-- Company Selection Input -->
+          <div class="input-group">
+            <div
+              class="input-wrapper"
+              [class.error]="!selectedCompanyId && form.submitted"
+            >
+              <i class="icon company-icon"></i>
+              <select
+                [(ngModel)]="selectedCompanyId"
+                name="companyId"
+                class="form-input"
+                required
+                #companyId="ngModel"
+              >
+                <option value="0" disabled>Select Company</option>
+                <option *ngFor="let company of companies" [value]="company.id">
+                  {{ company.name }}
+                </option>
+              </select>
+            </div>
+            <div
+              class="error-message"
+              *ngIf="!selectedCompanyId && form.submitted"
+            >
+              Company selection is required
+            </div>
+          </div>
+          <!-- Save Button -->
+          <button
+            type="submit"
+            class="select-btn"
+            [disabled]="isLoading || !selectedCompanyId"
+          >
+            SAVE
+          </button>
+        </form>
+        <!-- Loading Overlay -->
+        <div class="loading-overlay" *ngIf="isLoading">
+          <div class="violet-loader"></div>
+          <p class="loading-text">{{ loadingText }}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,48 @@
+/* Custom styles to complement Tailwind CSS */
+.invoice-container {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.form-input:focus,
+.item-input:focus,
+.qty-input:focus,
+.cost-input:focus,
+.notes-textarea:focus,
+.date-input:focus,
+.tax-select:focus,
+.form-select:focus {
+  outline: none;
+}
+
+.recipient-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.recipient-list::-webkit-scrollbar-track {
+  background: #f1f1f1;
+}
+
+.recipient-list::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 3px;
+}
+
+.recipient-list::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.recipient-dropdown-content,
+.calendar-wrapper {
+  animation: fadeIn 0.2s ease-out;
+}
