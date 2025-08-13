@@ -14,8 +14,6 @@ namespace Core_API.Infrastructure.Persistence.Repositories
         {
             _dbContext = dbContext;
             dbset = _dbContext.Set<T>();
-            //To include Categories
-            _dbContext.Products.Include(u => u.Category).Include(u => u.CategoryId);
         }
 
         /// <summary>
@@ -52,7 +50,7 @@ namespace Core_API.Infrastructure.Persistence.Repositories
             if (!string.IsNullOrEmpty(includeProperties))
             {
                 foreach (var includeProp in includeProperties
-                    .Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                    .Split([','], StringSplitOptions.RemoveEmptyEntries))
                 {
                     query = query.Include(includeProp);
                 }
@@ -77,7 +75,7 @@ namespace Core_API.Infrastructure.Persistence.Repositories
             if (!string.IsNullOrEmpty(includeProperties))
             {
                 foreach (var includeProp in includeProperties
-                    .Split(new char[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+                    .Split([','], StringSplitOptions.RemoveEmptyEntries))
                 {
                     query = query.Include(includeProp);
                 }

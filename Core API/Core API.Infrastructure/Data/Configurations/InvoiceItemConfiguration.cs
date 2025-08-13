@@ -8,15 +8,12 @@ namespace Core_API.Infrastructure.Data.Configurations
     {
         public void Configure(EntityTypeBuilder<InvoiceItem> builder)
         {
-            // InvoiceItem - Invoice relationship
-            builder.HasOne(ii => ii.Invoice)
-                   .WithMany(i => i.InvoiceItems)
-                   .HasForeignKey(ii => ii.InvoiceId)
-                   .OnDelete(DeleteBehavior.Cascade); // Delete InvoiceItem when Invoice is deleted
-
-            // Configure decimal properties
-            builder.Property(ii => ii.Price).HasColumnType("decimal(18,2)");
-            builder.Property(ii => ii.Amount).HasColumnType("decimal(18,2)");
+            builder.Property(ii => ii.UnitPrice)
+              .HasColumnType("decimal(18,2)");
+            builder.Property(ii => ii.Amount)
+              .HasColumnType("decimal(18,2)");
+            builder.Property(ii => ii.TaxAmount)
+              .HasColumnType("decimal(18,2)");
         }
     }
 }

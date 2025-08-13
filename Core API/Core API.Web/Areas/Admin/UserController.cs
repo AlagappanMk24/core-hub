@@ -1,10 +1,9 @@
 ﻿using Core_API.Application.Contracts.Services;
-using Core_API.Application.Features.Users;
-using Core_API.Application.Features.Users.DTOs;
+using Core_API.Application.DTOs.User;
+using Core_API.Application.DTOs.User.Request;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace Core_API.Web.Areas.Admin
 {
@@ -74,29 +73,29 @@ namespace Core_API.Web.Areas.Admin
             }
         }
 
-        // GET: Fetch data for user upsert form (roles and companies)
-        [HttpGet("upsert-data")]
-        public async Task<IActionResult> GetUpsertData()
-        {
-            try
-            {
-                var companies = await _companyService.GetAllCompaniesAsync();
-                var roles = await _roleManager.Roles.Select(r => r.Name).ToListAsync();
+        //// GET: Fetch data for user upsert form (roles and companies)
+        //[HttpGet("upsert-data")]
+        //public async Task<IActionResult> GetUpsertData()
+        //{
+        //    try
+        //    {
+        //        var companies = await _companyService.GetAllCompaniesAsync();
+        //        var roles = await _roleManager.Roles.Select(r => r.Name).ToListAsync();
 
-                var upsertData = new
-                {
-                    Companies = companies.Select(c => new { c.Id, c.Name }).ToList(),
-                    Roles = roles
-                };
+        //        var upsertData = new
+        //        {
+        //            Companies = companies.Select(c => new { c.Id, c.Name }).ToList(),
+        //            Roles = roles
+        //        };
 
-                return Ok(upsertData);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error fetching upsert data");
-                return StatusCode(500, new { error = "Error fetching upsert data" });
-            }
-        }
+        //        return Ok(upsertData);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "Error fetching upsert data");
+        //        return StatusCode(500, new { error = "Error fetching upsert data" });
+        //    }
+        //}
 
         // POST: Create a new user
         [HttpPost]

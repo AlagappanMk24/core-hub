@@ -1,5 +1,5 @@
-﻿using Core_API.Application.Contracts.DTOs.Request;
-using Core_API.Application.Contracts.Services;
+﻿using Core_API.Application.Contracts.Services;
+using Core_API.Application.DTOs.Authorization.Request;
 using Core_API.Domain.Entities;
 using Core_API.Infrastructure.Data.Context;
 using Core_API.Infrastructure.Services.Authorization;

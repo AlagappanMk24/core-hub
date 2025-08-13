@@ -16,9 +16,9 @@ namespace Core_API.Infrastructure.Data.Configurations
 
             // Customer - Company relationship
             builder.HasOne(c => c.Company)
-                   .WithMany()
-                   .HasForeignKey(c => c.CompanyId)
-                   .OnDelete(DeleteBehavior.Restrict);
+                    .WithMany(c => c.Customers)
+                    .HasForeignKey(c => c.CompanyId)
+                    .OnDelete(DeleteBehavior.Restrict);
 
             // Configure Address as an owned type
             builder.OwnsOne(c => c.Address, address =>

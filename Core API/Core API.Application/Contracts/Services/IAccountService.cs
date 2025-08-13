@@ -1,6 +1,6 @@
-﻿using Core_API.Application.Contracts.DTOs.Request;
-using Core_API.Application.Contracts.DTOs.Response;
-using Core_API.Application.Features.Users.DTOs;
+﻿using Core_API.Application.DTOs.Authentication.Request;
+using Core_API.Application.DTOs.Authentication.Response;
+using Core_API.Application.DTOs.User.Request;
 using Core_API.Domain.Entities.Identity;
 using Microsoft.AspNetCore.Identity;
 

@@ -20,6 +20,11 @@ namespace Core_API.Domain.Entities.Identity
         [ValidateNever]
         public Company? Company { get; set; }
 
+        [ForeignKey("Customer")]
+        public int? CustomerId { get; set; }
+        [ValidateNever]
+        public Customer? Customer { get; set; }
+
         [NotMapped]
         public string Role { get; set; }
         public string? ProfileImageUrl { get; set; }

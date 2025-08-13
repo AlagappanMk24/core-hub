@@ -1,6 +1,4 @@
-﻿using Core_API.Domain.Entities;
-
-namespace Core_API.Domain.Models.Email
+﻿namespace Core_API.Domain.Models.Email
 {
     /// <summary>
     /// Base model for all email requests
@@ -30,14 +28,6 @@ namespace Core_API.Domain.Models.Email
         {
             Subject = "Your Two-Factor Authentication Code";
         }
-    }
-
-    /// <summary>
-    /// Model for order confirmation email requests
-    /// </summary>
-    public class OrderConfirmationEmailRequest : EmailRequestBase
-    {
-        public OrderHeader OrderHeader { get; set; }
     }
 
     /// <summary>
@@ -77,5 +67,23 @@ namespace Core_API.Domain.Models.Email
         {
             Subject = "Welcome to Angular Core Hub - Login to Set Your Password";
         }
+    }
+    public class InvoiceEmailRequest : EmailRequestBase
+    {
+        public List<string> To { get; set; } = new List<string>();
+        public List<string> Cc { get; set; } = new List<string>();
+        public string HtmlMessage { get; set; }
+        public string InvoiceNumber { get; set; }
+        public decimal? AmountDue { get; set; }
+        public DateTime? DueDate { get; set; }
+    }
+    public class InvoiceEmailTemplateModel
+    {
+        public string Content { get; set; }
+        public string InvoiceNumber { get; set; }
+        public decimal? AmountDue { get; set; }
+        public DateTime? DueDate { get; set; }
+        public bool HasAttachment { get; set; }
+        public string LogoUrl { get; set; }
     }
 }

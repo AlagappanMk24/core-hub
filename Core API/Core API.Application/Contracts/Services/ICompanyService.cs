@@ -1,17 +1,13 @@
-﻿using Core_API.Application.Common.Results;
-using Core_API.Application.Features.Companies.DTOs;
-using Core_API.Domain.Entities;
+﻿using Core_API.Application.DTOs.Company.Request;
+using Core_API.Application.DTOs.Company.Response;
 
 namespace Core_API.Application.Contracts.Services
 {
     public interface ICompanyService
     {
-        Task<IEnumerable<CompanyDto>> GetAllCompaniesAsync();
-        //Task<PaginatedResult<CompanyDto>> GetCompaniesPaginatedAsync(CompanyQueryParameters parameters);
-        Task<Company> GetCompanyByIdAsync(int id);
-        Task AddCompanyAsync(Company company);
-        Task UpdateCompanyAsync(Company company);
-        Task DeleteCompanyAsync(Company company);
-        Task<List<string>> GetCompanyStates();
+        Task<CompanyResponseDto> CreateCompanyAsync(CompanyCreateDto companyDto, string userId);
+        Task<CompanyResponseDto> GetCompanyByIdAsync(int id);
+        Task<bool> DeleteCompanyAsync(int id);
+        Task<IEnumerable<CompanyResponseDto>> GetAllCompaniesAsync();
     }
 }

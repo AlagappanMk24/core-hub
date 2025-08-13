@@ -14,6 +14,12 @@ namespace Core_API.Infrastructure.Data.Configurations
                 .HasForeignKey(au => au.CompanyId)
                 .IsRequired(false);
 
+            // ApplicationUser - Customer relationship
+            builder.HasOne(au => au.Customer)
+                .WithMany()
+                .HasForeignKey(au => au.CustomerId)
+                .IsRequired(false);
+
             // Optimize the query with an index on IsDeleted and DeletedDate
             builder.HasIndex(u => new { u.IsDeleted, u.DeletedDate })
               .HasFilter("IsDeleted = 1")

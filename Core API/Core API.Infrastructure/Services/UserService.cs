@@ -1,15 +1,10 @@
 ﻿using AutoMapper;
 using Core_API.Application.Common.Results;
 using Core_API.Application.Contracts.Persistence;
-using Core_API.Application.Contracts.Service;
 using Core_API.Application.Contracts.Services;
-using Core_API.Application.Features.Users.DTOs;
-using Core_API.Application.Features.Users.ViewModels;
-using Core_API.Application.Features.Users;
 using Core_API.Domain.Entities.Identity;
 using Core_API.Domain.Models.Email;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.ComponentModel.DataAnnotations;
@@ -18,6 +13,8 @@ using Core_API.Infrastructure.Data.Context;
 using Microsoft.EntityFrameworkCore;
 using Core_API.Infrastructure.Shared;
 using Microsoft.Extensions.Configuration;
+using Core_API.Application.DTOs.User.Request;
+using Core_API.Application.DTOs.User;
 
 namespace Core_API.Infrastructure.Service
 {
@@ -28,7 +25,7 @@ namespace Core_API.Infrastructure.Service
        RoleManager<IdentityRole> roleManager,
        //ICompanyService companyService,
        CoreAPIDbContext dbContext,
-       IEmailService emailService,
+       IEmailSendingService emailService,
        IOptions<AdminSettings> adminSettings,
        IOptions<UserCleanupOptions> cleanupOptions,
        IConfiguration configuration) : IUserService
@@ -41,7 +38,7 @@ namespace Core_API.Infrastructure.Service
         //private readonly ICompanyService _companyService = companyService;
         //private readonly IOptions<UserCleanupOptions> _cleanupOptions = cleanupOptions;
         private readonly CoreAPIDbContext _dbContext = dbContext;
-        private readonly IEmailService _emailService = emailService;
+        private readonly IEmailSendingService _emailService = emailService;
         private readonly IConfiguration _configuration = configuration;
         private readonly string _fallbackEmail = adminSettings.Value.FallbackEmail;
         private readonly IOptions<UserCleanupOptions> _cleanupOptions = cleanupOptions;

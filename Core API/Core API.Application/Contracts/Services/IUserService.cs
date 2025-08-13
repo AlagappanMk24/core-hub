@@ -1,6 +1,6 @@
 ﻿using Core_API.Application.Common.Results;
-using Core_API.Application.Features.Users;
-using Core_API.Application.Features.Users.DTOs;
+using Core_API.Application.DTOs.User;
+using Core_API.Application.DTOs.User.Request;
 using Core_API.Domain.Entities.Identity;
 using System.Security.Claims;
 

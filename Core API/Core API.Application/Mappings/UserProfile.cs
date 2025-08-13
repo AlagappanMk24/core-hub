@@ -1,8 +1,6 @@
 ﻿using AutoMapper;
-using Core_API.Application.Contracts.DTOs;
-using Core_API.Application.Contracts.DTOs.Request;
-using Core_API.Application.Features.Users.DTOs;
-using Core_API.Application.Features.Users.ViewModels;
+using Core_API.Application.DTOs.User.Request;
+using Core_API.Application.DTOs.User.Response;
 using Core_API.Domain.Entities.Identity;
 using Core_API.Domain.Exceptions;
 using Core_API.Domain.ValueObjects;
@@ -29,7 +27,7 @@ namespace Core_API.Application.Mappings
                 .ReverseMap();
 
             // New mapping for UserUpsertVM
-            CreateMap<UserDto, UserUpsertVM>()
+            CreateMap<UserDto, UserUpsertResponse>()
                 .ForMember(dest => dest.SelectedRoles, opt => opt.MapFrom(src => src.Roles ?? new List<string>()))
                 .ForMember(dest => dest.RoleList, opt => opt.Ignore())
                 .ForMember(dest => dest.CompanyList, opt => opt.Ignore())

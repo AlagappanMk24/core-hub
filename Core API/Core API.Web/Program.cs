@@ -11,21 +11,20 @@ using Newtonsoft.Json;
 using Core_API.Application.DI;
 using Core_API.Infrastructure.DI;
 using Microsoft.AspNetCore.Authentication.Google;
-using Core_API.Web.Logger;
 using AspNet.Security.OAuth.GitHub;
 using Core_API.Infrastructure.Shared;
 using Core_API.Domain.Entities.Identity;
 using Core_API.Infrastructure.Services.Background;
 using Core_API.Infrastructure.Data.Initializers;
-using Core_API.Application.Authorization.Handlers;
-using Core_API.Application.Authorization.Requirements;
 using Core_API.Application.Common.Constants;
 using Microsoft.AspNetCore.Authorization;
 using Stripe;
 using Microsoft.AspNetCore.RateLimiting;
 using System.Threading.RateLimiting;
 using Core_API.Infrastructure.RateLimiting;
-using Microsoft.AspNetCore.Builder;
+using Core_API.Application.CrossCuttingConcerns.Authorization.Handlers;
+using Core_API.Application.CrossCuttingConcerns.Authorization.Requirements;
+using Core_API.Application.CrossCuttingConcerns.Logging;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -103,9 +102,6 @@ void ConfigureServices(IServiceCollection services, IConfiguration configuration
     {
         options.Filters.Add<ValidateModelFilter>();
     });
-
-    // Add support for views
-    services.AddControllersWithViews();
 
     // Add HTTP client for external API calls
     services.AddHttpClient();
@@ -189,6 +185,24 @@ void ConfigureRateLimiting(IServiceCollection services, IConfiguration configura
             opt.QueueLimit = 0;
         });
 
+        // Policy for company creation
+        options.AddFixedWindowLimiter("CompanyCreationPolicy", opt =>
+        {
+            opt.PermitLimit = 5;
+            opt.Window = TimeSpan.FromHours(1);
+            opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+            opt.QueueLimit = 0;
+        });
+
+        // New policy for general API requests: 50 requests per minute
+        options.AddFixedWindowLimiter("GeneralApiPolicy", opt =>
+        {
+            opt.PermitLimit = 50;
+            opt.Window = TimeSpan.FromMinutes(1);
+            opt.QueueProcessingOrder = QueueProcessingOrder.OldestFirst;
+            opt.QueueLimit = 0;
+        });
+
         options.RejectionStatusCode = 429;
     });
 }
@@ -213,9 +227,19 @@ void ConfigureDatabase(IServiceCollection services, IConfiguration configuration
 /// <param name="services">The service collection.</param>
 void ConfigureIdentity(IServiceCollection services)
 {
-    services.AddIdentity<ApplicationUser, IdentityRole>()
-            .AddEntityFrameworkStores<CoreAPIDbContext>()
-            .AddDefaultTokenProviders();
+    services.AddIdentityCore<ApplicationUser>(options =>
+    {
+        options.SignIn.RequireConfirmedAccount = false;
+        // Configure other Identity options as needed
+        options.Password.RequireDigit = true;
+        options.Password.RequiredLength = 6;
+        options.Password.RequireNonAlphanumeric = false;
+        options.Password.RequireUppercase = false;
+        options.Password.RequireLowercase = false;
+    })
+     .AddRoles<IdentityRole>()
+     .AddEntityFrameworkStores<CoreAPIDbContext>()
+     .AddDefaultTokenProviders();
 }
 
 /// <summary>
@@ -270,11 +294,11 @@ void ConfigureAuthentication(IServiceCollection services, IConfiguration configu
         opt.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
         opt.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
         opt.DefaultScheme = JwtBearerDefaults.AuthenticationScheme;
-    }).AddJwtBearer(opt =>
+    }).AddJwtBearer(options =>
     {
-        opt.SaveToken = true;
-        opt.RequireHttpsMetadata = false;
-        opt.TokenValidationParameters = new TokenValidationParameters
+        options.SaveToken = true;
+        options.RequireHttpsMetadata = false;// Set to true in production
+        options.TokenValidationParameters = new TokenValidationParameters
         {
             ValidateIssuer = true,
             ValidateAudience = true,
@@ -284,6 +308,7 @@ void ConfigureAuthentication(IServiceCollection services, IConfiguration configu
             ValidIssuer = jwtSettings.ValidIssuer,
             IssuerSigningKey = new SymmetricSecurityKey(key)
         };
+        options.MapInboundClaims = true; // Explicitly enable claim mapping
     });
 }
 
@@ -302,114 +327,9 @@ void ConfigureAuthorization(IServiceCollection services)
     // Configure authorization policies
     services.AddAuthorization(options =>
     {
-        // Register policies for all defined permissions
-        foreach (var permissionField in typeof(AuthorizationConstants.Permissions)
-            .GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static))
-        {
-            if (permissionField.FieldType == typeof(string))
-            {
-                var permission = (string)permissionField.GetValue(null);
-                options.AddPolicy(permission, policy =>
-                    policy.Requirements.Add(new PermissionRequirement(permission)));
-            }
-        }
-        options.AddPolicy("ManageRoles", policy =>
-           policy.RequireRole("Admin").AddRequirements(new PermissionRequirement("Roles.Manage")));
-
-        // Add policy for impersonation
-        options.AddPolicy("ImpersonationAccess", policy =>
-            policy.Requirements.Add(new ImpersonationAuthorizationRequirement()));
-
-        // Grouped policies for common use cases
-        options.AddPolicy("ProductAccess", policy =>
-            policy.RequireAssertion(context =>
-                context.User.IsInRole(AppConstants.Role_Admin) ||
-                context.User.IsInRole(AppConstants.Role_Admin_Super) ||
-                context.User.IsInRole(AppConstants.Role_Manager) ||
-                context.User.IsInRole(AppConstants.Role_Vendor) ||
-                context.User.IsInRole(AppConstants.Role_Supplier) ||
-                context.User.HasClaim(c => c.Type == "Permission" &&
-                    (c.Value == AuthorizationConstants.Permissions.Product_View ||
-                     c.Value == AuthorizationConstants.Permissions.Product_Manage))));
-
-        options.AddPolicy("ProductManagement", policy =>
-            policy.RequireAssertion(context =>
-                context.User.IsInRole(AppConstants.Role_Admin) ||
-                context.User.IsInRole(AppConstants.Role_Admin_Super) ||
-                context.User.IsInRole(AppConstants.Role_Manager) ||
-                context.User.HasClaim(c => c.Type == "Permission" &&
-                    c.Value == AuthorizationConstants.Permissions.Product_Manage)));
-
-        options.AddPolicy("OrderAccess", policy =>
-            policy.RequireAssertion(context =>
-                context.User.IsInRole(AppConstants.Role_Admin) ||
-                context.User.IsInRole(AppConstants.Role_Admin_Super) ||
-                context.User.IsInRole(AppConstants.Role_Manager) ||
-                context.User.IsInRole(AppConstants.Role_CustomerSupport) ||
-                context.User.IsInRole(AppConstants.Role_DeliveryAgent) ||
-                context.User.HasClaim(c => c.Type == "Permission" &&
-                    (c.Value == AuthorizationConstants.Permissions.Order_View ||
-                     c.Value == AuthorizationConstants.Permissions.Order_Manage))));
-
-        options.AddPolicy("OrderManagement", policy =>
-            policy.RequireAssertion(context =>
-                context.User.IsInRole(AppConstants.Role_Admin) ||
-                context.User.IsInRole(AppConstants.Role_Admin_Super) ||
-                context.User.IsInRole(AppConstants.Role_Manager) ||
-                context.User.HasClaim(c => c.Type == "Permission" &&
-                    c.Value == AuthorizationConstants.Permissions.Order_Manage)));
-
-        options.AddPolicy("AdminOnly", policy =>
-            policy.RequireRole(AppConstants.Role_Admin, AppConstants.Role_Admin_Super));
-
-        options.AddPolicy("UserManagement", policy =>
-            policy.RequireAssertion(context =>
-                context.User.IsInRole(AppConstants.Role_Admin) ||
-                context.User.IsInRole(AppConstants.Role_Admin_Super) ||
-                context.User.HasClaim(c => c.Type == "Permission" &&
-                    c.Value == AuthorizationConstants.Permissions.User_Manage)));
-
-        // Additional grouped policies for other entities
-        options.AddPolicy("CategoryManagement", policy =>
-            policy.RequireAssertion(context =>
-                context.User.IsInRole(AppConstants.Role_Admin) ||
-                context.User.IsInRole(AppConstants.Role_Admin_Super) ||
-                context.User.IsInRole(AppConstants.Role_Manager) ||
-                context.User.HasClaim(c => c.Type == "Permission" &&
-                    c.Value == AuthorizationConstants.Permissions.Category_Manage)));
-
-        options.AddPolicy("InvoiceManagement", policy =>
-            policy.RequireAssertion(context =>
-                context.User.IsInRole(AppConstants.Role_Admin) ||
-                context.User.IsInRole(AppConstants.Role_Admin_Super) ||
-                context.User.IsInRole(AppConstants.Role_Manager) ||
-                context.User.HasClaim(c => c.Type == "Permission" &&
-                    c.Value == AuthorizationConstants.Permissions.Invoice_Manage)));
-
-        options.AddPolicy("CustomerManagement", policy =>
-            policy.RequireAssertion(context =>
-                context.User.IsInRole(AppConstants.Role_Admin) ||
-                context.User.IsInRole(AppConstants.Role_Admin_Super) ||
-                context.User.IsInRole(AppConstants.Role_Manager) ||
-                context.User.IsInRole(AppConstants.Role_CustomerSupport) ||
-                context.User.HasClaim(c => c.Type == "Permission" &&
-                    c.Value == AuthorizationConstants.Permissions.Customer_Manage)));
-
-        options.AddPolicy("CompanyManagement", policy =>
-            policy.RequireAssertion(context =>
-                context.User.IsInRole(AppConstants.Role_Admin) ||
-                context.User.IsInRole(AppConstants.Role_Admin_Super) ||
-                context.User.IsInRole(AppConstants.Role_Manager) ||
-                context.User.HasClaim(c => c.Type == "Permission" &&
-                    c.Value == AuthorizationConstants.Permissions.Company_Manage)));
-
-        options.AddPolicy("BrandManagement", policy =>
-            policy.RequireAssertion(context =>
-                context.User.IsInRole(AppConstants.Role_Admin) ||
-                context.User.IsInRole(AppConstants.Role_Admin_Super) ||
-                context.User.IsInRole(AppConstants.Role_Manager) ||
-                context.User.HasClaim(c => c.Type == "Permission" &&
-                    c.Value == AuthorizationConstants.Permissions.Brand_Manage)));
+        options.AddPolicy("Admin", policy => policy.RequireRole("Admin"));
+        options.AddPolicy("User", policy => policy.RequireRole("User"));
+        options.AddPolicy("Customer", policy => policy.RequireRole("Customer"));
     });
 }
 

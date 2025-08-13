@@ -1,5 +1,5 @@
-﻿using Core_API.Application.Contracts.DTOs.Request;
-using Core_API.Application.Contracts.Services;
+﻿using Core_API.Application.Contracts.Services;
+using Core_API.Application.DTOs.Authorization.Request;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
@@ -7,8 +7,7 @@ namespace Core_API.Web.Areas.Admin
 {
     [Route("api/[controller]")]
     [ApiController]
-    //[Authorize(Roles = "Admin")]
-    [Authorize(Policy = "ManageRoles")]
+    [Authorize(Roles = "Admin")]
     public class RolesController(IRolesService rolesService, ILogger<RolesController> logger) : ControllerBase
     {
         private readonly IRolesService _rolesService = rolesService;

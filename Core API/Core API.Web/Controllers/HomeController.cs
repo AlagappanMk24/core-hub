@@ -1,16 +1,13 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿//using Core_API.Application.Contracts.Services;
+//using Microsoft.AspNetCore.Mvc;
 
 //namespace Core_API.Web.Controllers
 //{
-//    [Route("api/[controller]")]
+//    [Route("api/home")]
 //    [ApiController]
-//    public class HomeController : ControllerBase
+//    public class HomeController(IProductService productService) : ControllerBase
 //    {
-//        private readonly IProductService _productService;
-//        public HomeController(IProductService productService)
-//        {
-//            _productService = productService;
-//        }
+//        private readonly IProductService _productService = productService;
 
 //        [HttpGet]
 //        public async Task<IActionResult> GetAllProducts()

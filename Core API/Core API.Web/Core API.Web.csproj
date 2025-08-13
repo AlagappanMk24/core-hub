@@ -32,9 +32,14 @@
 
   <ItemGroup>
     <Folder Include="Areas\Business\" />
-    <Folder Include="Areas\Customer\" />
     <Folder Include="Areas\Operations\" />
-    <Folder Include="wwwroot\" />
   </ItemGroup>
-
+<ItemGroup>
+  <None Update="wwwroot\fonts\OpenSans-Regular.ttf">
+    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+  </None>
+  <None Update="wwwroot\fonts\OpenSans-Bold.ttf">
+    <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+  </None>
+</ItemGroup>
 </Project>

@@ -9,7 +9,7 @@ using System.Security.Cryptography;
 using System.Text;
 using Core_API.Infrastructure.Data.Context;
 using Microsoft.EntityFrameworkCore;
-using Core_API.Application.Contracts.Services;
+using Core_API.Application.Contracts.Services.Auth;
 
 namespace Core_API.Infrastructure.Services.Authentication
 {

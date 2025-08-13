@@ -1,18 +1,18 @@
-﻿using Core_API.Application.Contracts.DTOs.Request;
-using Core_API.Application.Contracts.Service;
-using Core_API.Application.Features.Users.DTOs;
-using Core_API.Web.Areas.Auth;
-using Microsoft.AspNetCore.Http;
+﻿using Core_API.Application.Contracts.Service;
+using Core_API.Application.DTOs.Authentication.Request;
+using Core_API.Application.DTOs.User.Request;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Core_API.Web.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class AccountController(IAccountService accountService, ILogger<AuthController> logger) : ControllerBase
+    [Authorize(Roles = "Admin,User,Customer")]
+    public class AccountController(IAccountService accountService, ILogger<AccountController> logger) : ControllerBase
     {
         private readonly IAccountService _accountService = accountService;
-        private readonly ILogger<AuthController> _logger = logger;
+        private readonly ILogger<AccountController> _logger = logger;
 
         /// <summary>
         /// Changes the user's password.

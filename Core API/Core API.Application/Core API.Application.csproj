@@ -17,9 +17,4 @@
     <ProjectReference Include="..\Core API.Domain\Core API.Domain.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Features\Companies\ViewModels\" />
-    <Folder Include="Features\Auth\" />
-  </ItemGroup>
-
 </Project>

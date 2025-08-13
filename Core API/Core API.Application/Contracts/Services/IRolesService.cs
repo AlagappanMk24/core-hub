@@ -1,4 +1,4 @@
-﻿using Core_API.Application.Contracts.DTOs.Request;
+﻿using Core_API.Application.DTOs.Authorization.Request;
 
 namespace Core_API.Application.Contracts.Services
 {

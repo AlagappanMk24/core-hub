@@ -3,6 +3,7 @@ using Core_API.Domain.Entities.Identity;
 using Core_API.Infrastructure.Data.Context;
 using Core_API.Infrastructure.Persistence.Repositories;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 
 namespace Core_API.Infrastructure.Persistence
 {
@@ -11,31 +12,14 @@ namespace Core_API.Infrastructure.Persistence
         private readonly CoreAPIDbContext _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
         private readonly UserManager<ApplicationUser> _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
 
-        // Private fields to hold instances of repositories
-        private IAuthRepository _authUsers;
-        private IUserRepository _users;
-        public IAuthRepository AuthUsers
-        {
-            get
-            {
-                if (_authUsers == null)
-                {
-                    _authUsers = new AuthRepository(_dbContext, _userManager);
-                }
-                return _authUsers;
-            }
-        }
-        public IUserRepository Users
-        {
-            get
-            {
-                if (_users == null)
-                {
-                    _users = new UserRepository(_dbContext);
-                }
-                return _users;
-            }
-        }
+        public IAuthRepository AuthUsers => new AuthRepository(_dbContext, _userManager);
+        public IUserRepository Users => new UserRepository(_dbContext);
+        public ICustomerRepository Customers => new CustomerRepository(_dbContext);
+        public IInvoiceRepository Invoices => new InvoiceRepository(_dbContext);
+        public ITaxTypeRepository TaxTypes => new TaxTypeRepository(_dbContext);
+        public IInvoiceSettingsRepository InvoiceSettings => new InvoiceSettingsRepository(_dbContext);
+        public IEmailSettingsRepository EmailSettings => new EmailSettingsRepository(_dbContext);
+        public ICompanyRepository Companies => new CompanyRepository(_dbContext);
         public async Task SaveChangesAsync()
         {
             await _dbContext.SaveChangesAsync();
