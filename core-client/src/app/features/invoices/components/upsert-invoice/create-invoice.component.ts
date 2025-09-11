@@ -11,15 +11,17 @@ import { ActivatedRoute, Router } from '@angular/router';
 import {
   Address,
   Invoice,
+  InvoiceUpsert,
   TaxType,
 } from '../../../../interfaces/invoice/invoice.interface';
 import { CustomerService } from '../../../../services/customer/customer.service';
 import { InvoiceService } from '../../../../services/invoice/invoice.service';
 import { NotificationDialogComponent } from '../../../../components/notification/notification-dialog.component';
 import { CreateCustomerDialogComponent } from '../create-customer/create-customer-dialog.component';
-import { InvoicePreviewComponent } from '../preview-invoice/invoice-preview.component';
 import { Company } from '../../../../interfaces/company/company.interface';
 import { CompanyService } from '../../../../services/company/company.service';
+import { AuthService } from '../../../../services/auth/auth.service';
+import { InvoiceDisplayComponent } from '../invoice-display/invoice-display/invoice-display.component';
 
 interface Customer {
   id: number;
@@ -52,7 +54,7 @@ interface InvoiceData {
   currency: string;
   isAutomated: boolean;
   invoiceStatus?: string;
-  paymentStatus? : string;
+  paymentStatus?: string;
 }
 
 @Component({
@@ -86,7 +88,7 @@ export class CreateInvoiceComponent implements OnInit {
     currency: 'USD',
     isAutomated: false,
   };
-
+  company: Company | null = null;
   customers: Customer[] = [];
   filteredCustomers: Customer[] = [];
   selectedCustomer: Customer | null = null;
@@ -94,6 +96,10 @@ export class CreateInvoiceComponent implements OnInit {
   customerSearch: string = '';
   private searchSubject: Subject<string> = new Subject();
   private dueDateSubject: Subject<string> = new Subject();
+  private itemChangeSubject: Subject<{
+    index: number;
+    type: 'quantity' | 'cost';
+  }> = new Subject();
   showCalendar: boolean = false;
   calendarType: 'issued' | 'due' = 'issued';
   currentMonth: number = 0;
@@ -125,6 +131,7 @@ export class CreateInvoiceComponent implements OnInit {
     { value: 'bank', display: 'Bank Transfer', icon: 'account_balance' },
     { value: 'cash', display: 'Cash', icon: 'money' },
     { value: 'credit_card', display: 'Credit Card', icon: 'credit_card' },
+    { value: 'upi', display: 'UPI', icon: 'upi' },
   ];
   isEditMode: boolean = false; // Track edit mode
   invoiceId: string | null = null; // Store invoice ID for edit mode
@@ -133,6 +140,7 @@ export class CreateInvoiceComponent implements OnInit {
     private customerService: CustomerService,
     private invoiceService: InvoiceService,
     private companyService: CompanyService,
+    private authService: AuthService,
     private dialog: MatDialog,
     private router: Router,
     private route: ActivatedRoute
@@ -142,24 +150,118 @@ export class CreateInvoiceComponent implements OnInit {
     const today = new Date();
     this.currentMonth = today.getMonth();
     this.currentYear = today.getFullYear();
-    // Load tax types first
-    this.loadTaxTypes().subscribe(() => {
-      // Then load customers and invoice data
-      this.loadCustomers();
-      this.addItem();
-      this.setupSearchDebounce();
-      this.setupDueDateDebounce();
+    // Load company data first
+    this.loadCompanyData().subscribe({
+      next: () => {
+        // Then load tax types, customers, and invoice data
+        this.loadTaxTypes().subscribe(() => {
+          this.loadCustomers();
+          this.addItem();
+          this.setupSearchDebounce();
+          this.setupDueDateDebounce();
+          this.setupItemChangeDebounce();
+          // Check if in edit mode
+          this.route.paramMap.subscribe((params) => {
+            const id = params.get('id');
+            if (id) {
+              this.isEditMode = true;
+              this.invoiceId = id;
+              this.loadInvoiceData(id);
+            }
+          });
+        });
+      },
+      error: (err) => {
+        console.error('Error loading company data:', err);
+        this.openDialog(
+          'error',
+          'Error',
+          'Failed to load company data.',
+          'Unable to retrieve company information. A default company profile will be used.'
+        );
+        // Set default company data as fallback
+        this.company = {
+          id: 0,
+          name: 'KL Infotech',
+          email: 'support@klinfotech.com',
+          address: {
+            address1: 'Besant Nagar, Chennai 45',
+            address2: '',
+            city: 'Chennai',
+            state: 'Tamil Nadu',
+            zipCode: '600045',
+            country: 'India',
+          },
+        };
+      },
+    });
+  }
 
-      // Check if in edit mode
-      this.route.paramMap.subscribe((params) => {
-        const id = params.get('id');
-        if (id) {
-          this.isEditMode = true;
-          this.invoiceId = id;
-          this.loadInvoiceData(id);
-        }
+  // Fetch company data based on authenticated user
+  loadCompanyData(): Observable<void> {
+    return new Observable((observer) => {
+      const userDetails = this.authService.getUserDetail();
+      if (!userDetails || !userDetails.companyId) {
+        console.error('No user details or company ID found');
+        observer.error(
+          new Error('User not authenticated or no company ID found')
+        );
+        return;
+      }
+
+      // Assuming the user's company ID is stored in AuthService or can be fetched
+      this.authService.getUserCompanyId().subscribe({
+        next: (companyId) => {
+          if (companyId) {
+            this.companyService
+              .getCompanyById(userDetails.companyId)
+              .subscribe({
+                next: (company) => {
+                  this.company = company;
+                  observer.next();
+                  observer.complete();
+                },
+                error: (err) => {
+                  console.error('Error fetching company:', err);
+                  observer.error(err);
+                },
+              });
+          } else {
+            console.warn('No company ID associated with user');
+            observer.error(new Error('No company ID found for user'));
+          }
+        },
+        error: (err) => {
+          console.error('Error fetching user company ID:', err);
+          observer.error(err);
+        },
       });
     });
+  }
+
+  // Get company initials for logo
+  getCompanyInitials(): string {
+    if (!this.company || !this.company.name) {
+      return 'AC';
+    }
+    return this.company.name
+      .split(' ')
+      .map((n) => n[0])
+      .join('')
+      .substring(0, 2)
+      .toUpperCase();
+  }
+
+  // Get company address string
+  getCompanyAddress(): string {
+    if (!this.company || !this.company.address) {
+      return 'Besant Nagar, Chennai 45';
+    }
+    const { address1, address2, city, state, zipCode, country } =
+      this.company.address;
+    return [address1, address2, city, state, zipCode, country]
+      .filter((part) => part)
+      .join(', ');
   }
 
   loadInvoiceData(id: string): void {
@@ -214,7 +316,7 @@ export class CreateInvoiceComponent implements OnInit {
           currency: invoice.currency || 'USD',
           isAutomated: invoice.isAutomated || false,
           invoiceStatus: invoice.invoiceStatus,
-          paymentStatus : invoice.paymentStatus
+          paymentStatus: invoice.paymentStatus,
         };
 
         // Set selected customer
@@ -273,6 +375,13 @@ export class CreateInvoiceComponent implements OnInit {
     this.dueDateSubject.pipe(debounceTime(300)).subscribe((dueDate) => {
       this.validateDueDate(dueDate);
     });
+  }
+  setupItemChangeDebounce(): void {
+    this.itemChangeSubject
+      .pipe(debounceTime(300))
+      .subscribe(({ index, type }) => {
+        this.updateTaxDetails(index);
+      });
   }
 
   loadCustomers(search: string = ''): void {
@@ -340,6 +449,7 @@ export class CreateInvoiceComponent implements OnInit {
     return new Observable((observer) => {
       this.invoiceService.getTaxTypes().subscribe({
         next: (taxTypes) => {
+          console.log(taxTypes, 'TaxTypes');
           this.taxTypes = taxTypes;
           observer.next();
           observer.complete();
@@ -432,60 +542,50 @@ export class CreateInvoiceComponent implements OnInit {
                 ? (parseFloat(this.getSubtotal()) * discount.amount) / 100
                 : discount.amount,
             })),
-            invoiceStatus: (this.invoiceData.invoiceStatus as Invoice['invoiceStatus']) || 'Draft',
-            paymentStatus : (this.invoiceData.paymentStatus as Invoice['paymentStatus']) || 'Pending',
+            invoiceStatus:
+              (this.invoiceData.invoiceStatus as Invoice['invoiceStatus']) ||
+              'Draft',
+            paymentStatus:
+              (this.invoiceData.paymentStatus as Invoice['paymentStatus']) ||
+              'Pending',
             customerId: this.invoiceData.customerId,
             isAutomated: this.invoiceData.isAutomated,
             subtotal: parseFloat(this.getSubtotal()),
             totalAmount: parseFloat(this.getTotal()),
           };
 
-          // Fetch company data
-          this.companyService.getCompanyById(1).subscribe({
-            next: (company) => {
-              this.dialog
-                .open(InvoicePreviewComponent, {
-                  width: '1500px',
-                  maxHeight: '90vh',
-                  data: { invoice, company },
-                })
-                .afterClosed()
-                .subscribe((result) => {
-                  if (result?.action === 'sendInvoice') {
-                    this.sendInvoice();
-                  }
-                });
+          // Use dynamic company data or fallback
+          const companyData = this.company || {
+            id: 0,
+            name: 'KL Infotech',
+            email: 'support@klinfotech.com',
+            address: {
+              address1: 'Besant Nagar, Chennai 45',
+              address2: '',
+              city: 'Chennai',
+              state: 'Tamil Nadu',
+              zipCode: '600045',
+              country: 'India',
             },
-            error: (err) => {
-              console.error('Error fetching company:', err);
-              const defaultCompany: Company = {
-                id: 0,
-                name: 'KL Infotech',
-                email: 'support@klinfotech.com',
-                address: {
-                  address1: 'Besant Nagar, Chennai 45',
-                  address2: '',
-                  city: 'Chennai',
-                  state: 'Tamil Nadu',
-                  zipCode: '600045',
-                  country: 'India',
-                },
-              };
-              this.dialog
-                .open(InvoicePreviewComponent, {
-                  width: '1500px',
-                  maxHeight: '90vh',
-                  data: { invoice, company: defaultCompany },
-                })
-                .afterClosed()
-                .subscribe((result) => {
-                  if (result?.action === 'sendInvoice') {
-                    this.sendInvoice();
-                  }
-                });
-            },
-          });
+          };
+          this.dialog
+            .open(InvoiceDisplayComponent, {
+              width: '100%', // Full width
+              maxWidth: '100vw', // Override Material's default max-width
+              height: 'auto', // Auto height to fit content
+              maxHeight: '95vh', // Slightly reduced to avoid overlap with browser chrome
+              panelClass: 'full-screen-modal', // Custom class for additional styling
+              data: { invoice, company: companyData, mode: 'preview' },
+            })
+            .afterClosed()
+            .subscribe((result) => {
+              if (result?.action === 'sendInvoice') {
+                this.sendInvoice();
+              }
+            });
         },
+        //   });
+        // },
         error: (err) => {
           console.error('Error fetching customer:', err);
           this.openDialog(
@@ -511,9 +611,22 @@ export class CreateInvoiceComponent implements OnInit {
     this.invoiceService
       .createTaxType({ name: this.newTaxType.name, rate: this.newTaxType.rate })
       .subscribe({
-        next: () => {
-          this.loadTaxTypes();
+        // next: () => {
+        //   this.loadTaxTypes();
+        //   this.newTaxType = { name: '', rate: 0 };
+        //   this.openDialog(
+        //     'success',
+        //     'Success',
+        //     'Tax type added successfully!',
+        //     'The new tax type has been created and is now available for use in your invoices.'
+        //   );
+        // },
+        next: (createdTaxType: TaxType) => {
+          // Append the new tax type to the taxTypes array
+          this.taxTypes = [...this.taxTypes, createdTaxType];
+          // Reset the tax type form
           this.newTaxType = { name: '', rate: 0 };
+          // Show success dialog
           this.openDialog(
             'success',
             'Success',
@@ -794,24 +907,31 @@ export class CreateInvoiceComponent implements OnInit {
       return;
     }
 
-    const payload = {
+    // Update items.amount to reflect quantity * unitPrice
+    this.invoiceData.items = this.invoiceData.items.map((item) => ({
+      ...item,
+      amount: parseFloat((item.quantity * item.unitPrice).toFixed(2)),
+    }));
+
+    const payload: InvoiceUpsert = {
+      id: this.invoiceData.id,
       invoiceNumber: this.invoiceData.isAutomated
         ? `INV${Date.now()}`
-        : this.invoiceData.invoiceNumber,
-      poNumber: this.invoiceData.poNumber,
-      projectDetail: this.invoiceData.projectDetail,
-      issueDate: this.parseDate(this.invoiceData.issuedDate)!,
-      dueDate: this.parseDate(this.invoiceData.dueDate)!,
+        : this.invoiceData.invoiceNumber.trim(),
+      poNumber: this.invoiceData.poNumber.trim(),
+      projectDetail: this.invoiceData.projectDetail.trim(),
+      issueDate: issueDate,
+      dueDate: dueDate,
       type: 'Standard',
-      currency: this.invoiceData.currency,
+      currency: this.invoiceData.currency || 'USD',
       customerId: this.invoiceData.customerId,
-      notes: this.invoiceData.notes,
-      paymentMethod: this.invoiceData.paymentMethod,
+      notes: this.invoiceData.notes.trim(),
+      paymentMethod: this.invoiceData.paymentMethod.trim(),
       items: this.invoiceData.items.map((i) => ({
-        description: i.description,
+        description: i.description.trim(),
         quantity: i.quantity,
         unitPrice: i.unitPrice,
-        taxType: i.taxType,
+        taxType: i.taxType || '',
         taxAmount: i.taxAmount,
         amount: i.amount,
       })),
@@ -821,9 +941,17 @@ export class CreateInvoiceComponent implements OnInit {
         amount: d.amount,
         isPercentage: d.isPercentage,
       })),
+      invoiceStatus: status,
+      paymentStatus:
+        status === 'Sent'
+          ? 'Pending'
+          : this.invoiceData.paymentStatus || 'Pending',
     };
+    const request = this.isEditMode
+      ? this.invoiceService.updateInvoice(payload)
+      : this.invoiceService.createInvoice(payload);
 
-    this.invoiceService.createInvoice(payload).subscribe({
+    request.subscribe({
       next: (response) => {
         console.log('Invoice saved:', response);
         if (status === 'Sent') {
@@ -1084,39 +1212,57 @@ export class CreateInvoiceComponent implements OnInit {
     return subtotal.toFixed(2);
   }
 
-  updateTaxDetails(): void {
-    this.invoiceData.taxDetails = [];
-    const taxTypeMap = new Map<string, { rate: number; amount: number }>();
+  updateTaxDetails(index?: number): void {
+    if (index !== undefined) {
+      const item = this.invoiceData.items[index];
+      const amount = parseFloat((item.quantity * item.unitPrice).toFixed(2));
+      let taxAmount = 0;
 
-    this.invoiceData.items.forEach((item) => {
       if (item.taxType) {
         const taxType = this.taxTypes.find((t) => t.name === item.taxType);
         if (taxType) {
-          // Calculate tax amount for the item
-          const taxAmount =
-            item.quantity * item.unitPrice * (taxType.rate / 100);
-          item.taxAmount = parseFloat(taxAmount.toFixed(2)); // Ensure two decimal places
+          taxAmount = parseFloat((amount * (taxType.rate / 100)).toFixed(2));
+        }
+      }
 
-          // Aggregate tax details by tax type
+      item.amount = amount;
+      item.taxAmount = taxAmount;
+    } else {
+      this.invoiceData.items.forEach((item) => {
+        const amount = parseFloat((item.quantity * item.unitPrice).toFixed(2));
+        let taxAmount = 0;
+
+        if (item.taxType) {
+          const taxType = this.taxTypes.find((t) => t.name === item.taxType);
+          if (taxType) {
+            taxAmount = parseFloat((amount * (taxType.rate / 100)).toFixed(2));
+          }
+        }
+
+        item.amount = amount;
+        item.taxAmount = taxAmount;
+      });
+    }
+
+    const taxTypeMap = new Map<string, { rate: number; amount: number }>();
+    this.invoiceData.items.forEach((item) => {
+      if (item.taxType && item.taxAmount > 0) {
+        const taxType = this.taxTypes.find((t) => t.name === item.taxType);
+        if (taxType) {
           if (taxTypeMap.has(item.taxType)) {
             const existing = taxTypeMap.get(item.taxType)!;
-            existing.amount += taxAmount;
+            existing.amount += item.taxAmount;
             taxTypeMap.set(item.taxType, existing);
           } else {
             taxTypeMap.set(item.taxType, {
               rate: taxType.rate,
-              amount: taxAmount,
+              amount: item.taxAmount,
             });
           }
-        } else {
-          item.taxAmount = 0; // No tax type found
         }
-      } else {
-        item.taxAmount = 0; // No tax type selected
       }
     });
 
-    // Convert taxTypeMap to taxDetails array
     this.invoiceData.taxDetails = Array.from(taxTypeMap.entries()).map(
       ([taxType, { rate, amount }]) => ({
         taxType,
@@ -1125,7 +1271,9 @@ export class CreateInvoiceComponent implements OnInit {
       })
     );
   }
-
+  trackByItem(index: number, item: any): number {
+    return index;
+  }
   getTaxAmount(): string {
     const taxAmount = this.invoiceData.taxDetails.reduce(
       (sum, tax) => sum + tax.amount,
@@ -1154,12 +1302,20 @@ export class CreateInvoiceComponent implements OnInit {
     return (subtotal + tax - discount).toFixed(2);
   }
 
-  onItemCostChange(): void {
-    this.updateTaxDetails();
+  onItemQuantityChange(index: number): void {
+    const item = this.invoiceData.items[index];
+    if (item.quantity < 1) {
+      item.quantity = 1;
+    }
+    this.itemChangeSubject.next({ index, type: 'quantity' });
   }
 
-  onItemQuantityChange(): void {
-    this.updateTaxDetails();
+  onItemCostChange(index: number): void {
+    const item = this.invoiceData.items[index];
+    if (item.unitPrice < 0) {
+      item.unitPrice = 0;
+    }
+    this.itemChangeSubject.next({ index, type: 'cost' });
   }
 
   onTaxTypeChange(): void {
@@ -1214,9 +1370,11 @@ export class CreateInvoiceComponent implements OnInit {
   }
 
   getPaymentMethodDisplayName(value: string): string {
+    console.log(value, 'value');
     const method = this.paymentMethods.find(
       (m) => m.value === value.toLowerCase().replace(' ', '_')
     );
+    console.log(method, 'method');
     return method ? method.display : 'Select';
   }
 

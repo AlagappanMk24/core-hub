@@ -98,13 +98,14 @@ export class VerifyOtpComponent implements OnInit, OnDestroy {
               'OTP validated Succesfully, navigating to dashboard...';
             setTimeout(() => {
               this.isVerifying = false;
-               // Redirect to customer-dashboard if user has Customer role
-              const user = this.authService.getUserDetail();
-              if (user?.roles.includes('Customer')) {
-                this.router.navigate(['/customer-dashboard']);
-              } else {
-                this.router.navigate(['/dashboard']);
-              }
+              //  // Redirect to customer-dashboard if user has Customer role
+              // const user = this.authService.getUserDetail();
+              // if (user?.roles.includes('Customer')) {
+              //   this.router.navigate(['/customer-dashboard']);
+              // } else {
+              //   this.router.navigate(['/dashboard']);
+              // }
+              this.router.navigate(['/redirect-after-login']);
             }, 2000);
           } else {
             this.isVerifying = false;

@@ -5,6 +5,7 @@ import { HeaderComponent } from '../header/header.component';
 import { AuthService } from '../../services/auth/auth.service';
 import { SidebarComponent } from '../sidebar/sidebar.component';
 import { RouterOutlet } from '@angular/router';
+import { NotificationService } from '../../services/notification/notification.service';
 
 @Component({
   selector: 'app-layout',
@@ -15,14 +16,13 @@ import { RouterOutlet } from '@angular/router';
 })
 export class LayoutComponent implements OnInit {
   isSidebarCollapsed = false;
-  hasNotifications = true;
-
   currentUser = {
     name: 'Guest',
     avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face'
   };
 
   private authService = inject(AuthService);
+   private notificationService = inject(NotificationService);
 
   ngOnInit(): void {
     this.loadCurrentUser();
@@ -32,10 +32,8 @@ export class LayoutComponent implements OnInit {
     const userDetails = this.authService.getUserDetail();
     if (userDetails) {
       this.currentUser.name = userDetails.fullName || userDetails.email || 'User';
-      // You can also update the avatar if your userDetails contains an avatar URL
-      // this.currentUser.avatar = userDetails.avatarUrl || this.currentUser.avatar;
     } else {
-      this.currentUser.name = 'David Greyhenak'; // Default name matching the design
+      this.currentUser.name = 'David Greyhenak'; 
     }
   }
 

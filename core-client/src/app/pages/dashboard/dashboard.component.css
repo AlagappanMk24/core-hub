@@ -1,5 +1,5 @@
 /* Custom styles for dashboard */
-body {
+/* body {
   font-family: 'Roboto', sans-serif;
 }
 
@@ -18,7 +18,7 @@ button:hover {
 
 .text-purple-700 {
   color: #6B46C1;
-}
+} */
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
@@ -26,3 +26,4 @@ button:hover {
     grid-template-columns: repeat(1, minmax(0, 1fr));
   }
 }
+/* Add custom styles if needed, Tailwind handles most styling */

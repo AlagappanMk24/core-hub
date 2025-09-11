@@ -1,7 +1,7 @@
 // AuthService.ts
 import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { Observable, map } from 'rxjs';
+import { Observable, catchError, map, of } from 'rxjs';
 import { jwtDecode } from 'jwt-decode';
 import { environment } from '../../environments/environment.development';
 import { LoginRequest } from '../../interfaces/auth/auth-request/login-request';
@@ -75,10 +75,22 @@ export class AuthService {
           // }
           this.clearOtpToken();
           const decoded: any = jwtDecode(response.token);
-          const roles = Array.isArray(decoded['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'])
-            ? decoded['http://schemas.microsoft.com/ws/2008/06/identity/claims/role']
-            : decoded['http://schemas.microsoft.com/ws/2008/06/identity/claims/role']
-            ? [decoded['http://schemas.microsoft.com/ws/2008/06/identity/claims/role']]
+          const roles = Array.isArray(
+            decoded[
+              'http://schemas.microsoft.com/ws/2008/06/identity/claims/role'
+            ]
+          )
+            ? decoded[
+                'http://schemas.microsoft.com/ws/2008/06/identity/claims/role'
+              ]
+            : decoded[
+                'http://schemas.microsoft.com/ws/2008/06/identity/claims/role'
+              ]
+            ? [
+                decoded[
+                  'http://schemas.microsoft.com/ws/2008/06/identity/claims/role'
+                ],
+              ]
             : [];
         }
         return response;
@@ -96,31 +108,37 @@ export class AuthService {
     const token = this.getAuthToken();
     if (!token) return null;
     try {
-      // const decodedToken: any = jwtDecode(token);
-      // const roles = Array.isArray(decodedToken.role)
-      //   ? decodedToken.role
-      //   : decodedToken.role
-      //   ? [decodedToken.role]
-      //   : [];
-      // return {
-      //   id: decodedToken.nameid,
-      //   fullName: decodedToken.name,
-      //   email: decodedToken.email,
-      //   roles: roles,
-      //   companyId: decodedToken.companyId,
-      // };
       const decodedToken: any = jwtDecode(token);
-      const roles = Array.isArray(decodedToken['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'])
-        ? decodedToken['http://schemas.microsoft.com/ws/2008/06/identity/claims/role']
-        : decodedToken['http://schemas.microsoft.com/ws/2008/06/identity/claims/role']
-        ? [decodedToken['http://schemas.microsoft.com/ws/2008/06/identity/claims/role']]
+         console.log('Decoded JWT:', decodedToken); // Debug
+      const roles = Array.isArray(
+        decodedToken[
+          'http://schemas.microsoft.com/ws/2008/06/identity/claims/role'
+        ]
+      )
+        ? decodedToken[
+            'http://schemas.microsoft.com/ws/2008/06/identity/claims/role'
+          ]
+        : decodedToken[
+            'http://schemas.microsoft.com/ws/2008/06/identity/claims/role'
+          ]
+        ? [
+            decodedToken[
+              'http://schemas.microsoft.com/ws/2008/06/identity/claims/role'
+            ],
+          ]
         : [];
       return {
-        id: decodedToken['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'],
-        fullName: decodedToken['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'],
+        id: decodedToken[
+          'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'
+        ],
+        fullName:
+          decodedToken[
+            'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'
+          ],
         email: decodedToken['email'],
         roles: roles,
         companyId: decodedToken['companyId'],
+        customerId : decodedToken['customerId']
       };
     } catch (error) {
       console.error('Error decoding token:', error);
@@ -241,7 +259,9 @@ export class AuthService {
   // Check if user has a specific role
   hasRole(role: string): boolean {
     const user = this.getUserDetail();
-    return user?.roles.includes(role) || false;
+    const roles = user?.roles || [];
+    console.log(`Checking for role ${role}:`, roles); // Debug
+    return roles.includes(role);
   }
 
   updateCompany(companyId: number): Observable<any> {
@@ -249,14 +269,41 @@ export class AuthService {
       companyId,
     });
   }
-  
+
   /**
    * Requests a new company to be added by sending an email to the admin.
    * @param request - Object containing user details and requested company name
    * @returns Observable<any> - Response from the API
    */
-  requestCompany(request: { fullName: string; email: string; companyName: string }): Observable<any> {
+  requestCompany(request: {
+    fullName: string;
+    email: string;
+    companyName: string;
+  }): Observable<any> {
     const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-    return this.http.post(`${this.baseApiUrl}/request-company`, request, { headers });
+    return this.http.post(`${this.baseApiUrl}/request-company`, request, {
+      headers,
+    });
+  }
+
+  getUserCompanyId(): Observable<number | null> {
+    const token = this.getAuthToken();
+    if (!token) {
+      return of(null);
+    }
+    const decoded: any = jwtDecode(token);
+    const companyId = decoded?.companyId; // Assuming 'companyId' is stored in the JWT
+    if (companyId) {
+      return of(companyId);
+    }
+    // Fallback: Fetch user profile from API if companyId is not in token
+    return this.http
+      .get<{ companyId: number }>(`${environment.apiBaseUrl}/user/profile`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .pipe(
+        map((profile) => profile.companyId || null),
+        catchError(() => of(null))
+      );
   }
 }

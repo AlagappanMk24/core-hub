@@ -10,6 +10,7 @@ import { FormBuilder, FormGroup, FormsModule } from '@angular/forms';
 import { debounceTime, distinctUntilChanged, Subject } from 'rxjs';
 import {
   Invoice,
+  InvoiceFilter,
   InvoiceStats,
   MoreFiltersDialogData,
   PaginatedResult,
@@ -28,7 +29,6 @@ import {
   Customer,
   CustomerService,
 } from '../../../../services/customer/customer.service';
-import { HttpParams } from '@angular/common/http';
 
 @Component({
   selector: 'app-invoice',
@@ -100,8 +100,11 @@ export class InvoiceComponent implements OnInit {
   searchTerm = '';
   // downloadingInvoiceId: string | null = null;
   private searchSubject = new Subject<string>();
+  private destroy$ = new Subject<void>();
   isAdmin: boolean = false;
   isUser: boolean = false;
+  isCustomer: boolean = false;
+    customerId: string | null = null;
   customers: { id: number; name: string }[] = [];
   taxTypes: { name: string }[] = [];
   moreFiltersForm: FormGroup;
@@ -130,14 +133,39 @@ export class InvoiceComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    // Check roles
     this.isAdmin = this.authService.hasRole('Admin');
     this.isUser = this.authService.hasRole('User');
+    this.isCustomer = this.authService.hasRole('Customer');
+
+    // Get customerId from JWT for Customer role
+    const user = this.authService.getUserDetail();
+    this.customerId = user?.customerId || null;
+    console.log(
+      'InvoiceComponent: User details:',
+      user,
+      'Customer ID:',
+      this.customerId
+    );
+
+    // Load customers for Admin/User, skip for Customer
+    if (this.isAdmin || this.isUser) {
+      this.loadCustomers();
+    }
+
+    // Load tax types for filters (Admin only)
+    if (this.isAdmin) {
+      this.loadTaxTypes();
+    }
+
     this.loadInvoices();
     this.loadStats();
-    this.loadCustomers();
     this.setupSearch();
   }
-
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
   private setupSearch(): void {
     this.searchSubject
       .pipe(debounceTime(300), distinctUntilChanged())
@@ -148,137 +176,95 @@ export class InvoiceComponent implements OnInit {
       });
   }
 
-  // loadInvoices(): void {
-  //   this.isLoading = true;
-  //   this.invoiceService
-  //     .getPagedInvoices(
-  //       this.currentPage,
-  //       this.itemsPerPage,
-  //       this.searchTerm,
-  //       this.selectedStatus === 'All' ? null : this.selectedStatus
-  //     )
-  //     .subscribe({
-  //       next: (result: PaginatedResult<Invoice>) => {
-  //         this.invoices = result.items;
-  //         this.totalItems = result.totalCount;
-  //         this.totalPages = result.totalPages;
-  //         this.isLoading = false;
-  //       },
-  //       error: (error) => {
-  //         console.error('Error fetching invoices:', error);
-  //         this.openDialog(
-  //           'error',
-  //           'Load Failed',
-  //           'Failed to load invoices. Please try again.',
-  //           'Invoice data could not be retrieved from the server. Please check your internet connection and refresh the page.'
-  //         );
-  //         this.isLoading = false;
-  //       },
-  //     });
-  // }
-
+  private loadTaxTypes(): void {
+    this.invoiceService.getTaxTypes().subscribe({
+      next: (taxTypes: TaxType[]) => {
+        this.taxTypes = taxTypes.map((tax) => ({ name: tax.name }));
+      },
+      error: (error) => {
+        console.error('Error fetching tax types:', error);
+        this.openDialog(
+          'error',
+          'Load Failed',
+          'Failed to load tax types. Please try again.',
+          'Tax type data could not be retrieved. Please check your internet connection and refresh the page.'
+        );
+      },
+    });
+  }
   loadInvoices(): void {
     this.isLoading = true;
-    const filters = this.moreFiltersForm.value;
-    let params = new HttpParams()
-      .set('pageNumber', this.currentPage.toString())
-      .set('pageSize', this.itemsPerPage.toString());
-    if (this.searchTerm) {
-      params = params.set('search', this.searchTerm);
-    }
-    if(filters.invoiceStatus || this.selectedInvoiceStatus){
-     params = params.set(
-        'invoiceStatus',
-        filters.invoiceStatus || this.selectedInvoiceStatus
-      );
-    }
-    if (filters.paymentStatus || this.selectedPaymentStatus) {
-      params = params.set(
-        'paymentStatus',
-        filters.paymentStatus || this.selectedPaymentStatus
-      );
-    }
-    if (filters.customerId) {
-      params = params.set('customerId', filters.customerId.toString());
-    }
-    if (filters.minAmount != null) {
-      params = params.set('minAmount', filters.minAmount.toString());
-    }
-    if (filters.maxAmount != null) {
-      params = params.set('maxAmount', filters.maxAmount.toString());
-    }
-    if (filters.invoiceNumberFrom) {
-      params = params.set('invoiceNumberFrom', filters.invoiceNumberFrom);
-    }
-    if (filters.invoiceNumberTo) {
-      params = params.set('invoiceNumberTo', filters.invoiceNumberTo);
-    }
-    if (filters.status) {
-      params = params.set('status', filters.status);
-    }
-    // Handle date filters, converting strings to Date objects if necessary
-    if (filters.issueDateFrom) {
-      const issueDateFrom =
-        typeof filters.issueDateFrom === 'string'
-          ? new Date(filters.issueDateFrom)
-          : filters.issueDateFrom;
-      if (issueDateFrom instanceof Date && !isNaN(issueDateFrom.getTime())) {
-        params = params.set('issueDateFrom', issueDateFrom.toISOString());
-      }
-    }
-    if (filters.issueDateTo) {
-      const issueDateTo =
-        typeof filters.issueDateTo === 'string'
-          ? new Date(filters.issueDateTo)
-          : filters.issueDateTo;
-      if (issueDateTo instanceof Date && !isNaN(issueDateTo.getTime())) {
-        params = params.set('issueDateTo', issueDateTo.toISOString());
-      }
-    }
-    if (filters.dueDateFrom) {
-      const dueDateFrom =
-        typeof filters.dueDateFrom === 'string'
-          ? new Date(filters.dueDateFrom)
-          : filters.dueDateFrom;
-      if (dueDateFrom instanceof Date && !isNaN(dueDateFrom.getTime())) {
-        params = params.set('dueDateFrom', dueDateFrom.toISOString());
-      }
-    }
-    if (filters.dueDateTo) {
-      const dueDateTo =
-        typeof filters.dueDateTo === 'string'
-          ? new Date(filters.dueDateTo)
-          : filters.dueDateTo;
-      if (dueDateTo instanceof Date && !isNaN(dueDateTo.getTime())) {
-        params = params.set('dueDateTo', dueDateTo.toISOString());
-      }
-    }
-    this.invoiceService
-      .getPagedInvoices(
-        this.currentPage,
-        this.itemsPerPage,
-        this.searchTerm,
-        params
-      )
-      .subscribe({
-        next: (result: PaginatedResult<Invoice>) => {
-          console.log(result, "result");
-          this.invoices = result.items;
-          this.totalItems = result.totalCount;
-          this.totalPages = result.totalPages;
-          this.isLoading = false;
-        },
-        error: (error) => {
-          console.error('Error fetching invoices:', error);
-          this.openDialog(
-            'error',
-            'Load Failed',
-            'Failed to load invoices. Please try again.',
-            'Invoice data could not be retrieved from the server. Please check your internet connection and refresh the page.'
-          );
-          this.isLoading = false;
-        },
-      });
+    const filter: InvoiceFilter = {
+      pageNumber: this.currentPage,
+      pageSize: this.itemsPerPage,
+      search: this.searchTerm || undefined,
+      invoiceStatus:
+        this.moreFiltersForm.get('invoiceStatus')?.value ||
+        (this.selectedInvoiceStatus === 'All'
+          ? undefined
+          : this.selectedInvoiceStatus),
+      paymentStatus:
+        this.moreFiltersForm.get('paymentStatus')?.value ||
+        this.selectedPaymentStatus ||
+        undefined,
+      customerId: this.isCustomer
+        ? Number(this.customerId) // Restrict to customer's own invoices
+        : this.moreFiltersForm.get('customerId')?.value || undefined,
+      taxType: this.isAdmin
+        ? this.moreFiltersForm.get('taxType')?.value || undefined
+        : undefined,
+      minAmount: this.isAdmin
+        ? this.moreFiltersForm.get('minAmount')?.value || undefined
+        : undefined,
+      maxAmount: this.isAdmin
+        ? this.moreFiltersForm.get('maxAmount')?.value || undefined
+        : undefined,
+      invoiceNumberFrom: this.isAdmin
+        ? this.moreFiltersForm.get('invoiceNumberFrom')?.value || undefined
+        : undefined,
+      invoiceNumberTo: this.isAdmin
+        ? this.moreFiltersForm.get('invoiceNumberTo')?.value || undefined
+        : undefined,
+      issueDateFrom: this.isAdmin
+        ? this.moreFiltersForm.get('issueDateFrom')?.value
+          ? new Date(this.moreFiltersForm.get('issueDateFrom')?.value).toISOString()
+          : undefined
+        : undefined,
+      issueDateTo: this.isAdmin
+        ? this.moreFiltersForm.get('issueDateTo')?.value
+          ? new Date(this.moreFiltersForm.get('issueDateTo')?.value).toISOString()
+          : undefined
+        : undefined,
+      dueDateFrom: this.isAdmin
+        ? this.moreFiltersForm.get('dueDateFrom')?.value
+          ? new Date(this.moreFiltersForm.get('dueDateFrom')?.value).toISOString()
+          : undefined
+        : undefined,
+      dueDateTo: this.isAdmin
+        ? this.moreFiltersForm.get('dueDateTo')?.value
+          ? new Date(this.moreFiltersForm.get('dueDateTo')?.value).toISOString()
+          : undefined
+        : undefined,
+    };
+
+    this.invoiceService.getPagedInvoices(filter).subscribe({
+      next: (result: PaginatedResult<Invoice>) => {
+        // this.invoices = result.items;
+        this.invoices = result.items.map((item) => ({
+          ...item,
+          customerName: item.customer?.name || 'Unknown Customer', // Map customer.name to customerName
+          issueDate: new Date(item.issueDate),
+          dueDate: new Date(item.dueDate),
+        }));
+        this.totalItems = result.totalCount;
+        this.totalPages = Math.ceil(result.totalCount / this.itemsPerPage);
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error fetching invoices:', error);
+        this.isLoading = false;
+      },
+    });
   }
 
   getInitials(name: string): string {
@@ -289,7 +275,7 @@ export class InvoiceComponent implements OnInit {
       .substring(0, 2);
   }
 
-  getAvatarColor(name: string): string {
+  getAvatarColor(name: string | undefined): string {
     const colors = [
       '#FF2E63',
       '#00D4B9',
@@ -299,9 +285,11 @@ export class InvoiceComponent implements OnInit {
       '#8A2BE2',
       '#4B0082',
     ];
+    const fallbackName = name || 'Unknown';
     const index =
-      name.split('').reduce((sum, char) => sum + char.charCodeAt(0), 0) %
-      colors.length;
+      fallbackName
+        .split('')
+        .reduce((sum, char) => sum + char.charCodeAt(0), 0) % colors.length;
     return colors[index];
   }
 
@@ -593,17 +581,17 @@ export class InvoiceComponent implements OnInit {
 
   onExport(format: 'excel' | 'pdf'): void {
     this.exportingFormat = format;
+     const filter: InvoiceFilter = {
+      pageNumber: this.currentPage,
+      pageSize: this.itemsPerPage,
+      search: this.searchTerm || undefined,
+      invoiceStatus: this.selectedInvoiceStatus || undefined,
+      paymentStatus: this.selectedPaymentStatus || undefined,
+      customerId: this.isCustomer ? Number(this.customerId) : undefined,
+    };
     if (format === 'excel') {
       this.invoiceService
-        .exportInvoicesExcel(
-          this.currentPage,
-          this.itemsPerPage,
-          this.searchTerm,
-          this.selectedInvoiceStatus === 'All'
-            ? null
-            : this.selectedInvoiceStatus,
-          this.selectedPaymentStatus
-        )
+        .exportInvoicesExcel(filter)
         .subscribe({
           next: (blob) => {
             const url = window.URL.createObjectURL(blob);
@@ -633,15 +621,7 @@ export class InvoiceComponent implements OnInit {
         });
     } else if (format === 'pdf') {
       this.invoiceService
-        .exportInvoicesPdf(
-          this.currentPage,
-          this.itemsPerPage,
-          this.searchTerm,
-          this.selectedInvoiceStatus === 'All'
-            ? null
-            : this.selectedInvoiceStatus,
-          this.selectedPaymentStatus
-        )
+        .exportInvoicesPdf(filter)
         .subscribe({
           next: (blob) => {
             const url = window.URL.createObjectURL(blob);

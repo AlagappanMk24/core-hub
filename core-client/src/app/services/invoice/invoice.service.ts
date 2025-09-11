@@ -6,6 +6,7 @@ import { AuthService } from '../auth/auth.service';
 import {
   Invoice,
   InvoiceApiResponse,
+  InvoiceFilter,
   InvoiceSettings,
   InvoiceStats,
   InvoiceUpsert,
@@ -67,77 +68,56 @@ export class InvoiceService {
     return throwError(() => new Error(message));
   }
 
-  // getPagedInvoices(
-  //   pageNumber: number,
-  //   pageSize: number,
-  //   search?: string,
-  //   status?: string | null,
-  // ): Observable<PaginatedResult<Invoice>> {
-  //   let params = new HttpParams()
-  //     .set('pageNumber', pageNumber.toString())
-  //     .set('pageSize', pageSize.toString());
-  //   if (search) {
-  //     params = params.set('search', search);
-  //   }
-  //   if (status && status !== 'All') {
-  //     params = params.set(
-  //       'status',
-  //       status === 'Open Invoice' ? 'Sent' : status
-  //     );
-  //   }
-  //   return this.http
-  //     .get<PaginatedResult<InvoiceApiResponse>>(this.apiUrl, {
-  //       headers: this.getHeaders(),
-  //       params,
-  //     })
-  //     .pipe(
-  //       map((response: PaginatedResult<InvoiceApiResponse>) => ({
-  //         ...response,
-  //         items: response.items.map((item: InvoiceApiResponse) =>
-  //           this.mapToInvoice(item)
-  //         ),
-  //       })),
-  //       catchError((error) =>
-  //         this.handleError(error, 'Failed to fetch paged invoices')
-  //       )
-  //     );
-  // }
+  getPagedInvoices(filter: {
+    pageNumber: number;
+    pageSize: number;
+    search?: string;
+    invoiceStatus?: string;
+    paymentStatus?: string;
+    customerId?: number;
+    taxType?: number;
+    minAmount?: number;
+    maxAmount?: number;
+    invoiceNumberFrom?: string;
+    invoiceNumberTo?: string;
+    issueDateFrom?: string;
+    issueDateTo?: string;
+    dueDateFrom?: string;
+    dueDateTo?: string;
+  }): Observable<PaginatedResult<Invoice>> {
+    let params = new HttpParams()
+      .set('pageNumber', filter.pageNumber.toString())
+      .set('pageSize', filter.pageSize.toString());
 
-  getPagedInvoices(
-    pageNumber: number,
-    pageSize: number,
-    search?: string,
-    params: HttpParams = new HttpParams()
-  ): Observable<PaginatedResult<Invoice>> {
-    params = params
-      .set('pageNumber', pageNumber.toString())
-      .set('pageSize', pageSize.toString());
-    if (search) {
-      params = params.set('search', search);
-    }
-    if (status && status !== 'All') {
-      params = params.set(
-        'status',
-        status === 'Open Invoice' ? 'Sent' : status
-      );
-    }
-    console.log(params, 'Params');
-    return this.http
-      .get<PaginatedResult<InvoiceApiResponse>>(this.apiUrl, {
-        headers: this.getHeaders(),
-        params,
-      })
-      .pipe(
-        map((response: PaginatedResult<InvoiceApiResponse>) => ({
-          ...response,
-          items: response.items.map((item: InvoiceApiResponse) =>
-            this.mapToInvoice(item)
-          ),
-        })),
-        catchError((error) =>
-          this.handleError(error, 'Failed to fetch paged invoices')
-        )
-      );
+    if (filter.search) params = params.set('search', filter.search);
+    if (filter.invoiceStatus)
+      params = params.set('invoiceStatus', filter.invoiceStatus);
+    if (filter.paymentStatus)
+      params = params.set('paymentStatus', filter.paymentStatus);
+    if (filter.customerId)
+      params = params.set('customerId', filter.customerId.toString());
+    if (filter.taxType)
+      params = params.set('taxType', filter.taxType.toString());
+    if (filter.minAmount)
+      params = params.set('minAmount', filter.minAmount.toString());
+    if (filter.maxAmount)
+      params = params.set('maxAmount', filter.maxAmount.toString());
+    if (filter.invoiceNumberFrom)
+      params = params.set('invoiceNumberFrom', filter.invoiceNumberFrom);
+    if (filter.invoiceNumberTo)
+      params = params.set('invoiceNumberTo', filter.invoiceNumberTo);
+    if (filter.issueDateFrom)
+      params = params.set('issueDateFrom', filter.issueDateFrom);
+    if (filter.issueDateTo)
+      params = params.set('issueDateTo', filter.issueDateTo);
+    if (filter.dueDateFrom)
+      params = params.set('dueDateFrom', filter.dueDateFrom);
+    if (filter.dueDateTo) params = params.set('dueDateTo', filter.dueDateTo);
+
+    return this.http.get<PaginatedResult<Invoice>>(this.apiUrl, {
+      headers: this.getHeaders(),
+      params,
+    });
   }
 
   getInvoiceById(id: string): Observable<Invoice> {
@@ -167,9 +147,13 @@ export class InvoiceService {
 
   createInvoice(invoice: InvoiceUpsert): Observable<{ model: number }> {
     return this.http
-      .post<{ model: number }>(this.apiUrl, invoice, {
-        headers: this.getHeaders(),
-      })
+      .post<{ model: number }>(
+        this.apiUrl,
+        { invoiceDto: invoice },
+        {
+          headers: this.getHeaders(),
+        }
+      )
       .pipe(
         catchError((error) =>
           this.handleError(error, 'Failed to create invoice')
@@ -182,9 +166,13 @@ export class InvoiceService {
       return throwError(() => new Error('Invoice ID is required for update'));
     }
     return this.http
-      .put<{ model: number }>(`${this.apiUrl}/${invoice.id}`, invoice, {
-        headers: this.getHeaders(),
-      })
+      .put<{ model: number }>(
+        `${this.apiUrl}/${invoice.id}`,
+        { invoiceDto: invoice },
+        {
+          headers: this.getHeaders(),
+        }
+      )
       .pipe(
         catchError((error) =>
           this.handleError(error, 'Failed to update invoice')
@@ -225,9 +213,9 @@ export class InvoiceService {
       );
   }
 
-  createTaxType(taxType: TaxTypeCreate): Observable<void> {
+  createTaxType(taxType: TaxTypeCreate): Observable<TaxType> {
     return this.http
-      .post<void>(`${this.apiUrl}/tax-types`, taxType, {
+      .post<TaxType>(`${this.apiUrl}/tax-types`, taxType, {
         headers: this.getHeaders(),
       })
       .pipe(
@@ -324,38 +312,52 @@ export class InvoiceService {
       );
   }
 
-  exportInvoicesExcel(
-    pageNumber: number,
-    pageSize: number,
-    search: string,
-    invoiceStatus: string | null,
-    paymentStatus: string | null
-  ): Observable<Blob> {
-    let params: any = { pageNumber, pageSize };
-    if (search) params.search = search;
-    if (invoiceStatus) params.invoiceStatus = invoiceStatus;
-    if (paymentStatus) params.paymentStatus = paymentStatus;
+  // exportInvoicesExcel(
+  //   pageNumber: number,
+  //   pageSize: number,
+  //   search: string,
+  //   invoiceStatus: string | null,
+  //   paymentStatus: string | null
+  // ): Observable<Blob> {
+  //   let params: any = { pageNumber, pageSize };
+  //   if (search) params.search = search;
+  //   if (invoiceStatus) params.invoiceStatus = invoiceStatus;
+  //   if (paymentStatus) params.paymentStatus = paymentStatus;
+  //   return this.http.get(`${this.apiUrl}/export/excel`, {
+  //     headers: this.getHeaders(),
+  //     params,
+  //     responseType: 'blob',
+  //   });
+  // }
+
+  // exportInvoicesPdf(
+  //   pageNumber: number,
+  //   pageSize: number,
+  //   search: string,
+  //   invoiceStatus: string | null,
+  //   paymentStatus: string | null
+  // ): Observable<Blob> {
+  //   let params: any = { pageNumber, pageSize };
+  //   if (search) params.search = search;
+  //   if (invoiceStatus) params.invoiceStatus = invoiceStatus;
+  //   if (paymentStatus) params.paymentStatus = paymentStatus;
+  //   return this.http.get(`${this.apiUrl}/export/pdf`, {
+  //     headers: this.getHeaders(),
+  //     params,
+  //     responseType: 'blob',
+  //   });
+  // }
+
+   exportInvoicesExcel(filter: InvoiceFilter): Observable<Blob> {
     return this.http.get(`${this.apiUrl}/export/excel`, {
-      headers: this.getHeaders(),
-      params,
+      params: { ...filter },
       responseType: 'blob',
     });
   }
 
-  exportInvoicesPdf(
-    pageNumber: number,
-    pageSize: number,
-    search: string,
-    invoiceStatus: string | null,
-    paymentStatus: string | null
-  ): Observable<Blob> {
-    let params: any = { pageNumber, pageSize };
-    if (search) params.search = search;
-    if (invoiceStatus) params.invoiceStatus = invoiceStatus;
-    if (paymentStatus) params.paymentStatus = paymentStatus;
+  exportInvoicesPdf(filter: InvoiceFilter): Observable<Blob> {
     return this.http.get(`${this.apiUrl}/export/pdf`, {
-      headers: this.getHeaders(),
-      params,
+      params: { ...filter },
       responseType: 'blob',
     });
   }

@@ -93,6 +93,7 @@ import { NotificationDialogComponent } from '../../../../components/notification
                   pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\\.[a-z]{2,}$"
                   placeholder="Recipient's email address"
                   #toInput="ngModel"
+                  readonly
                 />
                 <button
                   *ngIf="i > 0"

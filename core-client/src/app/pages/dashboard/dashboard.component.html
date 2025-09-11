@@ -1,1 +1,8 @@
-<app-dashboard-stats></app-dashboard-stats>
+<div class="min-h-screen bg-gray-100">
+  <ng-container *ngIf="isAdmin; else userDashboard">
+    <app-admin-dashboard-stats></app-admin-dashboard-stats>
+  </ng-container>
+  <ng-template #userDashboard>
+    <app-user-dashboard-stats></app-user-dashboard-stats>
+  </ng-template>
+</div>

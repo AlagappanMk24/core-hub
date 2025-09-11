@@ -1,6 +1,16 @@
 import { Component, Directive, Inject } from '@angular/core';
-import { AbstractControl, FormsModule, NG_VALIDATORS, NgForm, Validator } from '@angular/forms';
-import { MatDialogModule, MatDialogRef, MAT_DIALOG_DATA } from '@angular/material/dialog';
+import {
+  AbstractControl,
+  FormsModule,
+  NG_VALIDATORS,
+  NgForm,
+  Validator,
+} from '@angular/forms';
+import {
+  MatDialogModule,
+  MatDialogRef,
+  MAT_DIALOG_DATA,
+} from '@angular/material/dialog';
 import { MatButtonModule } from '@angular/material/button';
 import { MatInputModule } from '@angular/material/input';
 import { MatFormFieldModule } from '@angular/material/form-field';
@@ -26,34 +36,58 @@ interface CustomerFormData {
 
 @Directive({
   selector: '[appEmailValidator]',
-  providers: [{ provide: NG_VALIDATORS, useExisting: EmailValidatorDirective, multi: true }],
+  providers: [
+    {
+      provide: NG_VALIDATORS,
+      useExisting: EmailValidatorDirective,
+      multi: true,
+    },
+  ],
 })
 export class EmailValidatorDirective implements Validator {
   validate(control: AbstractControl): { [key: string]: any } | null {
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    return control.value && !emailRegex.test(control.value) ? { invalidEmail: true } : null;
+    return control.value && !emailRegex.test(control.value)
+      ? { invalidEmail: true }
+      : null;
   }
 }
 
 @Directive({
   selector: '[appPhoneValidator]',
-  providers: [{ provide: NG_VALIDATORS, useExisting: PhoneValidatorDirective, multi: true }],
+  providers: [
+    {
+      provide: NG_VALIDATORS,
+      useExisting: PhoneValidatorDirective,
+      multi: true,
+    },
+  ],
 })
 export class PhoneValidatorDirective implements Validator {
   validate(control: AbstractControl): { [key: string]: any } | null {
     const phoneRegex = /^\+?[0-9]{7,20}$/;
-    return control.value && !phoneRegex.test(control.value) ? { invalidPhone: true } : null;
+    return control.value && !phoneRegex.test(control.value)
+      ? { invalidPhone: true }
+      : null;
   }
 }
 
 @Directive({
   selector: '[appZipCodeValidator]',
-  providers: [{ provide: NG_VALIDATORS, useExisting: ZipCodeValidatorDirective, multi: true }],
+  providers: [
+    {
+      provide: NG_VALIDATORS,
+      useExisting: ZipCodeValidatorDirective,
+      multi: true,
+    },
+  ],
 })
 export class ZipCodeValidatorDirective implements Validator {
   validate(control: AbstractControl): { [key: string]: any } | null {
     const zipRegex = /^[A-Za-z0-9-]{3,10}$/;
-    return control.value && !zipRegex.test(control.value) ? { invalidZipCode: true } : null;
+    return control.value && !zipRegex.test(control.value)
+      ? { invalidZipCode: true }
+      : null;
   }
 }
 
@@ -120,13 +154,17 @@ export class CreateCustomerDialogComponent {
   }
 
   onSave(customerForm: NgForm): void {
-    console.log(customerForm, "cf");
+    console.log(customerForm, 'cf');
     if (customerForm.invalid) {
       customerForm.control.markAllAsTouched(); // Mark all fields as touched to show errors
-      this.snackBar.open('Please fill all required fields correctly.', 'Close', {
-        duration: 3000,
-        panelClass: ['error-snackbar'],
-      });
+      this.snackBar.open(
+        'Please fill all required fields correctly.',
+        'Close',
+        {
+          duration: 3000,
+          panelClass: ['error-snackbar'],
+        }
+      );
       return;
     }
 
@@ -143,8 +181,8 @@ export class CreateCustomerDialogComponent {
       zipCode: this.customer.zipCode,
     };
 
-    console.log(newCustomer, "newCustomer");
-    
+    console.log(newCustomer, 'newCustomer');
+
     this.customerService.createCustomer(newCustomer).subscribe({
       next: (response) => {
         this.isSaving = false;

@@ -1,0 +1,385 @@
+<div class="p-6">
+  <!-- Dashboard Title -->
+  <div class="flex justify-between items-center mb-6">
+    <h1 class="text-2xl font-bold text-gray-800">Invoice Dashboard</h1>
+    <span class="text-gray-500 flex items-center">
+      Overview
+      <i class="fas fa-info-circle ml-2 text-sm"></i>
+    </span>
+  </div>
+
+  <!-- Stats Cards Row -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+    <!-- Total Invoice Amount Card -->
+    <div
+      class="bg-gradient-danger text-white p-6 rounded-lg shadow-lg relative overflow-hidden stats-card"
+      style="
+        background: linear-gradient(to right, #ffbf96, #fe7096) !important;
+        padding: 2.5rem 2.5rem;
+      "
+    >
+      <div class="flex justify-between items-start">
+        <div>
+          <h3 class="text-white text-opacity-90 text-sm font-medium">
+            Total Invoice Amount
+          </h3>
+          <p class="text-3xl font-bold mt-2">${{ stats.totalInvoiceAmount | number }}</p>
+          <div class="flex items-center mt-3">
+            <i class="mdi mdi-chart-line mdi-24px float-end"></i>
+            <span class="text-sm">Increased by 8%</span>
+          </div>
+        </div>
+        <div class="text-white text-opacity-70">
+          <i class="fas fa-file-invoice-dollar text-2xl"></i>
+        </div>
+      </div>
+      <div
+        class="absolute top-0 right-0 w-20 h-20 bg-white bg-opacity-10 rounded-full -mr-10 -mt-10"
+      ></div>
+    </div>
+
+    <!-- Pending Invoices Card -->
+    <div
+      class="bg-gradient-info text-white p-6 rounded-lg shadow-lg relative overflow-hidden stats-card"
+      style="
+        background: linear-gradient(to right, #90caf9, #047edf 99%) !important;
+        padding: 2.5rem 2.5rem;
+      "
+    >
+      <div class="flex justify-between items-start">
+        <div>
+          <h3 class="text-white text-opacity-90 text-sm font-medium">
+            Pending Invoices
+          </h3>
+          <p class="text-3xl font-bold mt-2">{{ stats.pendingInvoices | number }}</p>
+          <div class="flex items-center mt-3">
+            <i class="fas fa-arrow-down text-sm mr-1"></i>
+            <span class="text-sm">Decreased by 5%</span>
+          </div>
+        </div>
+        <div class="text-white text-opacity-70">
+          <i class="fas fa-hourglass-half text-2xl"></i>
+        </div>
+      </div>
+      <div
+        class="absolute top-0 right-0 w-20 h-20 bg-white bg-opacity-10 rounded-full -mr-10 -mt-10"
+      ></div>
+    </div>
+
+    <!-- Paid Invoices Card -->
+    <div
+      class="bg-gradient-success text-white p-6 rounded-lg shadow-lg relative overflow-hidden stats-card"
+      style="
+        background: linear-gradient(to right, #84d9d2, #07cdae) !important;
+        padding: 2.5rem 2.5rem;
+      "
+    >
+      <div class="flex justify-between items-start">
+        <div>
+          <h3 class="text-white text-opacity-90 text-sm font-medium">
+            Paid Invoices
+          </h3>
+          <p class="text-3xl font-bold mt-2">{{ stats.paidInvoices | number }}</p>
+          <div class="flex items-center mt-3">
+            <i class="fas fa-arrow-up text-sm mr-1"></i>
+            <span class="text-sm">Increased by 10%</span>
+          </div>
+        </div>
+        <div class="text-white text-opacity-70">
+          <i class="fas fa-check-circle text-2xl"></i>
+        </div>
+      </div>
+      <div
+        class="absolute top-0 right-0 w-20 h-20 bg-white bg-opacity-10 rounded-full -mr-10 -mt-10"
+      ></div>
+    </div>
+  </div>
+
+  <!-- Charts Section -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <!-- Invoice Amount Trend -->
+    <div class="bg-white p-6 rounded-lg shadow-lg">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-lg font-semibold text-gray-800">
+          Invoice Amount Trend
+        </h3>
+        <div class="flex space-x-4 text-sm">
+          <div class="flex items-center">
+            <div class="w-3 h-3 bg-purple-500 rounded-full mr-2"></div>
+            <span class="text-gray-600">B2B</span>
+          </div>
+          <div class="flex items-center">
+            <div class="w-3 h-3 bg-pink-400 rounded-full mr-2"></div>
+            <span class="text-gray-600">B2C</span>
+          </div>
+          <div class="flex items-center">
+            <div class="w-3 h-3 bg-blue-400 rounded-full mr-2"></div>
+            <span class="text-gray-600">Retail</span>
+          </div>
+        </div>
+      </div>
+      <div class="h-64">
+        <canvas id="invoiceAmountChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Invoice Status Distribution -->
+    <div class="bg-white p-6 rounded-lg shadow-lg">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-lg font-semibold text-gray-800">Invoice Status Distribution</h3>
+      </div>
+      <div class="h-48 flex items-center justify-center mb-4">
+        <div class="relative w-40 h-40">
+          <canvas id="invoiceStatusChart"></canvas>
+        </div>
+      </div>
+      <div class="space-y-3">
+        <div class="flex justify-between items-center">
+          <div class="flex items-center">
+            <div class="w-3 h-3 bg-blue-400 rounded-full mr-3"></div>
+            <span class="text-gray-700 text-sm">Paid</span>
+          </div>
+          <span class="text-gray-500 font-medium text-sm">{{ (stats.paidInvoices / (stats.paidInvoices + stats.pendingInvoices + 30) * 100) | number:'1.0-0' }}%</span>
+        </div>
+        <div class="flex justify-between items-center">
+          <div class="flex items-center">
+            <div class="w-3 h-3 bg-teal-400 rounded-full mr-3"></div>
+            <span class="text-gray-700 text-sm">Pending</span>
+          </div>
+          <span class="text-gray-500 font-medium text-sm">{{ (stats.pendingInvoices / (stats.paidInvoices + stats.pendingInvoices + 30) * 100) | number:'1.0-0' }}%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Invoices Section -->
+  <div class="bg-white p-6 rounded-lg shadow-lg mb-8">
+    <h3 class="text-lg font-semibold text-gray-800 mb-6">Recent Invoices</h3>
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead>
+          <tr class="border-b border-gray-200">
+            <th class="text-left py-3 px-4 font-medium text-gray-600">Customer</th>
+            <th class="text-left py-3 px-4 font-medium text-gray-600">Invoice ID</th>
+            <th class="text-left py-3 px-4 font-medium text-gray-600">Amount</th>
+            <th class="text-left py-3 px-4 font-medium text-gray-600">Status</th>
+            <th class="text-left py-3 px-4 font-medium text-gray-600">Last Update</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr
+            *ngFor="let invoice of invoices"
+            class="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+          >
+            <td class="py-3 px-4">
+              <div class="flex items-center">
+                <img
+                  [src]="invoice.avatar"
+                  [alt]="invoice.customer"
+                  class="w-8 h-8 rounded-full mr-3"
+                />
+                <span class="text-gray-800">{{ invoice.customer }}</span>
+              </div>
+            </td>
+            <td class="py-3 px-4 text-gray-800">{{ invoice.id }}</td>
+            <td class="py-3 px-4 text-gray-800">${{ invoice.amount | number }}</td>
+            <td class="py-3 px-4">
+              <span
+                class="px-2 py-1 text-xs font-medium rounded-full text-white"
+                [ngClass]="{
+                  'bg-green-500': invoice.status === 'PAID',
+                  'bg-yellow-500': invoice.status === 'PENDING',
+                  'bg-red-500': invoice.status === 'OVERDUE'
+                }"
+              >
+                {{ invoice.status }}
+              </span>
+            </td>
+            <td class="py-3 px-4 text-gray-600">{{ invoice.lastUpdate }}</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Calendar and Recent Updates Section -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <!-- Calendar -->
+    <div class="bg-white rounded-lg shadow-lg overflow-hidden">
+      <div class="bg-teal-400 text-white p-4 flex justify-between items-center">
+        <button class="text-white hover:text-gray-200">
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <h3 class="text-lg font-semibold">June 2025</h3>
+        <button class="text-white hover:text-gray-200">
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+      <div class="p-4">
+        <div class="grid grid-cols-7 gap-1 mb-2">
+          <div class="text-center text-sm font-medium text-gray-500 py-2">Su</div>
+          <div class="text-center text-sm font-medium text-gray-500 py-2">Mo</div>
+          <div class="text-center text-sm font-medium text-gray-500 py-2">Tu</div>
+          <div class="text-center text-sm font-medium text-gray-500 py-2">We</div>
+          <div class="text-center text-sm font-medium text-gray-500 py-2">Th</div>
+          <div class="text-center text-sm font-medium text-gray-500 py-2">Fr</div>
+          <div class="text-center text-sm font-medium text-gray-500 py-2">Sa</div>
+        </div>
+        <div class="grid grid-cols-7 gap-1">
+          <div
+            *ngFor="let day of calendarDays"
+            class="text-center py-2 text-sm hover:bg-gray-100 rounded cursor-pointer"
+            [ngClass]="{
+              'bg-teal-400 text-white rounded-full': day === 4,
+              'text-gray-400': day === 0,
+              'text-gray-800': day > 0 && day !== 4
+            }"
+          >
+            {{ day || "" }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Updates -->
+    <div class="bg-white p-6 rounded-lg shadow-lg">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-gray-800">Recent Updates</h3>
+        <i class="fas fa-cog text-gray-400"></i>
+      </div>
+      <div class="mb-4">
+        <div class="flex items-center text-sm text-gray-500 mb-2">
+          <i class="fas fa-user-circle mr-2"></i>
+          <span>Jack Menqu</span>
+          <span class="mx-2">•</span>
+          <span>October 3rd, 2025</span>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-2 mb-4">
+        <img
+          src="https://demo.bootstrapdash.com/purple-admin-free/dist/themes/assets/images/dashboard/img_1.jpg"
+          alt="Update 1"
+          class="rounded-lg w-full object-cover"
+        />
+        <img
+          src="https://demo.bootstrapdash.com/purple-admin-free/dist/themes/assets/images/dashboard/img_2.jpg"
+          alt="Update 2"
+          class="rounded-lg w-full object-cover"
+        />
+        <img
+          src="https://demo.bootstrapdash.com/purple-admin-free/dist/themes/assets/images/dashboard/img_4.jpg"
+          alt="Update 3"
+          class="rounded-lg w-full object-cover"
+        />
+        <img
+          src="https://demo.bootstrapdash.com/purple-admin-free/dist/themes/assets/images/dashboard/img_3.jpg"
+          alt="Update 4"
+          class="rounded-lg w-full object-cover"
+        />
+      </div>
+      <div class="border-t pt-4">
+        <div class="flex items-center mb-2">
+          <img
+            src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
+            alt="User"
+            class="w-8 h-8 rounded-full mr-3"
+          />
+          <div>
+            <h4 class="font-medium text-gray-800">
+              Invoice INV-001 Paid
+            </h4>
+            <p class="text-sm text-gray-600">
+              Payment of $1500 received for invoice INV-001 on Dec 5, 2025.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Invoice Payment Progress and Todo List Section -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <!-- Invoice Payment Progress -->
+    <div class="bg-white p-6 rounded-lg shadow-lg">
+      <h3 class="text-lg font-semibold text-gray-800 mb-6">Invoice Payment Progress</h3>
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead>
+            <tr class="border-b border-gray-200">
+              <th class="text-left py-3 font-medium text-gray-600">Invoice ID</th>
+              <th class="text-left py-3 font-medium text-gray-600">Customer</th>
+              <th class="text-left py-3 font-medium text-gray-600">Due Date</th>
+              <th class="text-left py-3 font-medium text-gray-600">Paid</th>
+            </tr>
+        </thead>
+        <tbody>
+          <tr
+            *ngFor="let progress of invoiceProgress"
+            class="border-b border-gray-100"
+          >
+            <td class="py-3 text-gray-800">{{ progress.id }}</td>
+            <td class="py-3 text-gray-800">{{ progress.customer }}</td>
+            <td class="py-3 text-gray-600">{{ progress.dueDate }}</td>
+            <td class="py-3">
+              <div class="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  class="h-2 rounded-full"
+                  [style.width.%]="progress.paidPercentage"
+                  [style.background-color]="progress.color"
+                ></div>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+    <!-- Todo List -->
+    <div class="bg-white p-6 rounded-lg shadow-lg">
+      <h3 class="text-lg font-semibold text-gray-800 mb-6">Todo List</h3>
+      <div class="flex mb-4">
+        <input
+          type="text"
+          [(ngModel)]="newTodo"
+          placeholder="What do you need to do today?"
+          class="flex-1 px-3 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+          (keyup.enter)="addTodo()"
+        />
+        <button
+          (click)="addTodo()"
+          class="bg-purple-500 text-white px-4 py-2 rounded-r-md hover:bg-purple-600 transition-colors"
+        >
+          Add
+        </button>
+      </div>
+      <div class="space-y-3">
+        <div
+          *ngFor="let todo of todos; trackBy: trackByTodo"
+          class="flex items-center"
+        >
+          <input
+            type="checkbox"
+            [(ngModel)]="todo.completed"
+            class="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+          />
+          <span
+            class="ml-3 flex-1"
+            [ngClass]="{
+              'line-through text-gray-500': todo.completed,
+              'text-gray-800': !todo.completed
+            }"
+          >
+            {{ todo.text }}
+          </span>
+          <button
+            (click)="removeTodo(todo.id)"
+            class="text-gray-400 hover:text-red-500 ml-2"
+          >
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -31,7 +31,14 @@ export interface Invoice {
   customerName: string;
   invoiceNumber: string;
   invoiceStatus: 'Draft' | 'Sent' | 'Approved' | 'Cancelled';
-  paymentStatus: 'Pending' | 'Processing' | 'Completed' | 'PartiallyPaid' | 'Overdue' | 'Failed' | 'Refunded';
+  paymentStatus:
+    | 'Pending'
+    | 'Processing'
+    | 'Completed'
+    | 'PartiallyPaid'
+    | 'Overdue'
+    | 'Failed'
+    | 'Refunded';
   totalAmount: number;
   issueDate: Date;
   dueDate: Date;
@@ -85,7 +92,14 @@ export interface InvoiceApiResponse {
   id: string;
   invoiceNumber: string;
   invoiceStatus: 'Draft' | 'Sent' | 'Approved' | 'Cancelled';
-  paymentStatus: 'Pending' | 'Processing' | 'Completed' | 'PartiallyPaid' | 'Overdue' | 'Failed' | 'Refunded';
+  paymentStatus:
+    | 'Pending'
+    | 'Processing'
+    | 'Completed'
+    | 'PartiallyPaid'
+    | 'Overdue'
+    | 'Failed'
+    | 'Refunded';
   totalAmount: number;
   issueDate: string | Date;
   dueDate: string | Date;
@@ -163,4 +177,22 @@ export interface MoreFiltersDialogData {
     dueDateFrom: Date | null;
     dueDateTo: Date | null;
   };
+}
+
+export interface InvoiceFilter {
+  pageNumber: number;
+  pageSize: number;
+  search?: string;
+  invoiceStatus?: string;
+  paymentStatus?: string;
+  customerId?: number;
+  taxType?: number;
+  minAmount?: number;
+  maxAmount?: number;
+  invoiceNumberFrom?: string;
+  invoiceNumberTo?: string;
+  issueDateFrom?: string;
+  issueDateTo?: string;
+  dueDateFrom?: string;
+  dueDateTo?: string;
 }

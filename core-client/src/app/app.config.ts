@@ -13,8 +13,9 @@ export const appConfig: ApplicationConfig = {
     provideRouter(routes),
     provideAnimationsAsync(),
     provideClientHydration(),
-    provideHttpClient(withFetch()), provideAnimationsAsync(),
-   provideHttpClient(withFetch()),
+    provideHttpClient(withFetch()),
+    provideAnimationsAsync(),
+    provideHttpClient(withFetch()),
     {
       provide: HTTP_INTERCEPTORS,
       useClass: AuthInterceptor,

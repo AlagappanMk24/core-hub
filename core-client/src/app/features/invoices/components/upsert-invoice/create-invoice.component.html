@@ -72,9 +72,13 @@
           >
             {{ isEditMode ? "Update Invoice" : "Save and Continue" }}
           </button>
-            <button *ngIf="isEditMode" class="send-btn px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition" (click)="sendInvoice()">
-          Send Invoice
-        </button>
+          <button
+            *ngIf="isEditMode"
+            class="send-btn px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
+            (click)="sendInvoice()"
+          >
+            Send Invoice
+          </button>
         </div>
       </div>
 
@@ -82,7 +86,7 @@
         <!-- Left Panel -->
         <div class="left-panel flex-1 flex flex-col gap-6">
           <!-- Company Info -->
-          <div
+          <!-- <div
             class="company-section bg-white p-4 sm:p-6 rounded-lg shadow-sm flex justify-between items-center"
           >
             <div class="company-info flex items-center gap-4">
@@ -117,12 +121,49 @@
                 />
               </svg>
             </button>
-          </div>
+          </div> -->
 
+          <!-- Company Info -->
+          <div
+            class="company-section bg-white p-4 sm:p-6 rounded-lg shadow-sm flex justify-between items-center"
+          >
+            <div class="company-info flex items-center gap-4">
+              <div
+                class="company-logo w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-lg"
+              >
+                {{ getCompanyInitials() }}
+              </div>
+              <div class="company-details">
+                <h3 class="company-name text-lg font-semibold text-gray-800">
+                  {{ company?.name || "Loading..." }}
+                </h3>
+                <p class="company-address text-sm text-gray-600">
+                  {{ getCompanyAddress() }}
+                </p>
+              </div>
+            </div>
+            <button
+              class="dropdown-toggle p-2 rounded-full hover:bg-gray-200 transition"
+            >
+              <svg
+                class="w-4 h-4 text-gray-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </button>
+          </div>
           <!-- Invoice Section -->
           <div class="invoice-section bg-white p-4 sm:p-6 rounded-lg shadow-sm">
             <h2 class="section-title text-xl font-semibold text-gray-800 mb-4">
-              {{isEditMode ? 'Edit Invoice Details' : 'Invoice Details' }}
+              {{ isEditMode ? "Edit Invoice Details" : "Invoice Details" }}
             </h2>
             <div class="field-group mb-4">
               <label class="field-label text-sm font-medium text-gray-700"
@@ -239,7 +280,11 @@
             <div class="items-list flex flex-col gap-4 pt-4">
               <div
                 class="item-row grid grid-cols-12 gap-4 items-start py-4 border-b"
-                *ngFor="let item of invoiceData.items; let i = index"
+                *ngFor="
+                  let item of invoiceData.items;
+                  let i = index;
+                  trackBy: trackByItem
+                "
               >
                 <div
                   class="item-number col-span-1 w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-xs text-gray-600"
@@ -262,11 +307,12 @@
                     >
                       <option value="">No Tax</option>
                       <option *ngFor="let tax of taxTypes" [value]="tax.name">
-                        {{ tax.name }} 
+                        {{ tax.name }}
                       </option>
                     </select>
                     <span class="tax-amount text-sm text-gray-600">
-                      Tax Amount: {{ invoiceData.currency }} {{ item.taxAmount.toFixed(2) }}
+                      Tax Amount: {{ invoiceData.currency }}
+                      {{ item.taxAmount.toFixed(2) }}
                     </span>
                   </div>
                 </div>
@@ -275,7 +321,7 @@
                     type="number"
                     class="qty-input w-full p-2 border rounded-lg text-center focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     [(ngModel)]="item.quantity"
-                    (ngModelChange)="onItemQuantityChange()"
+                    (ngModelChange)="onItemQuantityChange(i)"
                     min="1"
                   />
                 </div>
@@ -290,7 +336,7 @@
                       type="number"
                       class="cost-input w-full p-2 border-l focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                       [(ngModel)]="item.unitPrice"
-                      (ngModelChange)="onItemCostChange()"
+                      (ngModelChange)="onItemCostChange(i)"
                       min="0"
                       step="0.01"
                     />
@@ -451,7 +497,7 @@
                         </div>
                       </div>
                     </div>
-                      <div
+                    <div
                       class="create-customer-item p-4 flex items-center gap-3 cursor-pointer hover:bg-blue-100 transition border-t"
                       (click)="openCreateCustomerDialog()"
                     >
@@ -603,7 +649,13 @@
                     (click)="selectPaymentMethod('credit_card')"
                   >
                     💳 Credit Card
-                </div>
+                  </div>
+                  <div
+                    class="option-item p-3 cursor-pointer hover:bg-gray-100 transition"
+                    (click)="selectPaymentMethod('upi')"
+                  >
+                    📱 UPI
+                  </div>
                 </div>
               </div>
               <div class="helper-text text-xs text-gray-600 mt-1">
@@ -785,8 +837,8 @@
                     [(ngModel)]="discount.isPercentage"
                     (ngModelChange)="updateDiscounts()"
                   >
-                    <option [value]="false">Fixed</option>
-                    <option [value]="true">Percentage</option>
+                    <option [ngValue]="false">Fixed</option>
+                    <option [ngValue]="true">Percentage</option>
                   </select>
                   <button
                     class="delete-discount-btn col-span-2 p-2 rounded-full hover:bg-red-100 transition"

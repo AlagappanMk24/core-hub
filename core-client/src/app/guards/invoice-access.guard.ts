@@ -1,4 +1,3 @@
-
 import { Injectable } from '@angular/core';
 import { CanActivate, Router, ActivatedRouteSnapshot, RouterStateSnapshot } from '@angular/router';
 import { AuthService } from '../services/auth/auth.service';
@@ -6,22 +5,21 @@ import { AuthService } from '../services/auth/auth.service';
 @Injectable({
   providedIn: 'root',
 })
-export class UserGuard implements CanActivate {
+export class InvoiceAccessGuard implements CanActivate {
   constructor(private authService: AuthService, private router: Router) {}
 
   canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): boolean {
-    // if (this.authService.hasRole('User') || this.authService.hasRole('Admin')) {
-    //   return true;
-    // }
-    // this.router.navigate(['/notfound']);
-    // return false;
     const user = this.authService.getUserDetail();
-    console.log('UserGuard: User details:', user); // Debug
-    if (this.authService.hasRole('User') || this.authService.hasRole('Admin')) {
-      console.log('UserGuard: Access granted for route:', state.url);
+    console.log('InvoiceAccessGuard: User details:', user);
+    if (
+      this.authService.hasRole('Admin') ||
+      this.authService.hasRole('User') ||
+      this.authService.hasRole('Customer')
+    ) {
+      console.log('InvoiceAccessGuard: Access granted for route:', state.url);
       return true;
     }
-    console.log('UserGuard: Access denied, redirecting to /notfound');
+    console.log('InvoiceAccessGuard: Access denied, redirecting to /notfound');
     this.router.navigate(['/notfound']);
     return false;
   }
