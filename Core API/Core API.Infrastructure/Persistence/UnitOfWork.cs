@@ -3,8 +3,6 @@ using Core_API.Domain.Entities.Identity;
 using Core_API.Infrastructure.Data.Context;
 using Core_API.Infrastructure.Persistence.Repositories;
 using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-
 namespace Core_API.Infrastructure.Persistence
 {
     public class UnitOfWork(CoreAPIDbContext dbContext, UserManager<ApplicationUser> userManager) : IUnitOfWork

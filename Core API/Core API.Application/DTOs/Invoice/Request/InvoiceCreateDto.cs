@@ -59,6 +59,9 @@ namespace Core_API.Application.DTOs.Invoice.Request
         [StringLength(50, ErrorMessage = "Tax type cannot exceed 50 characters")]
         public string TaxType { get; set; }
 
+        [Range(0, double.MaxValue, ErrorMessage = "Amount must be a positive value")]
+        public decimal Amount { get; set; }
+
         [Range(0, double.MaxValue, ErrorMessage = "Tax amount cannot be negative")]
         public decimal TaxAmount { get; set; }
     }

@@ -12,23 +12,26 @@ namespace Core_API.Application.Contracts.Services
         Task<OperationResult<InvoiceResponseDto>> UpdateAsync(InvoiceUpdateDto dto, OperationContext operationContext);
         Task<OperationResult<bool>> DeleteAsync(int id, OperationContext operationContext);
         Task<OperationResult<InvoiceResponseDto>> GetByIdAsync(int id, OperationContext operationContext);
+        //Task<OperationResult<PaginatedResult<InvoiceResponseDto>>> GetPagedAsync(
+        //     OperationContext operationContext,
+        //     int pageNumber,
+        //     int pageSize,
+        //     string? search = null,
+        //     string? invoiceStatus = null,
+        //     string? paymentStatus = null,
+        //     int? customerId = null,
+        //     int? taxType = null,
+        //     decimal? minAmount = null,
+        //     decimal? maxAmount = null,
+        //     string? invoiceNumberFrom = null,
+        //     string? invoiceNumberTo = null,
+        //     DateTime? issueDateFrom = null,
+        //     DateTime? issueDateTo = null,
+        //     DateTime? dueDateFrom = null,
+        //     DateTime? dueDateTo = null);
         Task<OperationResult<PaginatedResult<InvoiceResponseDto>>> GetPagedAsync(
-             OperationContext operationContext,
-             int pageNumber,
-             int pageSize,
-             string? search = null,
-             string? invoiceStatus = null,
-             string? paymentStatus = null,
-             int? customerId = null,
-             int? taxType = null,
-             decimal? minAmount = null,
-             decimal? maxAmount = null,
-             string? invoiceNumberFrom = null,
-             string? invoiceNumberTo = null,
-             DateTime? issueDateFrom = null,
-             DateTime? issueDateTo = null,
-             DateTime? dueDateFrom = null,
-             DateTime? dueDateTo = null);
+          OperationContext operationContext,
+          InvoiceFilterRequestDto filter);
         Task<OperationResult<InvoiceSettingsDto>> GetInvoiceSettingsAsync(OperationContext operationContext);
         Task<OperationResult<bool>> SendInvoiceAsync(int id, OperationContext operationContext, EmailDataDto emailData);
         Task<OperationResult<InvoiceStatsDto>> GetStatsAsync(OperationContext operationContext);

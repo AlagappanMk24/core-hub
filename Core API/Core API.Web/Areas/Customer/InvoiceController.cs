@@ -6,17 +6,16 @@ using System.Security.Claims;
 
 namespace Core_API.Web.Areas.Customer
 {
-  
-    [Route("api/customer-dashboard")]
+    [Route("api/customer")]
     [ApiController]
     [Authorize(Policy = "Customer")]
-    public class CustomerDashboardController(IInvoiceService invoiceService, ILogger<CustomerDashboardController> logger) : ControllerBase
+    public class InvoiceController(IInvoiceService invoiceService, ILogger<CustomerDashboardController> logger) : ControllerBase
     {
         private readonly IInvoiceService _invoiceService = invoiceService ?? throw new ArgumentNullException(nameof(invoiceService));
         private readonly ILogger<CustomerDashboardController> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         private OperationContext GetOperationContext()
         {
-            var customerIdClaim = User.FindFirst("customerId")?.Value; 
+            var customerIdClaim = User.FindFirst("customerId")?.Value;
             var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
 
             if (string.IsNullOrEmpty(userId))

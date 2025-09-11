@@ -7,6 +7,7 @@ using Core_API.Infrastructure.Data.Context;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
+using System.Globalization;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace Core_API.Infrastructure.Data.Initializers
@@ -82,15 +83,9 @@ namespace Core_API.Infrastructure.Data.Initializers
             var roles = new[]
             {
                 AppConstants.Role_Customer,
-                AppConstants.Role_Employee,
                 AppConstants.Role_Admin,
                 AppConstants.Role_Admin_Super,
-                AppConstants.Role_Supplier,
-                AppConstants.Role_CustomerSupport,
-                AppConstants.Role_DeliveryAgent,
-                AppConstants.Role_Manager,
-                AppConstants.Role_Vendor,
-                AppConstants.Role_Company
+                AppConstants.Role_User
             };
 
             foreach (var role in roles)
@@ -401,8 +396,8 @@ namespace Core_API.Infrastructure.Data.Initializers
                 {
                     // KL Infotech - 8 Customers
                     new() {
-                        Name = "John Doe",
-                        Email = "alagappantest@gmail.com",
+                        Name = "Alaga Muthu",
+                        Email = "alagappanmuthukumar1998@gmail.com",
                         PhoneNumber = "555-0101",
                         CompanyId = companyMap["KL Infotech"],
                         Address = new Address { Address1 = "123 Maple St", Address2 = "Apt 4B", City = "Springfield", State = "IL", Country = "USA", ZipCode = "62701" }
@@ -754,10 +749,11 @@ namespace Core_API.Infrastructure.Data.Initializers
                     try
                     {
                         var existingCustomers = await _dbContext.Customers
-                            .Select(c => c.Email)
-                            .ToListAsync(cancellationToken);
+                              .Select(c => new { c.Email, c.Id })
+                              .ToListAsync(cancellationToken);
+                        var existingCustomerEmails = existingCustomers.Select(c => c.Email).ToHashSet();
                         var newCustomers = customersToSeed
-                            .Where(c => !existingCustomers.Contains(c.Email))
+                            .Where(c => !existingCustomerEmails.Contains(c.Email))
                             .ToList();
 
                         if (newCustomers.Any())
@@ -784,23 +780,36 @@ namespace Core_API.Infrastructure.Data.Initializers
                 // Retrieve all customers for invoice seeding
                 var customers = await _dbContext.Customers
                     .ToListAsync(cancellationToken);
+
                 var customerMap = customers.ToDictionary(c => c.Email, c => c.Id);
 
-                // Seed Customer Users
-                var customerUsersToSeed = new List<(Customer Customer, ApplicationUser User)>
+                // Seed Users
+                var customerUsersToSeed = new List<(Customer Customer, ApplicationUser User, string Role)>
                 {
-                    (customers.First(c => c.Email == "alagappantest@gmail.com"), new ApplicationUser
+                    // Customer Role
+                    (customers.First(c => c.Email == "alagappanmuthukumar1998@gmail.com"), new ApplicationUser
                     {
-                        UserName = "john.doe@example.com",
-                        Email = "alagappantest@gmail.com",
-                        FullName = "John Doe",
-                        CustomerId = customerMap["alagappantest@gmail.com"],
-                        EmailConfirmed = true
-                    }),
-                    // Add more customer users as needed
+                        UserName = "alaga.muthu@example.com",
+                        Email = "alagappanmuthukumar1998@gmail.com",
+                        FullName = "Alaga Muthu",
+                        CustomerId = customerMap["alagappanmuthukumar1998@gmail.com"],
+                        EmailConfirmed = true,
+                        CompanyId = companyMap["KL Infotech"]
+                    }, AppConstants.Role_Customer),
+
+                    // User Role
+                    (customers.First(c => c.Email == "jane.smith@example.com"), new ApplicationUser
+                    {
+                        UserName = "jane.smith@example.com",
+                        Email = "jane.smith@example.com",
+                        FullName = "Jane Smith",
+                        CustomerId = customerMap["jane.smith@example.com"],
+                        EmailConfirmed = true,
+                        CompanyId = companyMap["KL Infotech"]
+                    }, AppConstants.Role_User)
                 };
 
-                foreach (var (customer, user) in customerUsersToSeed)
+                foreach (var (customer, user, role) in customerUsersToSeed)
                 {
                     var existingUser = await _userManager.FindByEmailAsync(user.Email);
                     if (existingUser != null)
@@ -809,29 +818,29 @@ namespace Core_API.Infrastructure.Data.Initializers
                         continue;
                     }
 
-                    _logger.LogInformation("Creating customer user {Email}...", user.Email);
-                    var creationResult = await _userManager.CreateAsync(user, "Customer@123"); // Use a secure password or configure as needed
+                    _logger.LogInformation("Creating user {Email} with role {Role}...", user.Email, role);
+                    var creationResult = await _userManager.CreateAsync(user, "SecurePassword@123");
                     if (!creationResult.Succeeded)
                     {
-                        _logger.LogError("Failed to create customer user {Email}", user.Email);
+                        _logger.LogError("Failed to create user {Email}", user.Email);
                         foreach (var error in creationResult.Errors)
                         {
                             _logger.LogError("User creation error: {Error}", error.Description);
                         }
-                        throw new InvalidOperationException($"Failed to create customer user {user.Email}");
+                        throw new InvalidOperationException($"Failed to create user {user.Email}");
                     }
 
-                    var roleResult = await _userManager.AddToRoleAsync(user, AppConstants.Role_Customer);
+                    var roleResult = await _userManager.AddToRoleAsync(user, role);
                     if (!roleResult.Succeeded)
                     {
-                        _logger.LogError("Failed to assign Customer role to user {Email}", user.Email);
+                        _logger.LogError("Failed to assign {Role} role to user {Email}", role, user.Email);
                         foreach (var error in roleResult.Errors)
                         {
                             _logger.LogError("Role assignment error: {Error}", error.Description);
                         }
-                        throw new InvalidOperationException($"Failed to assign Customer role to user {user.Email}");
+                        throw new InvalidOperationException($"Failed to assign {role} role to user {user.Email}");
                     }
-                    _logger.LogInformation("Successfully created customer user {Email} with Customer role.", user.Email);
+                    _logger.LogInformation("Successfully created user {Email} with {Role} role.", user.Email, role);
                 }
 
                 // Seed Invoices
@@ -842,7 +851,7 @@ namespace Core_API.Infrastructure.Data.Initializers
                         InvoiceNumber = "INV-001", PONumber = "PO-001", IssueDate = DateTime.UtcNow.AddDays(-30), PaymentDue = DateTime.UtcNow.AddDays(-15),
                         InvoiceStatus = InvoiceStatus.Approved, PaymentStatus = PaymentStatus.Completed,
                         InvoiceType = InvoiceType.Standard,
-                        CustomerId = customerMap["alagappantest@gmail.com"],
+                        CustomerId = customerMap["alagappanmuthukumar1998@gmail.com"],
                         CompanyId = companyMap["KL Infotech"],
                         Subtotal = 2950.00m, Tax =  295.00m, TotalAmount = 3095.00m, // Subtotal(2950) + Tax(295) - Discount (150) = Total Amount (3095)
                         Notes = "Payment received on time.", PaymentMethod = "Bank Transfer",
@@ -1003,7 +1012,7 @@ namespace Core_API.Infrastructure.Data.Initializers
                         InvoiceNumber = "INV-013", PONumber = "PO-013", IssueDate = DateTime.UtcNow.AddDays(-40), PaymentDue = DateTime.UtcNow.AddDays(-25),
                         InvoiceStatus = InvoiceStatus.Approved, PaymentStatus = PaymentStatus.Completed,
                         InvoiceType = InvoiceType.Standard,
-                        CustomerId = customerMap["alagappantest@gmail.com"], CompanyId = companyMap["KL Infotech"],
+                        CustomerId = customerMap["alagappanmuthukumar1998@gmail.com"], CompanyId = companyMap["KL Infotech"],
                         Subtotal = 3450.00m, Tax = 345.00m, TotalAmount = 3795.00m,
                         Notes = "Payment received in full early.", PaymentMethod = "Bank Transfer",
                         Currency = "USD",
@@ -1042,7 +1051,7 @@ namespace Core_API.Infrastructure.Data.Initializers
                         InvoiceNumber = "INV-016", PONumber = "PO-016", IssueDate = DateTime.UtcNow.AddDays(-22), PaymentDue = DateTime.UtcNow.AddDays(-5),
                         InvoiceStatus = InvoiceStatus.Sent, PaymentStatus = PaymentStatus.Pending,
                         InvoiceType = InvoiceType.Standard,
-                        CustomerId = customerMap["alagappantest@gmail.com"], CompanyId = companyMap["KL Infotech"],
+                        CustomerId = customerMap["alagappanmuthukumar1998@gmail.com"], CompanyId = companyMap["KL Infotech"],
                         Subtotal = 4000.00m, Tax = 400.00m, TotalAmount = 4400.00m,
                         Notes = "Awaiting client payment.", PaymentMethod = "PayPal",
                         Currency = "USD",
@@ -1081,7 +1090,7 @@ namespace Core_API.Infrastructure.Data.Initializers
                         InvoiceNumber = "INV-019", PONumber = "PO-019", IssueDate = DateTime.UtcNow.AddDays(-10), PaymentDue = DateTime.UtcNow.AddDays(10),
                         InvoiceStatus = InvoiceStatus.Sent, PaymentStatus = PaymentStatus.Pending,
                         InvoiceType = InvoiceType.Standard,
-                        CustomerId = customerMap["alagappantest@gmail.com"], CompanyId = companyMap["KL Infotech"],
+                        CustomerId = customerMap["alagappanmuthukumar1998@gmail.com"], CompanyId = companyMap["KL Infotech"],
                         Subtotal = 4500.00m, Tax = 450.00m, TotalAmount = 4950.00m,
                         Notes = "Awaiting final payment.", PaymentMethod = "Stripe",
                         Currency = "USD",
@@ -1121,7 +1130,7 @@ namespace Core_API.Infrastructure.Data.Initializers
                         InvoiceStatus = InvoiceStatus.Sent, PaymentStatus = PaymentStatus.Pending,
                         InvoiceType = InvoiceType.Standard,
                         CustomerId = customerMap["david.lee@example.com"], CompanyId = companyMap["KL Infotech"],
-                        Subtotal = 3600.00m, Tax = 360.00m, TotalAmount = 3960.00m,
+                        Subtotal = 7100.00m, Tax = 710.00m, TotalAmount = 7810.00m,
                         Notes = "Awaiting payment for development services.", PaymentMethod = "UPI",
                         Currency = "INR",
                         ProjectDetail = "Database Optimization & Performance Tuning", // Database Management

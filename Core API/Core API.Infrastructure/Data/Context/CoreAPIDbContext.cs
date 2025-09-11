@@ -2,7 +2,6 @@
 using Core_API.Domain.Entities;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using Core_API.Infrastructure.Data.Seeders;
 
 namespace Core_API.Infrastructure.Data.Context
 {

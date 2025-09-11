@@ -5,8 +5,10 @@ using Core_API.Application.Contracts.Persistence;
 using Core_API.Application.Contracts.Services;
 using Core_API.Application.Contracts.Services.File.Pdf;
 using Core_API.Application.DTOs.Customer.Response;
+using Core_API.Application.DTOs.Invoice.Request;
 using Core_API.Application.DTOs.Invoice.Response;
 using Core_API.Domain.Entities;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using PdfSharp.Drawing;
 using PdfSharp.Fonts;
@@ -70,7 +72,7 @@ namespace Core_API.Infrastructure.Services.File.Pdf
                 return OperationResult<InvoiceResponseDto>.FailureResult("Failed to generate invoice PDF.");
             }
         }
-        public async Task<OperationResult<byte[]>> ExportInvoicesPdfAsync(OperationContext operationContext, int pageNumber, int pageSize, string search = null, string status = null)
+        public async Task<OperationResult<byte[]>> ExportInvoicesPdfAsync(OperationContext operationContext, [FromQuery] InvoiceFilterRequestDto invoiceFilterRequestDto)
         {
             try
             {
@@ -81,7 +83,7 @@ namespace Core_API.Infrastructure.Services.File.Pdf
                     return OperationResult<byte[]>.FailureResult("Company ID is required.");
                 }
                 int companyId = operationContext.CompanyId.Value;
-                var result = await _unitOfWork.Invoices.GetPagedAsync(companyId, pageNumber, pageSize, search, status);
+                var result = await _unitOfWork.Invoices.GetPagedAsync(companyId, invoiceFilterRequestDto);
                 if (result.Items.Count == 0)
                 {
                     return OperationResult<byte[]>.FailureResult("No invoices found for export.");
@@ -369,14 +371,22 @@ namespace Core_API.Infrastructure.Services.File.Pdf
                     var address = $"{companyInfo.Address.Address1 ?? ""} {companyInfo.Address.Address2 ?? ""}".Trim();
                     if (!string.IsNullOrEmpty(address))
                     {
-                        gfx.DrawString("123 Business St, Suite 100", fontSmall, darkGrayBrush,
+                        gfx.DrawString(address, fontSmall, darkGrayBrush,
                             new XRect(margin, companyY, 250, lineHeight), XStringFormats.TopLeft);
                         companyY += lineHeight;
                     }
-                    var cityState = $"{companyInfo.Address.City ?? ""}, {companyInfo.Address.State ?? ""}".Trim(',', ' ');
-                    if (!string.IsNullOrEmpty(cityState))
+                    // This line combines the city, state, and zip code
+                    var cityStateZipForCompanySection = $"{companyInfo.Address.City ?? ""}, {companyInfo.Address.State ?? ""} {companyInfo.Address.ZipCode ?? ""}".Trim(',', ' ');
+                    if (!string.IsNullOrEmpty(cityStateZipForCompanySection))
                     {
-                        gfx.DrawString(cityState, fontSmall, darkGrayBrush,
+                        gfx.DrawString(cityStateZipForCompanySection, fontSmall, darkGrayBrush,
+                            new XRect(margin, companyY, 250, lineHeight), XStringFormats.TopLeft);
+                        companyY += lineHeight;
+                    }
+                    var country = companyInfo.Address.Country ?? "";
+                    if (!string.IsNullOrEmpty(country))
+                    {
+                        gfx.DrawString(country, fontSmall, darkGrayBrush,
                             new XRect(margin, companyY, 250, lineHeight), XStringFormats.TopLeft);
                         companyY += lineHeight;
                     }
@@ -490,8 +500,8 @@ namespace Core_API.Infrastructure.Services.File.Pdf
                 gfx.DrawString("Item Description", fontHeader, XBrushes.White,
                     new XRect(colX, tableY + 10, colWidths[0], lineHeight), XStringFormats.TopLeft);
                 colX += colWidths[0];
-                gfx.DrawString("Usage Period", fontHeader, XBrushes.White,
-                    new XRect(colX, tableY + 10, colWidths[1], lineHeight), XStringFormats.TopCenter);
+                //gfx.DrawString("Usage Period", fontHeader, XBrushes.White,
+                //    new XRect(colX, tableY + 10, colWidths[1], lineHeight), XStringFormats.TopCenter);
                 colX += colWidths[1];
                 gfx.DrawString("Qty", fontHeader, XBrushes.White,
                     new XRect(colX, tableY + 10, colWidths[2], lineHeight), XStringFormats.TopCenter);
@@ -531,8 +541,8 @@ namespace Core_API.Infrastructure.Services.File.Pdf
                     gfx.DrawString(item.Description, fontRegular, XBrushes.Black,
                         new XRect(colX, tableY + 8, colWidths[0], lineHeight), XStringFormats.TopLeft);
                     colX += colWidths[0];
-                    gfx.DrawString("Monthly", fontRegular, XBrushes.Black,
-                        new XRect(colX, tableY + 8, colWidths[1], lineHeight), XStringFormats.TopCenter);
+                    //gfx.DrawString("Monthly", fontRegular, XBrushes.Black,
+                    //    new XRect(colX, tableY + 8, colWidths[1], lineHeight), XStringFormats.TopCenter);
                     colX += colWidths[1];
                     gfx.DrawString(item.Quantity.ToString(), fontRegular, XBrushes.Black,
                         new XRect(colX, tableY + 8, colWidths[2], lineHeight), XStringFormats.TopCenter);

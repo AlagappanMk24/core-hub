@@ -16,6 +16,7 @@ namespace Core_API.Web.Controllers
         private readonly ILogger<CompanyController> _logger = logger;
 
         [HttpGet]
+        [AllowAnonymous]
         public async Task<IActionResult> GetCompanies()
         {
             try

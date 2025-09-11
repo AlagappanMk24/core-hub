@@ -2,6 +2,7 @@
 using Core_API.Application.Common.Results;
 using Core_API.Application.Contracts.Persistence;
 using Core_API.Application.Contracts.Services.File.Excel;
+using Core_API.Application.DTOs.Invoice.Request;
 using Core_API.Application.DTOs.Invoice.Response;
 using Microsoft.Extensions.Logging;
 using NPOI.SS.UserModel;
@@ -13,7 +14,7 @@ namespace Core_API.Infrastructure.Services.File.Excel
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly ILogger<ExcelService> _logger = logger;
-        public async Task<OperationResult<byte[]>> ExportInvoicesExcelAsync(OperationContext operationContext, int pageNumber, int pageSize, string search = null, string status = null)
+        public async Task<OperationResult<byte[]>> ExportInvoicesExcelAsync(OperationContext operationContext, InvoiceFilterRequestDto invoiceFilterRequestDto)
         {
             try
             {
@@ -25,7 +26,7 @@ namespace Core_API.Infrastructure.Services.File.Excel
                 }
                 int companyId = operationContext.CompanyId.Value;
 
-                var result = await _unitOfWork.Invoices.GetPagedAsync(companyId, pageNumber, pageSize, search, status);
+                var result = await _unitOfWork.Invoices.GetPagedAsync(companyId, invoiceFilterRequestDto);
 
                 if (result.Items.Count == 0)
                 {

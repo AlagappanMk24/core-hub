@@ -13,10 +13,11 @@ using Core_API.Application.DTOs.Invoice.Response;
 using Core_API.Application.Contracts.Services.File.Pdf;
 using Core_API.Domain.Models.Email;
 using Core_API.Application.DTOs.EmailDto;
+using Microsoft.AspNetCore.SignalR;
 
 namespace Core_API.Infrastructure.Services
 {
-    public class InvoiceService(IUnitOfWork unitOfWork, IPdfService pdfService, IEmailSendingService emailSendingService, ILogger<InvoiceService> logger, IMapper mapper) : IInvoiceService
+    public class InvoiceService(IUnitOfWork unitOfWork, IPdfService pdfService, IEmailSendingService emailSendingService, ILogger<InvoiceService> logger, IMapper mapper, IHubContext<NotificationHub> hubContext) : IInvoiceService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
         private readonly IPdfService _pdfService = pdfService ?? throw new ArgumentNullException(nameof(pdfService));
@@ -24,6 +25,7 @@ namespace Core_API.Infrastructure.Services
         private readonly ILogger<InvoiceService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         private readonly IMapper _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         private readonly string[] _supportedCurrencies = ["USD", "EUR", "INR"];
+        private readonly IHubContext<NotificationHub> _hubContext = hubContext ;
 
         public async Task<OperationResult<InvoiceResponseDto>> CreateAsync(InvoiceCreateDto dto, OperationContext operationContext)
         {
@@ -320,62 +322,12 @@ namespace Core_API.Infrastructure.Services
                 return OperationResult<InvoiceResponseDto>.FailureResult("Failed to retrieve invoice.");
             }
         }
-        //public async Task<OperationResult<PaginatedResult<InvoiceResponseDto>>> GetPagedAsync(OperationContext operationContext, int pageNumber, int pageSize, string search = null, string status = null)
-        //{
-        //    try
-        //    {
-        //        // Validate CompanyId
-        //        if (!operationContext.CompanyId.HasValue)
-        //        {
-        //            _logger.LogWarning("Company ID is required for retrieving paged invoices.");
-        //            return OperationResult<PaginatedResult<InvoiceResponseDto>>.FailureResult("Company ID is required.");
-        //        }
-        //        int companyId = operationContext.CompanyId.Value;
-
-        //        var result = await _unitOfWork.Invoices.GetPagedAsync(companyId, pageNumber, pageSize, search, status);
-        //        var mappedItems = new List<InvoiceResponseDto>();
-        //        foreach (var invoice in result.Items)
-        //        {
-        //            var dto = await MapToInvoiceResponseDto(invoice);
-        //            mappedItems.Add(dto);
-        //        }
-        //        var response = new PaginatedResult<InvoiceResponseDto>
-        //        {
-        //            Items = mappedItems,
-        //            TotalCount = result.TotalCount,
-        //            PageNumber = result.PageNumber,
-        //            PageSize = result.PageSize
-        //        };
-        //        return OperationResult<PaginatedResult<InvoiceResponseDto>>.SuccessResult(response);
-        //    }
-        //    catch (Exception ex)
-        //    {
-        //        _logger.LogError(ex, "Error retrieving paged invoices for company {CompanyId}", operationContext.CompanyId);
-        //        return OperationResult<PaginatedResult<InvoiceResponseDto>>.FailureResult("Failed to retrieve invoices.");
-        //    }
-        //}
-
         public async Task<OperationResult<PaginatedResult<InvoiceResponseDto>>> GetPagedAsync(
-       OperationContext operationContext,
-       int pageNumber,
-       int pageSize,
-       string? search = null,
-       string? invoiceStatus = null,
-       string? paymentStatus = null,
-       int? customerId = null,
-       int? taxType = null,
-       decimal? minAmount = null,
-       decimal? maxAmount = null,
-       string? invoiceNumberFrom = null,
-       string? invoiceNumberTo = null,
-       DateTime? issueDateFrom = null,
-       DateTime? issueDateTo = null,
-       DateTime? dueDateFrom = null,
-       DateTime? dueDateTo = null)
+           OperationContext operationContext,
+           InvoiceFilterRequestDto filter)
         {
             try
             {
-                // Validate CompanyId
                 if (!operationContext.CompanyId.HasValue)
                 {
                     _logger.LogWarning("Company ID is required for retrieving paged invoices.");
@@ -383,23 +335,7 @@ namespace Core_API.Infrastructure.Services
                 }
                 int companyId = operationContext.CompanyId.Value;
 
-                var result = await _unitOfWork.Invoices.GetPagedAsync(
-                    companyId,
-                    pageNumber,
-                    pageSize,
-                    search,
-                    invoiceStatus,
-                    paymentStatus,
-                    customerId,
-                    taxType,
-                    minAmount,
-                    maxAmount,
-                    invoiceNumberFrom,
-                    invoiceNumberTo,
-                    issueDateFrom,
-                    issueDateTo,
-                    dueDateFrom,
-                    dueDateTo);
+                var result = await _unitOfWork.Invoices.GetPagedAsync(companyId, filter);
 
                 var mappedItems = new List<InvoiceResponseDto>();
                 foreach (var invoice in result.Items)
@@ -524,6 +460,16 @@ namespace Core_API.Infrastructure.Services
                     return OperationResult<bool>.FailureResult("Invoice not found or does not belong to your company.");
                 }
 
+                // Log invoice details for debugging
+                _logger.LogDebug("Fetched invoice: Id={Id}, CustomerId={CustomerId}, InvoiceNumber={InvoiceNumber}, PaymentDue={PaymentDue}, TotalAmount={TotalAmount}",
+                    invoice.Id, invoice.CustomerId, invoice.InvoiceNumber, invoice.PaymentDue, invoice.TotalAmount);
+
+                // Validate CustomerId
+                if (invoice.CustomerId == 0)
+                {
+                    _logger.LogWarning("Invoice {InvoiceId} has an invalid CustomerId (0).", id);
+                    return OperationResult<bool>.FailureResult("Invoice has an invalid CustomerId.");
+                }
                 // Generate PDF if required
                 MemoryStream pdfStream = null;
                 if (emailData.AttachPdf)
@@ -561,7 +507,33 @@ namespace Core_API.Infrastructure.Services
                 _unitOfWork.Invoices.Update(invoice);
                 await _unitOfWork.SaveChangesAsync();
 
-                _logger.LogInformation("Invoice {InvoiceId} sent successfully to {Email} for company {CompanyId}", id, invoiceEmailRequest.Email, companyId);
+                // Send SignalR notification to the customer
+                try
+                {
+                    if (_hubContext == null)
+                    {
+                        _logger.LogWarning("SignalR hub context is null for invoice {InvoiceId}", id);
+                    }
+                    else
+                    {
+                        await _hubContext.Clients.Group(invoice.CustomerId.ToString()).SendAsync(
+                            "ReceiveInvoiceNotification",
+                            new
+                            {
+                                InvoiceId = invoice.Id,
+                                InvoiceNumber = invoice.InvoiceNumber,
+                                Message = $"New invoice {invoice.InvoiceNumber} has been sent to you."
+                            }
+                        );
+                        _logger.LogInformation("Sent SignalR notification for invoice {InvoiceId} to customer {CustomerId}", id, invoice.CustomerId);
+                    }
+                }
+                catch (Exception signalREx)
+                {
+                    _logger.LogWarning(signalREx, "Failed to send SignalR notification for invoice {InvoiceId} to customer {CustomerId}", id, invoice.CustomerId);
+                }
+
+                _logger.LogInformation("Invoice {InvoiceId} sent successfully to {Email} for company {CompanyId}", id, invoiceEmailRequest.To.FirstOrDefault(), companyId);
                 return OperationResult<bool>.SuccessResult(true);
             }
             catch (Exception ex)

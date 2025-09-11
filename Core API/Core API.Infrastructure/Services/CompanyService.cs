@@ -50,7 +50,6 @@ namespace Core_API.Infrastructure.Services
                 UpdatedAt = company.UpdatedDate
             };
         }
-
         public async Task<CompanyResponseDto> GetCompanyByIdAsync(int id)
         {
             var company = await _unitOfWork.Companies.GetByIdAsync(id);

@@ -84,7 +84,7 @@ namespace Core_API.Infrastructure.Service
             }
 
             // Assign roles: default to "User" if none specified
-            if (registerDto.Roles is null)
+            if (registerDto.Roles is null || registerDto.Roles.Count == 0 )
             {
                 await _unitOfWork.AuthUsers.AddToRoleAsync(user, "User");
             }
@@ -742,7 +742,7 @@ namespace Core_API.Infrastructure.Service
                 audience: _jwtSettings.ValidAudience,
                 claims: claims,
                 signingCredentials: signing,
-                expires: DateTime.Now.AddHours(6)
+                expires: DateTime.Now.AddHours(12)
             );
             return JwtToken;
         }

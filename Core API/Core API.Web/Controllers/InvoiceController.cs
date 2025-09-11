@@ -20,7 +20,7 @@ namespace Core_API.Web.Controllers
     /// </remarks>
     /// <param name="invoiceService">The invoice service for business logic.</param>
     /// <param name="logger">The logger for logging controller actions.</param>
-    [Route("api/[controller]")]
+    [Route("api/[controller]")] 
     [ApiController]
     [Authorize(Roles = "Admin, User, Customer")]
     public class InvoiceController(IInvoiceService invoiceService, IExcelService excelService, IPdfService pdfService, ITaxService taxService, ILogger<InvoiceController> logger) : ControllerBase
@@ -59,7 +59,6 @@ namespace Core_API.Web.Controllers
             // Create context for company-specific operations (no CustomerId)
             return new OperationContext(userId, companyId: companyId);
         }
-
 
         /// <summary>
         /// Creates a new invoice for the authenticated user's company.
@@ -388,23 +387,10 @@ namespace Core_API.Web.Controllers
         /// <summary>
         /// Retrieves a paged list of invoices for the authenticated user's company.
         /// </summary>
-        /// <param name="pageNumber">The page number (default: 1).</param>
-        /// <param name="pageSize">The number of invoices per page (default: 10).</param>
-        /// <param name="search">Optional search term to filter by invoice number or customer name.</param>
-        /// <param name="status">Optional invoice status to filter (e.g., Draft, Sent, Paid).</param>
-        /// <param name="customerId">Optional customer ID to filter invoices.</param>
-        /// <param name="taxType">Optional tax type ID to filter invoices.</param>
-        /// <param name="minAmount">Optional minimum invoice amount to filter.</param>
-        /// <param name="maxAmount">Optional maximum invoice amount to filter.</param>
-        /// <param name="invoiceNumberFrom">Optional starting invoice number for range filter.</param>
-        /// <param name="invoiceNumberTo">Optional ending invoice number for range filter.</param>
-        /// <param name="issueDateFrom">Optional start date for issue date filter.</param>
-        /// <param name="issueDateTo">Optional end date for issue date filter.</param>
-        /// <param name="dueDateFrom">Optional start date for due date filter.</param>
-        /// <param name="dueDateTo">Optional end date for due date filter.</param>
+        /// <param name="filter">The filter parameters for retrieving invoices.</param>
         /// <returns>A <see cref="PaginatedResult{InvoiceResponseDto}"/> containing the invoices.</returns>
         /// <response code="200">Invoices retrieved successfully.</response>
-        /// <response code="400">Invalid pagination parameters or retrieval failed.</response>
+        /// <response code="400">Invalid filter parameters or retrieval failed.</response>
         /// <response code="401">Unauthorized access due to invalid token.</response>
         /// <response code="500">Internal server error.</response>
         [HttpGet]
@@ -412,55 +398,26 @@ namespace Core_API.Web.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetPaged(
-                [FromQuery] int pageNumber = 1,
-            [FromQuery] int pageSize = 10,
-            [FromQuery] string? search = null,
-            [FromQuery] string? invoiceStatus = null,
-            [FromQuery] string? paymentStatus = null,
-            [FromQuery] int? customerId = null,
-            [FromQuery] int? taxType = null,
-            [FromQuery] decimal? minAmount = null,
-            [FromQuery] decimal? maxAmount = null,
-            [FromQuery] string? invoiceNumberFrom = null,
-            [FromQuery] string? invoiceNumberTo = null,
-            [FromQuery] DateTime? issueDateFrom = null,
-            [FromQuery] DateTime? issueDateTo = null,
-            [FromQuery] DateTime? dueDateFrom = null,
-            [FromQuery] DateTime? dueDateTo = null)
+        public async Task<IActionResult> GetPaged([FromQuery] InvoiceFilterRequestDto filter)
         {
             var operationContext = GetOperationContext();
             try
             {
-                if (pageNumber < 1 || pageSize < 1)
+                if (!filter.IsValid())
                 {
-                    _logger.LogWarning("Invalid pagination parameters: pageNumber={PageNumber}, pageSize={PageSize}", pageNumber, pageSize);
+                    _logger.LogWarning("Invalid filter parameters: pageNumber={PageNumber}, pageSize={PageSize}", filter.PageNumber, filter.PageSize);
                     return BadRequest(new ProblemDetails
                     {
-                        Title = "Invalid Pagination Parameters",
-                        Detail = "Page number and page size must be greater than 0.",
+                        Title = "Invalid Filter Parameters",
+                        Detail = "Page number and page size must be greater than 0, and minAmount must not exceed maxAmount.",
                         Status = StatusCodes.Status400BadRequest
                     });
                 }
 
-                _logger.LogInformation("Retrieving paged invoices for company {CompanyId}, page {PageNumber}, size {PageSize}, search: {Search}, status: {Status}", operationContext.CompanyId, pageNumber, pageSize, search ?? "none", invoiceStatus ?? "none");
+                _logger.LogInformation("Retrieving paged invoices for company {CompanyId}, page {PageNumber}, size {PageSize}, search: {Search}, status: {Status}",
+                    operationContext.CompanyId, filter.PageNumber, filter.PageSize, filter.Search ?? "none", filter.InvoiceStatus ?? "none");
 
-                var result = await _invoiceService.GetPagedAsync(operationContext,
-                    pageNumber,
-                    pageSize,
-                    search?.Trim(),
-                    invoiceStatus?.Trim(),
-                    paymentStatus?.Trim(),
-                    customerId,
-                    taxType,
-                    minAmount,
-                    maxAmount,
-                    invoiceNumberFrom?.Trim(),
-                    invoiceNumberTo?.Trim(),
-                    issueDateFrom,
-                    issueDateTo,
-                    dueDateFrom,
-                    dueDateTo);
+                var result = await _invoiceService.GetPagedAsync(operationContext, filter);
                 if (!result.IsSuccess)
                 {
                     _logger.LogWarning("Paged invoices retrieval failed: {ErrorMessage}", result.ErrorMessage);
@@ -489,21 +446,20 @@ namespace Core_API.Web.Controllers
                 });
             }
         }
-
         [HttpGet("export/excel")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> ExportExcel([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string search = null, [FromQuery] string status = null)
+        public async Task<IActionResult> ExportExcel([FromQuery] InvoiceFilterRequestDto invoiceFilterRequestDto)
         {
             var operationContext = GetOperationContext();
             try
             {
                 _logger.LogInformation("Exporting invoices to Excel for company {CompanyId}", operationContext.CompanyId);
 
-                var result = await _excelService.ExportInvoicesExcelAsync(operationContext, pageNumber, pageSize, search?.Trim(), status?.Trim());
+                var result = await _excelService.ExportInvoicesExcelAsync(operationContext, invoiceFilterRequestDto);
                 if (!result.IsSuccess)
                 {
                     _logger.LogWarning("Excel export failed: {ErrorMessage}", result.ErrorMessage);
@@ -539,14 +495,14 @@ namespace Core_API.Web.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> ExportPdf([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string search = null, [FromQuery] string status = null)
+        public async Task<IActionResult> ExportPdf([FromQuery] InvoiceFilterRequestDto invoiceFilterRequestDto)
         {
             var operationContext = GetOperationContext();
             try
             {
                 _logger.LogInformation("Exporting invoices to PDF for company {CompanyId}", operationContext.CompanyId);
 
-                var result = await _pdfService.ExportInvoicesPdfAsync(operationContext, pageNumber, pageSize, search?.Trim(), status?.Trim());
+                var result = await _pdfService.ExportInvoicesPdfAsync(operationContext, invoiceFilterRequestDto);
                 if (!result.IsSuccess)
                 {
                     _logger.LogWarning("PDF export failed: {ErrorMessage}", result.ErrorMessage);
@@ -656,7 +612,7 @@ namespace Core_API.Web.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin, User")]
         public async Task<IActionResult> GetTaxTypes()
         {
             var operationContext = GetOperationContext();

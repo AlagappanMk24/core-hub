@@ -1,30 +1,31 @@
-using Core_API.Infrastructure.Data.Context;
-using Core_API.Web.Filters;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Identity;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
-using Microsoft.OpenApi.Models;
-using Core_API.Web.Utilities;
-using Newtonsoft.Json;
-using Core_API.Application.DI;
-using Core_API.Infrastructure.DI;
-using Microsoft.AspNetCore.Authentication.Google;
 using AspNet.Security.OAuth.GitHub;
-using Core_API.Infrastructure.Shared;
-using Core_API.Domain.Entities.Identity;
-using Core_API.Infrastructure.Services.Background;
-using Core_API.Infrastructure.Data.Initializers;
 using Core_API.Application.Common.Constants;
-using Microsoft.AspNetCore.Authorization;
-using Stripe;
-using Microsoft.AspNetCore.RateLimiting;
-using System.Threading.RateLimiting;
-using Core_API.Infrastructure.RateLimiting;
 using Core_API.Application.CrossCuttingConcerns.Authorization.Handlers;
 using Core_API.Application.CrossCuttingConcerns.Authorization.Requirements;
 using Core_API.Application.CrossCuttingConcerns.Logging;
+using Core_API.Application.DI;
+using Core_API.Domain.Entities.Identity;
+using Core_API.Infrastructure;
+using Core_API.Infrastructure.Data.Context;
+using Core_API.Infrastructure.Data.Initializers;
+using Core_API.Infrastructure.DI;
+using Core_API.Infrastructure.RateLimiting;
+using Core_API.Infrastructure.Services.Background;
+using Core_API.Infrastructure.Shared;
+using Core_API.Web.Filters;
+using Core_API.Web.Utilities;
+using Microsoft.AspNetCore.Authentication.Google;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using Microsoft.OpenApi.Models;
+using Newtonsoft.Json;
+using Stripe;
+using System.Text;
+using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -108,6 +109,9 @@ void ConfigureServices(IServiceCollection services, IConfiguration configuration
 
     // Add HTTP context accessor
     services.AddHttpContextAccessor();
+
+    // Add SignalR
+    services.AddSignalR(); 
 
     // Register application and infrastructure services
     RegisterApplicationServices(services);
@@ -414,7 +418,7 @@ void ConfigureCORS(IServiceCollection services)
     services.AddCors(options =>
     {
         options.AddPolicy("AllowMyOrigin",
-            builder => builder.WithOrigins("http://localhost:4200")
+            builder => builder.WithOrigins("http://localhost:4200", "https://localhost:4200")
                               .AllowAnyHeader()
                               .AllowAnyMethod()
                               .AllowCredentials());
@@ -512,6 +516,9 @@ void ConfigureMiddleware(WebApplication app)
 
     // Map controller endpoints
     app.MapControllers();
+
+    // Map SignalR hub
+    app.MapHub<NotificationHub>("/notificationHub"); 
 
     // Seed database with initial data
     SeedDatabase();
