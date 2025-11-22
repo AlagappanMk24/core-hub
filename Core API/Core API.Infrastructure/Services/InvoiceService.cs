@@ -1,19 +1,20 @@
-﻿using Core_API.Application.Common.Results;
+﻿using AutoMapper;
+using Core_API.Application.Common.Models;
+using Core_API.Application.Common.Results;
 using Core_API.Application.Contracts.Persistence;
 using Core_API.Application.Contracts.Services;
-using Core_API.Domain.Entities;
-using Core_API.Domain.Enums;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
-using AutoMapper;
-using Core_API.Application.Common.Models;
+using Core_API.Application.Contracts.Services.File.Pdf;
 using Core_API.Application.DTOs.Customer.Response;
+using Core_API.Application.DTOs.Email;
 using Core_API.Application.DTOs.Invoice.Request;
 using Core_API.Application.DTOs.Invoice.Response;
-using Core_API.Application.Contracts.Services.File.Pdf;
+using Core_API.Domain.Entities;
+using Core_API.Domain.Enums;
 using Core_API.Domain.Models.Email;
-using Core_API.Application.DTOs.EmailDto;
 using Microsoft.AspNetCore.SignalR;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using NPOI.OpenXmlFormats.Spreadsheet;
 
 namespace Core_API.Infrastructure.Services
 {
@@ -26,7 +27,6 @@ namespace Core_API.Infrastructure.Services
         private readonly IMapper _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         private readonly string[] _supportedCurrencies = ["USD", "EUR", "INR"];
         private readonly IHubContext<NotificationHub> _hubContext = hubContext ;
-
         public async Task<OperationResult<InvoiceResponseDto>> CreateAsync(InvoiceCreateDto dto, OperationContext operationContext)
         {
             try
@@ -127,6 +127,69 @@ namespace Core_API.Infrastructure.Services
                 invoice.Tax = invoice.TaxDetails.Sum(t => t.Amount);
                 var discountAmount = invoice.Discounts.Sum(d => d.IsPercentage ? (invoice.Subtotal * d.Amount / 100) : d.Amount);
                 invoice.TotalAmount = invoice.Subtotal + invoice.Tax - discountAmount;
+
+                //// Add attachments
+                //invoice.InvoiceAttachments = dto.Attachments.Select(attachment => new InvoiceAttachment
+                //{
+                //    FileName = attachment.FileName,
+                //    FileUrl = attachment.FileUrl,
+                //    CreatedBy = operationContext.UserId,
+                //    CreatedDate = DateTime.UtcNow
+                //}).ToList();
+
+                // Handle attachments
+                invoice.InvoiceAttachments = new List<InvoiceAttachment>();
+                foreach (var attachment in dto.Attachments)
+                {
+                    if (attachment.FileContent != null)
+                    {
+                        // Validate file
+                        var allowedTypes = new[] { "image/jpeg", "image/png", "application/pdf" };
+                        if (!allowedTypes.Contains(attachment.FileContent.ContentType))
+                        {
+                            return OperationResult<InvoiceResponseDto>.FailureResult($"Invalid file type for {attachment.FileName}. Only JPEG, PNG, and PDF are allowed.");
+                        }
+                        if (attachment.FileContent.Length > 5 * 1024 * 1024) // 5MB
+                        {
+                            return OperationResult<InvoiceResponseDto>.FailureResult($"File {attachment.FileName} exceeds 5MB limit.");
+                        }
+
+                        // Generate unique file name and path
+                        var uniqueFileName = $"{Guid.NewGuid()}_{attachment.FileName}";
+                        var folderPath = Path.Combine("wwwroot", "Attachments", "Invoices", companyId.ToString(), invoice.Id.ToString());
+                        Directory.CreateDirectory(folderPath);
+                        var filePath = Path.Combine(folderPath, uniqueFileName);
+
+                        // Save file
+                        using (var stream = new FileStream(filePath, FileMode.Create))
+                        {
+                            await attachment.FileContent.CopyToAsync(stream);
+                        }
+
+                        // Generate FileUrl
+                        var fileUrl = $"/Attachments/Invoices/{companyId}/{invoice.Id}/{uniqueFileName}";
+
+                        invoice.InvoiceAttachments.Add(new InvoiceAttachment
+                        {
+                            FileName = attachment.FileName,
+                            FileUrl = fileUrl,
+                            CreatedBy = operationContext.UserId,
+                            CreatedDate = DateTime.UtcNow
+                        });
+                    }
+                    else if (attachment.Id > 0 && !string.IsNullOrEmpty(attachment.FileUrl))
+                    {
+                        // Preserve existing attachment
+                        invoice.InvoiceAttachments.Add(new InvoiceAttachment
+                        {
+                            Id = attachment.Id,
+                            FileName = attachment.FileName,
+                            FileUrl = attachment.FileUrl,
+                            CreatedBy = operationContext.UserId,
+                            CreatedDate = DateTime.UtcNow
+                        });
+                    }
+                }
 
                 await _unitOfWork.Invoices.AddAsync(invoice);
                 await _unitOfWork.SaveChangesAsync();
@@ -242,11 +305,75 @@ namespace Core_API.Infrastructure.Services
                     discount.CreatedDate = DateTime.UtcNow;
                 }
 
+                //// Update attachments
+                //invoice.InvoiceAttachments.Clear();
+                //invoice.InvoiceAttachments = dto.Attachments.Select(attachment => new InvoiceAttachment
+                //{
+                //    FileName = attachment.FileName,
+                //    FileUrl = attachment.FileUrl,
+                //    CreatedBy = operationContext.UserId,
+                //    CreatedDate = DateTime.UtcNow
+                //}).ToList();
+
                 // Recalculate totals
                 invoice.Subtotal = invoice.InvoiceItems.Sum(i => i.Amount);
                 invoice.Tax = invoice.TaxDetails.Sum(t => t.Amount);
                 var discountAmount = invoice.Discounts.Sum(d => d.IsPercentage ? (invoice.Subtotal * d.Amount / 100) : d.Amount);
                 invoice.TotalAmount = invoice.Subtotal + invoice.Tax - discountAmount;
+
+                // Handle attachments
+                invoice.InvoiceAttachments.Clear();
+                foreach (var attachment in dto.Attachments)
+                {
+                    if (attachment.FileContent != null)
+                    {
+                        // Validate file
+                        var allowedTypes = new[] { "image/jpeg", "image/png", "application/pdf" };
+                        if (!allowedTypes.Contains(attachment.FileContent.ContentType))
+                        {
+                            return OperationResult<InvoiceResponseDto>.FailureResult($"Invalid file type for {attachment.FileName}. Only JPEG, PNG, and PDF are allowed.");
+                        }
+                        if (attachment.FileContent.Length > 5 * 1024 * 1024) // 5MB
+                        {
+                            return OperationResult<InvoiceResponseDto>.FailureResult($"File {attachment.FileName} exceeds 5MB limit.");
+                        }
+
+                        // Generate unique file name and path
+                        var uniqueFileName = $"{Guid.NewGuid()}_{attachment.FileName}";
+                        var folderPath = Path.Combine("wwwroot", "Attachments", "Invoices", companyId.ToString(), invoice.Id.ToString());
+                        Directory.CreateDirectory(folderPath);
+                        var filePath = Path.Combine(folderPath, uniqueFileName);
+
+                        // Save file
+                        using (var stream = new FileStream(filePath, FileMode.Create))
+                        {
+                            await attachment.FileContent.CopyToAsync(stream);
+                        }
+
+                        // Generate FileUrl
+                        var fileUrl = $"/Attachments/Invoices/{companyId}/{invoice.Id}/{uniqueFileName}";
+
+                        invoice.InvoiceAttachments.Add(new InvoiceAttachment
+                        {
+                            FileName = attachment.FileName,
+                            FileUrl = fileUrl,
+                            CreatedBy = operationContext.UserId,
+                            CreatedDate = DateTime.UtcNow
+                        });
+                    }
+                    else if (attachment.Id > 0 && !string.IsNullOrEmpty(attachment.FileUrl))
+                    {
+                        // Preserve existing attachment
+                        invoice.InvoiceAttachments.Add(new InvoiceAttachment
+                        {
+                            Id = attachment.Id,
+                            FileName = attachment.FileName,
+                            FileUrl = attachment.FileUrl,
+                            CreatedBy = operationContext.UserId,
+                            CreatedDate = DateTime.UtcNow
+                        });
+                    }
+                }
 
                 _unitOfWork.Invoices.Update(invoice);
                 await _unitOfWork.SaveChangesAsync();
@@ -306,7 +433,7 @@ namespace Core_API.Infrastructure.Services
 
                 int companyId = operationContext.CompanyId.Value;
 
-                var invoice = await _unitOfWork.Invoices.GetAsync(i => i.Id == id && i.CompanyId == companyId && !i.IsDeleted, "Customer,InvoiceItems,TaxDetails,Discounts");
+                var invoice = await _unitOfWork.Invoices.GetAsync(i => i.Id == id && i.CompanyId == companyId && !i.IsDeleted, "Customer,InvoiceItems,TaxDetails,Discounts,InvoiceAttachments");
                 if (invoice == null)
                 {
                     return OperationResult<InvoiceResponseDto>.FailureResult("Invoice not found or does not belong to your company.");
@@ -322,9 +449,7 @@ namespace Core_API.Infrastructure.Services
                 return OperationResult<InvoiceResponseDto>.FailureResult("Failed to retrieve invoice.");
             }
         }
-        public async Task<OperationResult<PaginatedResult<InvoiceResponseDto>>> GetPagedAsync(
-           OperationContext operationContext,
-           InvoiceFilterRequestDto filter)
+        public async Task<OperationResult<PaginatedResult<InvoiceResponseDto>>> GetPagedAsync(OperationContext operationContext, InvoiceFilterRequestDto filter)
         {
             try
             {
@@ -461,8 +586,8 @@ namespace Core_API.Infrastructure.Services
                 }
 
                 // Log invoice details for debugging
-                _logger.LogDebug("Fetched invoice: Id={Id}, CustomerId={CustomerId}, InvoiceNumber={InvoiceNumber}, PaymentDue={PaymentDue}, TotalAmount={TotalAmount}",
-                    invoice.Id, invoice.CustomerId, invoice.InvoiceNumber, invoice.PaymentDue, invoice.TotalAmount);
+                _logger.LogDebug("Fetched invoice: Id={Id}, CustomerId={CustomerId}, InvoiceNumber={InvoiceNumber}, DueDate={DueDate}, TotalAmount={TotalAmount}",
+                    invoice.Id, invoice.CustomerId, invoice.InvoiceNumber, invoice.DueDate, invoice.TotalAmount);
 
                 // Validate CustomerId
                 if (invoice.CustomerId == 0)
@@ -492,7 +617,7 @@ namespace Core_API.Infrastructure.Services
                     HtmlMessage = emailData.Message,
                     InvoiceNumber = invoice.InvoiceNumber,
                     AmountDue = invoice.TotalAmount,
-                    DueDate = invoice.PaymentDue
+                    DueDate = invoice.DueDate
                 };
 
                 // Send email
@@ -546,17 +671,18 @@ namespace Core_API.Infrastructure.Services
         {
             try
             {
-                // Validate CompanyId
-                if (!operationContext.CompanyId.HasValue)
-                {
-                    _logger.LogWarning("Company ID is required for retrieving invoice stats.");
-                    return OperationResult<InvoiceStatsDto>.FailureResult("Company ID is required.");
-                }
-                int companyId = operationContext.CompanyId.Value;
+                var query = _unitOfWork.Invoices.Query().Where(i => !i.IsDeleted);
 
-                var invoices = await _unitOfWork.Invoices.Query()
-                    .Where(i => i.CompanyId == companyId && !i.IsDeleted)
-                    .ToListAsync();
+                if (operationContext.CompanyId.HasValue)
+                    query = query.Where(i => i.CompanyId == operationContext.CompanyId.Value);
+
+                if (operationContext.CustomerId.HasValue)
+                    query = query.Where(i => i.CustomerId == operationContext.CustomerId.Value);
+
+                if (!string.IsNullOrEmpty(operationContext.UserId) && operationContext.CustomerId == null) 
+                    query = query.Where(i => i.CreatedBy == operationContext.UserId);
+
+                var invoices = await query.ToListAsync();
 
                 var stats = new InvoiceStatsDto
                 {
@@ -737,6 +863,60 @@ namespace Core_API.Infrastructure.Services
             {
                 _logger.LogError(ex, "Error retrieving invoice {InvoiceId} for customer {CustomerId}", id, context.CustomerId);
                 return OperationResult<InvoiceResponseDto>.FailureResult("An error occurred while retrieving the invoice.");
+            }
+        }
+        public async Task<OperationResult<bool>> DeleteAttachmentAsync(int invoiceId, int attachmentId, OperationContext operationContext)
+        {
+            try
+            {
+                // Validate CompanyId
+                if (!operationContext.CompanyId.HasValue)
+                {
+                    _logger.LogWarning("Company ID is required for deleting an attachment.");
+                    return OperationResult<bool>.FailureResult("Company ID is required.");
+                }
+                int companyId = operationContext.CompanyId.Value;
+
+                // Fetch the invoice to ensure it exists and belongs to the company
+                var invoice = await _unitOfWork.Invoices.GetAsync(i => i.Id == invoiceId && i.CompanyId == companyId && !i.IsDeleted);
+                if (invoice == null)
+                {
+                    _logger.LogWarning("Invoice {InvoiceId} not found or does not belong to company {CompanyId}.", invoiceId, companyId);
+                    return OperationResult<bool>.FailureResult("Invoice not found or does not belong to your company.");
+                }
+
+                // Fetch the attachment
+                var attachment = await _unitOfWork.InvoiceAttachments.GetAsync(a => a.Id == attachmentId && a.InvoiceId == invoiceId && !a.IsDeleted);
+                if (attachment == null)
+                {
+                    _logger.LogWarning("Attachment {AttachmentId} not found for invoice {InvoiceId}.", attachmentId, invoiceId);
+                    return OperationResult<bool>.FailureResult("Attachment not found or does not belong to the specified invoice.");
+                }
+
+                // Delete file from storage
+                var filePath = Path.Combine("wwwroot", attachment.FileUrl.TrimStart('/'));
+                if (System.IO.File.Exists(filePath))
+                {
+                    System.IO.File.Delete(filePath);
+                }
+
+                // Perform soft delete
+                attachment.IsDeleted = true;
+                attachment.UpdatedBy = operationContext.UserId;
+                attachment.UpdatedDate = DateTime.UtcNow;
+
+                _unitOfWork.InvoiceAttachments.Update(attachment);
+                await _unitOfWork.SaveChangesAsync();
+
+                _logger.LogInformation("Attachment {AttachmentId} deleted successfully for invoice {InvoiceId} for company {CompanyId}.",
+                    attachmentId, invoiceId, companyId);
+                return OperationResult<bool>.SuccessResult(true);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting attachment {AttachmentId} for invoice {InvoiceId} for company {CompanyId}",
+                    attachmentId, invoiceId, operationContext.CompanyId);
+                return OperationResult<bool>.FailureResult("Failed to delete attachment.");
             }
         }
         private static decimal CalculateChange(List<Invoice> invoices)

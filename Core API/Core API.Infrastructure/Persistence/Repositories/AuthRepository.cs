@@ -8,17 +8,17 @@ namespace Core_API.Infrastructure.Persistence.Repositories
 {
     public class AuthRepository(CoreAPIDbContext context, UserManager<ApplicationUser> userManager) : GenericRepository<ApplicationUser>(context), IAuthRepository
     {
-        private readonly UserManager<ApplicationUser> _userManager = userManager;
+        private readonly UserManager<ApplicationUser> _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
         private readonly CoreAPIDbContext _context = context;
-        public async Task<ApplicationUser> FindByNameAsync(string name)
+        public async Task<ApplicationUser?> FindByNameAsync(string name)
         {
             return await _userManager.FindByNameAsync(name);
         }
-        public async Task<ApplicationUser> FindByEmailAsync(string email)
+        public async Task<ApplicationUser?> FindByEmailAsync(string email)
         {
             return await _userManager.FindByEmailAsync(email);
         }
-        public async Task<ApplicationUser> FindByOtpIdentifierAsync(string otpIdentifier)
+        public async Task<ApplicationUser?> FindByOtpIdentifierAsync(string otpIdentifier)
         {
             return await _context.Users.FirstOrDefaultAsync(u => u.OtpIdentifier == otpIdentifier);
         }

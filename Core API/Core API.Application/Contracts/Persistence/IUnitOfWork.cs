@@ -6,6 +6,7 @@
         IUserRepository Users { get; }
         ICustomerRepository Customers { get; }
         IInvoiceRepository Invoices { get; }
+        IInvoiceAttachmentRepository InvoiceAttachments { get; }
         ITaxTypeRepository TaxTypes { get; }
         IInvoiceSettingsRepository InvoiceSettings { get; }
         IEmailSettingsRepository EmailSettings { get; }

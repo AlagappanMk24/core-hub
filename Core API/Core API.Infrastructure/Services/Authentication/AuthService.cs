@@ -679,14 +679,14 @@ namespace Core_API.Infrastructure.Service
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.Name, user.UserName),
-                new Claim(ClaimTypes.NameIdentifier, user.Id),
-                new Claim(JwtRegisteredClaimNames.Sub, user.Id),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new Claim(JwtRegisteredClaimNames.Email, user.Email),
-                new Claim("uid", user.Id),
-                new Claim("companyId", user.CompanyId?.ToString() ?? "0"),
-                new Claim("customerId", user.CustomerId?.ToString() ?? "0")
+                new(ClaimTypes.Name, user.UserName),
+                new(ClaimTypes.NameIdentifier, user.Id),
+                new(JwtRegisteredClaimNames.Sub, user.Id),
+                new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new(JwtRegisteredClaimNames.Email, user.Email),
+                new("uid", user.Id),
+                new("companyId", user.CompanyId?.ToString() ?? "0"),
+                new("customerId", user.CustomerId?.ToString() ?? "0")
             };
 
             var roles = await _unitOfWork.AuthUsers.GetRolesAsync(user);
@@ -809,7 +809,7 @@ namespace Core_API.Infrastructure.Service
         /// Creates a refresh token for session continuity.
         /// </summary>
         /// <returns>A <see cref="RefreshToken"/> with a random token and expiry.</returns>
-        private RefreshToken CreateRefreshToken()
+        private static RefreshToken CreateRefreshToken()
         {
             var randomNumber = new byte[32];
             using var generator = new RNGCryptoServiceProvider();
@@ -827,7 +827,7 @@ namespace Core_API.Infrastructure.Service
         /// Generates a 6-digit random OTP.
         /// </summary>
         /// <returns>A 6-digit OTP as a string.</returns>
-        private string GenerateOtp()
+        private static string GenerateOtp()
         {
             var random = new Random();
             return random.Next(100000, 999999).ToString(); // 6-digit OTP

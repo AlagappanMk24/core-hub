@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Core_API.Infrastructure.Migrations
 {
     [DbContext(typeof(CoreAPIDbContext))]
-    [Migration("20250906073253_InitialMigration")]
+    [Migration("20250930072754_InitialMigration")]
     partial class InitialMigration
     {
         /// <inheritdoc />
@@ -434,6 +434,9 @@ namespace Core_API.Infrastructure.Migrations
                     b.Property<int>("CustomerId")
                         .HasColumnType("int");
 
+                    b.Property<DateTime>("DueDate")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("InvoiceNumber")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -462,9 +465,6 @@ namespace Core_API.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
-
-                    b.Property<DateTime>("PaymentDue")
-                        .HasColumnType("datetime2");
 
                     b.Property<string>("PaymentMethod")
                         .HasMaxLength(100)
@@ -504,6 +504,47 @@ namespace Core_API.Infrastructure.Migrations
                     b.ToTable("Invoices");
                 });
 
+            modelBuilder.Entity("Core_API.Domain.Entities.InvoiceAttachment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CreatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("FileUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("InvoiceId")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("UpdatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InvoiceId");
+
+                    b.ToTable("InvoiceAttachments");
+                });
+
             modelBuilder.Entity("Core_API.Domain.Entities.InvoiceItem", b =>
                 {
                     b.Property<int>("Id")
@@ -539,7 +580,6 @@ namespace Core_API.Infrastructure.Migrations
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<string>("TaxType")
-                        .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
@@ -1058,6 +1098,17 @@ namespace Core_API.Infrastructure.Migrations
                     b.Navigation("Customer");
                 });
 
+            modelBuilder.Entity("Core_API.Domain.Entities.InvoiceAttachment", b =>
+                {
+                    b.HasOne("Core_API.Domain.Entities.Invoice", "Invoice")
+                        .WithMany("InvoiceAttachments")
+                        .HasForeignKey("InvoiceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Invoice");
+                });
+
             modelBuilder.Entity("Core_API.Domain.Entities.InvoiceItem", b =>
                 {
                     b.HasOne("Core_API.Domain.Entities.Invoice", "Invoice")
@@ -1201,6 +1252,8 @@ namespace Core_API.Infrastructure.Migrations
             modelBuilder.Entity("Core_API.Domain.Entities.Invoice", b =>
                 {
                     b.Navigation("Discounts");
+
+                    b.Navigation("InvoiceAttachments");
 
                     b.Navigation("InvoiceItems");
 

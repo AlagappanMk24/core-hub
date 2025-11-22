@@ -13,6 +13,7 @@ namespace Core_API.Infrastructure.Data.Context
         public DbSet<Customer> Customers { get; set; }
         public DbSet<Invoice> Invoices { get; set; }
         public DbSet<InvoiceItem> InvoiceItems { get; set; }
+        public DbSet<InvoiceAttachment> InvoiceAttachments { get; set; }
         public DbSet<TaxDetail> TaxDetails { get; set; }
         public DbSet<Discount> Discounts { get; set; }
         public DbSet<TaxType> TaxTypes { get; set; }

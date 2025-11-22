@@ -27,6 +27,7 @@ namespace Core_API.Application.DTOs.Invoice.Response
         public List<InvoiceItemDto> Items { get; set; }
         public List<TaxDetailDto> TaxDetails { get; set; }
         public List<DiscountDto> Discounts { get; set; }
+        public List<InvoiceAttachmentDto> InvoiceAttachments { get; set; }
         public MemoryStream PdfStream { get; set; }
     }
 }

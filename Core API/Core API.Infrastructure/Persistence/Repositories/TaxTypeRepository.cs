@@ -4,10 +4,7 @@ using Core_API.Infrastructure.Data.Context;
 
 namespace Core_API.Infrastructure.Persistence.Repositories
 {
-    public class TaxTypeRepository : GenericRepository<TaxType>, ITaxTypeRepository
+    public class TaxTypeRepository(CoreAPIDbContext dbContext) : GenericRepository<TaxType>(dbContext), ITaxTypeRepository
     {
-        public TaxTypeRepository(CoreAPIDbContext dbContext) : base(dbContext)
-        {
-        }
     }
 }

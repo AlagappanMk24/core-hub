@@ -1,4 +1,5 @@
-﻿using Core_API.Application.Contracts.Services;
+﻿using Core_API.Application.Common.Models;
+using Core_API.Application.Contracts.Services;
 using Core_API.Application.DTOs.Customer.Request;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -52,6 +53,18 @@ namespace Core_API.Web.Controllers
                 throw new UnauthorizedAccessException("User ID not found in token.");
             }
             return userId;
+        }
+
+        /// <summary>
+        /// Creates an OperationContext with userId and companyId.
+        /// </summary>
+        /// <returns>An <see cref="OperationContext"/> instance.</returns>
+        private OperationContext GetOperationContext()
+        {
+            return new OperationContext(
+                userId: GetUserId(),
+                companyId: GetCompanyId()
+            );
         }
 
         /// <summary>
@@ -307,9 +320,7 @@ namespace Core_API.Web.Controllers
         /// <summary>
         /// Retrieves a paged list of customers for the authenticated user's company.
         /// </summary>
-        /// <param name="pageNumber">The page number (default: 1).</param>
-        /// <param name="pageSize">The number of customers per page (default: 10).</param>
-        /// <param name="search">Optional search term to filter by name or email.</param>
+        /// <param name="filter">The filter parameters for pagination and search.</param>
         /// <returns>A <see cref="PaginatedResult{CustomerResponseDto}"/> containing the customers.</returns>
         /// <response code="200">Customers retrieved successfully.</response>
         /// <response code="400">Invalid pagination parameters or retrieval failed.</response>
@@ -320,25 +331,27 @@ namespace Core_API.Web.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> GetPaged([FromQuery] int pageNumber = 1, [FromQuery] int pageSize = 10, [FromQuery] string search = null)
+        public async Task<IActionResult> GetPaged([FromQuery] CustomerFilterRequestDto filter)
         {
             try
             {
-                if (pageNumber < 1 || pageSize < 1)
+                if (!filter.IsValid())
                 {
-                    _logger.LogWarning("Invalid pagination parameters: pageNumber={PageNumber}, pageSize={PageSize}", pageNumber, pageSize);
+                    _logger.LogWarning("Invalid filter parameters: pageNumber={PageNumber}, pageSize={PageSize}, status={Status}",
+                        filter.PageNumber, filter.PageSize, filter.Status ?? "none");
                     return BadRequest(new ProblemDetails
                     {
-                        Title = "Invalid Pagination Parameters",
-                        Detail = "Page number and page size must be greater than 0.",
+                        Title = "Invalid Filter Parameters",
+                        Detail = "Page number and page size must be greater than 0, and status must be 'All', 'Active', or 'Inactive'.",
                         Status = StatusCodes.Status400BadRequest
                     });
                 }
 
-                var companyId = GetCompanyId();
-                _logger.LogInformation("Retrieving paged customers for company {CompanyId}, page {PageNumber}, size {PageSize}, search: {Search}", companyId, pageNumber, pageSize, search ?? "none");
+                var operationContext = GetOperationContext();
+                _logger.LogInformation("Retrieving paged customers for company {CompanyId}, page {PageNumber}, size {PageSize}, search: {Search}, status: {Status}",
+                    operationContext.CompanyId, filter.PageNumber, filter.PageSize, filter.Search ?? "none", filter.Status ?? "none");
 
-                var result = await _customerService.GetPagedAsync(companyId, pageNumber, pageSize, search?.Trim());
+                var result = await _customerService.GetPagedAsync(operationContext, filter);
                 if (!result.IsSuccess)
                 {
                     _logger.LogWarning("Paged customers retrieval failed: {ErrorMessage}", result.ErrorMessage);
@@ -364,6 +377,186 @@ namespace Core_API.Web.Controllers
                 {
                     Title = "Internal Server Error",
                     Detail = "An unexpected error occurred while retrieving customers."
+                });
+            }
+        }
+
+        /// <summary>
+        /// Retrieves customer statistics for the authenticated user's company.
+        /// </summary>
+        /// <returns>A <see cref="CustomerStatsDto"/> containing customer statistics.</returns>
+        /// <response code="200">Statistics retrieved successfully.</response>
+        /// <response code="400">Statistics retrieval failed.</response>
+        /// <response code="401">Unauthorized access due to invalid token.</response>
+        /// <response code="500">Internal server error.</response>
+        [HttpGet("stats")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> GetStats()
+        {
+            try
+            {
+                var companyId = GetCompanyId();
+                _logger.LogInformation("Retrieving customer stats for company {CompanyId}", companyId);
+
+                var result = await _customerService.GetStatsAsync(companyId);
+                if (!result.IsSuccess)
+                {
+                    _logger.LogWarning("Customer stats retrieval failed: {ErrorMessage}", result.ErrorMessage);
+                    return BadRequest(new ProblemDetails
+                    {
+                        Title = "Customer Stats Retrieval Failed",
+                        Detail = result.ErrorMessage,
+                        Status = StatusCodes.Status400BadRequest
+                    });
+                }
+
+                return Ok(result.Data);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning(ex, "Unauthorized access during customer stats retrieval.");
+                return Unauthorized(new ProblemDetails { Title = "Unauthorized", Detail = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving customer stats for company {CompanyId}", GetCompanyId());
+                return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
+                {
+                    Title = "Internal Server Error",
+                    Detail = "An unexpected error occurred while retrieving customer stats."
+                });
+            }
+        }
+
+        /// <summary>
+        /// Exports customers to Excel based on filter parameters.
+        /// </summary>
+        /// <param name="filter">The filter parameters for exporting customers.</param>
+        /// <returns>An Excel file containing the filtered customers.</returns>
+        /// <response code="200">Excel file generated successfully.</response>
+        /// <response code="400">Invalid filter parameters or export failed.</response>
+        /// <response code="401">Unauthorized access due to invalid token.</response>
+        /// <response code="500">Internal server error.</response>
+        [HttpGet("export/excel")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> ExportExcel([FromQuery] CustomerFilterRequestDto filter)
+        {
+            try
+            {
+                if (!filter.IsValid())
+                {
+                    _logger.LogWarning("Invalid filter parameters for Excel export: search={Search}, status={Status}",
+                        filter.Search ?? "none", filter.Status ?? "none");
+                    return BadRequest(new ProblemDetails
+                    {
+                        Title = "Invalid Filter Parameters",
+                        Detail = "Invalid filter parameters for export.",
+                        Status = StatusCodes.Status400BadRequest
+                    });
+                }
+
+                var operationContext = GetOperationContext();
+                _logger.LogInformation("Exporting customers to Excel for company {CompanyId}, search: {Search}, status: {Status}",
+                    operationContext.CompanyId, filter.Search ?? "none", filter.Status ?? "none");
+
+                //var result = await _customerService.ExportExcelAsync(operationContext, filter);
+                //if (!result.IsSuccess)
+                //{
+                //    _logger.LogWarning("Excel export failed: {ErrorMessage}", result.ErrorMessage);
+                //    return BadRequest(new ProblemDetails
+                //    {
+                //        Title = "Export Failed",
+                //        Detail = result.ErrorMessage,
+                //        Status = StatusCodes.Status400BadRequest
+                //    });
+                //}
+
+                //return File(result.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "customers.xlsx");
+                return Ok();
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning(ex, "Unauthorized access during Excel export.");
+                return Unauthorized(new ProblemDetails { Title = "Unauthorized", Detail = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error exporting customers to Excel for company {CompanyId}", GetCompanyId());
+                return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
+                {
+                    Title = "Internal Server Error",
+                    Detail = "An unexpected error occurred while exporting customers."
+                });
+            }
+        }
+
+        /// <summary>
+        /// Exports customers to PDF based on filter parameters.
+        /// </summary>
+        /// <param name="filter">The filter parameters for exporting customers.</param>
+        /// <returns>A PDF file containing the filtered customers.</returns>
+        /// <response code="200">PDF file generated successfully.</response>
+        /// <response code="400">Invalid filter parameters or export failed.</response>
+        /// <response code="401">Unauthorized access due to invalid token.</response>
+        /// <response code="500">Internal server error.</response>
+        [HttpGet("export/pdf")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> ExportPdf([FromQuery] CustomerFilterRequestDto filter)
+        {
+            try
+            {
+                if (!filter.IsValid())
+                {
+                    _logger.LogWarning("Invalid filter parameters for PDF export: search={Search}, status={Status}",
+                        filter.Search ?? "none", filter.Status ?? "none");
+                    return BadRequest(new ProblemDetails
+                    {
+                        Title = "Invalid Filter Parameters",
+                        Detail = "Invalid filter parameters for export.",
+                        Status = StatusCodes.Status400BadRequest
+                    });
+                }
+
+                var operationContext = GetOperationContext();
+                _logger.LogInformation("Exporting customers to PDF for company {CompanyId}, search: {Search}, status: {Status}",
+                    operationContext.CompanyId, filter.Search ?? "none", filter.Status ?? "none");
+
+                //var result = await _customerService.ExportPdfAsync(operationContext, filter);
+                //if (!result.IsSuccess)
+                //{
+                //    _logger.LogWarning("PDF export failed: {ErrorMessage}", result.ErrorMessage);
+                //    return BadRequest(new ProblemDetails
+                //    {
+                //        Title = "Export Failed",
+                //        Detail = result.ErrorMessage,
+                //        Status = StatusCodes.Status400BadRequest
+                //    });
+                //}
+                //return File(result.Data, "application/pdf", "customers.pdf");
+                return Ok();
+               
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning(ex, "Unauthorized access during PDF export.");
+                return Unauthorized(new ProblemDetails { Title = "Unauthorized", Detail = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error exporting customers to PDF for company {CompanyId}", GetCompanyId());
+                return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
+                {
+                    Title = "Internal Server Error",
+                    Detail = "An unexpected error occurred while exporting customers."
                 });
             }
         }

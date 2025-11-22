@@ -14,6 +14,7 @@ namespace Core_API.Infrastructure.Persistence
         public IUserRepository Users => new UserRepository(_dbContext);
         public ICustomerRepository Customers => new CustomerRepository(_dbContext);
         public IInvoiceRepository Invoices => new InvoiceRepository(_dbContext);
+        public IInvoiceAttachmentRepository InvoiceAttachments => new InvoiceAttachmentRepository(_dbContext);
         public ITaxTypeRepository TaxTypes => new TaxTypeRepository(_dbContext);
         public IInvoiceSettingsRepository InvoiceSettings => new InvoiceSettingsRepository(_dbContext);
         public IEmailSettingsRepository EmailSettings => new EmailSettingsRepository(_dbContext);

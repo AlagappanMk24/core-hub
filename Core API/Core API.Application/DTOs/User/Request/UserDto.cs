@@ -1,5 +1,4 @@
 ﻿using Core_API.Domain.Exceptions;
-using Core_API.Domain.ValueObjects;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.ComponentModel.DataAnnotations;
 
@@ -24,7 +23,7 @@ namespace Core_API.Application.DTOs.User.Request
             {
                 try
                 {
-                    var validatedEmail = new Email(value);
+                    var validatedEmail = new Core_API.Domain.ValueObjects.Email(value);
                     _email = validatedEmail.ToString();
                 }
                 catch (InvalidEmailException ex)

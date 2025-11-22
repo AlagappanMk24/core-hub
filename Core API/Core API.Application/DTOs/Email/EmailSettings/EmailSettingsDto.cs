@@ -1,11 +1,10 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Core_API.Application.DTOs.EmailDto.EmailSettings
+namespace Core_API.Application.DTOs.Email.EmailSettings;
+
+public class EmailSettingsDto
 {
-    public class EmailSettingsDto
-    {
-        [Required]
-        [EmailAddress]
-        public string FromEmail { get; set; }
-    }
+    [Required]
+    [EmailAddress]
+    public string FromEmail { get; set; }
 }

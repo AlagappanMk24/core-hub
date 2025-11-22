@@ -1,7 +1,5 @@
-﻿using Core_API.Application.Common.Models;
-using Core_API.Application.Common.Results;
+﻿using Core_API.Application.Common.Results;
 using Core_API.Application.DTOs.Invoice.Request;
-using Core_API.Application.DTOs.Invoice.Response;
 using Core_API.Domain.Entities;
 
 namespace Core_API.Application.Contracts.Persistence

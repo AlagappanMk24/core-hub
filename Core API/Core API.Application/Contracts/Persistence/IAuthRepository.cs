@@ -5,9 +5,9 @@ namespace Core_API.Application.Contracts.Persistence
 {
     public interface IAuthRepository
     {
-        Task<ApplicationUser> FindByNameAsync(string name);
-        Task<ApplicationUser> FindByEmailAsync(string email);
-        Task<ApplicationUser> FindByOtpIdentifierAsync(string otpIdentifier);
+        Task<ApplicationUser?> FindByNameAsync(string name);
+        Task<ApplicationUser?> FindByEmailAsync(string email);
+        Task<ApplicationUser?> FindByOtpIdentifierAsync(string otpIdentifier);
         Task<IdentityResult> CreateUserAsync(ApplicationUser user);
         Task<IdentityResult> CreateAsync(ApplicationUser user, string password);
         Task<IdentityResult> AddExternalLoginAsync(ApplicationUser user, UserLoginInfo loginInfo);

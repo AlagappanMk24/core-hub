@@ -2,7 +2,7 @@
 using Core_API.Application.Contracts.Services;
 using Core_API.Application.Contracts.Services.File.Excel;
 using Core_API.Application.Contracts.Services.File.Pdf;
-using Core_API.Application.DTOs.EmailDto;
+using Core_API.Application.DTOs.Email;
 using Core_API.Application.DTOs.Invoice.Request;
 using Core_API.Domain.Entities;
 using Microsoft.AspNetCore.Authorization;
@@ -75,7 +75,7 @@ namespace Core_API.Web.Controllers
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [Authorize(Roles = "Admin, User")]
-        public async Task<IActionResult> Create([FromBody] InvoiceCreateDto invoiceDto)
+        public async Task<IActionResult> Create([FromForm] InvoiceCreateDto invoiceDto)
         {
             var operationContext = GetOperationContext();
             try
@@ -154,7 +154,7 @@ namespace Core_API.Web.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> Update(int id, [FromBody] InvoiceUpdateDto dto)
+        public async Task<IActionResult> Update(int id, [FromForm] InvoiceUpdateDto dto)
         {
             var operationContext = GetOperationContext();
             try
@@ -786,12 +786,53 @@ namespace Core_API.Web.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetStats()
         {
-            var operationContext = GetOperationContext();
+            var role = User.FindFirst(ClaimTypes.Role)?.Value;
+            var companyIdClaim = User.FindFirst("companyId")?.Value;
+            var customerIdClaim = User.FindFirst("customerId")?.Value;
+            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+            if (string.IsNullOrEmpty(userId))
+                return Unauthorized("User ID claim is missing.");
+
+            if (string.IsNullOrEmpty(role))
+                return Unauthorized("Role claim is missing.");
+
+            int? companyId = int.TryParse(companyIdClaim, out var cId) ? cId : null;
+            int? customerId = int.TryParse(customerIdClaim, out var custId) ? custId : null;
+
+            OperationContext context;
+
+            switch (role)
+            {
+                case "Admin":
+                    if (!companyId.HasValue)
+                        return Unauthorized("CompanyId is required for Admin.");
+                    context = new OperationContext(userId, companyId);
+                    break;
+
+                case "User":
+                    if (!companyId.HasValue)
+                        return Unauthorized("CompanyId is required for User.");
+                    context = new OperationContext(userId, companyId);
+                    break;
+
+                case "Customer":
+                    if (!companyId.HasValue || !customerId.HasValue)
+                        return Unauthorized("CompanyId and CustomerId are required for Customer.");
+                    context = new OperationContext(userId, companyId, customerId);
+                    break;
+
+                default:
+                    return Unauthorized("Unsupported role.");
+            }
+
+
+
             try
             {
-                _logger.LogInformation("Retrieving invoice stats for company {CompanyId}", operationContext.CompanyId);
+                _logger.LogInformation("Retrieving invoice stats for company {CompanyId}", context.CompanyId);
 
-                var result = await _invoiceService.GetStatsAsync(operationContext);
+                var result = await _invoiceService.GetStatsAsync(context);
                 if (!result.IsSuccess)
                 {
                     _logger.LogWarning("Stats retrieval failed: {ErrorMessage}", result.ErrorMessage);
@@ -812,7 +853,7 @@ namespace Core_API.Web.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving stats for company {CompanyId}", operationContext.CompanyId);
+                _logger.LogError(ex, "Error retrieving stats for company {CompanyId}", context.CompanyId);
                 return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
                 {
                     Title = "Internal Server Error",
@@ -1004,6 +1045,94 @@ namespace Core_API.Web.Controllers
                 {
                     Title = "Internal Server Error",
                     Detail = "Failed to generate template."
+                });
+            }
+        }
+
+        [HttpGet("{companyId}/{invoiceId}/{fileName}")]
+        public IActionResult GetAttachment(int companyId, int invoiceId, string fileName)
+        {
+            try
+            {
+                string attachmentStoragePath = Path.Combine(Directory.GetCurrentDirectory(), "Attachments", "Invoices");
+                var decodedFileName = Uri.UnescapeDataString(fileName);
+                var filePath = Path.Combine(attachmentStoragePath, companyId.ToString(), invoiceId.ToString(), decodedFileName);
+                if (!System.IO.File.Exists(filePath))
+                {
+                    return NotFound("File not found.");
+                }
+
+                var fileBytes = System.IO.File.ReadAllBytes(filePath);
+                var contentType = "application/pdf"; // Adjust based on file type
+                return File(fileBytes, contentType, decodedFileName);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Error retrieving file: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Deletes an attachment from an invoice.
+        /// </summary>
+        /// <param name="invoiceId">The ID of the invoice containing the attachment.</param>
+        /// <param name="attachmentId">The ID of the attachment to delete.</param>
+        /// <returns>No content if successful.</returns>
+        /// <response code="204">Attachment deleted successfully.</response>
+        /// <response code="400">Attachment or invoice not found, or deletion failed.</response>
+        /// <response code="401">Unauthorized access due to invalid token.</response>
+        /// <response code="500">Internal server error.</response>
+        [HttpDelete("{invoiceId}/attachments/{attachmentId}")]
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> DeleteAttachment(int invoiceId, int attachmentId)
+        {
+            var operationContext = GetOperationContext();
+            try
+            {
+                _logger.LogInformation("Deleting attachment {AttachmentId} for invoice {InvoiceId} for company {CompanyId} by user {UserId}",
+                    attachmentId, invoiceId, operationContext.CompanyId, operationContext.UserId);
+
+                var result = await _invoiceService.DeleteAttachmentAsync(invoiceId, attachmentId, operationContext);
+                if (!result.IsSuccess)
+                {
+                    _logger.LogWarning("Attachment deletion failed: {ErrorMessage}", result.ErrorMessage);
+                    return BadRequest(new ProblemDetails
+                    {
+                        Title = "Attachment Deletion Failed",
+                        Detail = result.ErrorMessage,
+                        Status = StatusCodes.Status400BadRequest
+                    });
+                }
+
+                return NoContent();
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning(ex, "Unauthorized access during attachment deletion.");
+                return Unauthorized(new ProblemDetails { Title = "Unauthorized", Detail = ex.Message });
+            }
+            catch (DbUpdateException ex)
+            {
+                _logger.LogError(ex, "Database error deleting attachment {AttachmentId} for invoice {InvoiceId} for company {CompanyId}",
+                    attachmentId, invoiceId, operationContext.CompanyId);
+                return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
+                {
+                    Title = "Database Error",
+                    Detail = "An error occurred while deleting the attachment from the database."
+                });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deleting attachment {AttachmentId} for invoice {InvoiceId} for company {CompanyId}",
+                    attachmentId, invoiceId, operationContext.CompanyId);
+                return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
+                {
+                    Title = "Internal Server Error",
+                    Detail = "An unexpected error occurred while deleting the attachment."
                 });
             }
         }

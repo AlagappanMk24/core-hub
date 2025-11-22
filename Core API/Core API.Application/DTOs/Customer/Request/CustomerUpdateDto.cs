@@ -1,10 +1,9 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace Core_API.Application.DTOs.Customer.Request
+namespace Core_API.Application.DTOs.Customer.Request;
+
+public class CustomerUpdateDto : CustomerCreateDto
 {
-    public class CustomerUpdateDto : CustomerCreateDto
-    {
-        [Required(ErrorMessage = "Customer ID is required")]
-        public int Id { get; set; }
-    }
+    [Required(ErrorMessage = "Customer ID is required")]
+    public int Id { get; set; }
 }

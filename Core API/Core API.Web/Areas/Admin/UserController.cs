@@ -10,30 +10,12 @@ namespace Core_API.Web.Areas.Admin
     [Route("api/admin/users")]
     [ApiController]
     [Authorize(Roles = "Admin")]
-    public class UserController : ControllerBase
+    public class UserController(IUserService userService,ILogger<UserController> logger,IWebHostEnvironment webHostEnvironment, IHttpContextAccessor httpContextAccessor) : ControllerBase
     {
-        private readonly IUserService _userService;
-        private readonly RoleManager<IdentityRole> _roleManager;
-        private readonly ILogger<UserController> _logger;
-        private readonly IWebHostEnvironment _webHostEnvironment;
-        private readonly IHttpContextAccessor _httpContextAccessor;
-        private readonly ICompanyService _companyService;
-
-        public UserController(
-            IUserService userService,
-            ILogger<UserController> logger,
-            RoleManager<IdentityRole> roleManager,
-            IWebHostEnvironment webHostEnvironment,
-            IHttpContextAccessor httpContextAccessor,
-            ICompanyService companyService)
-        {
-            _userService = userService;
-            _roleManager = roleManager;
-            _logger = logger;
-            _webHostEnvironment = webHostEnvironment;
-            _httpContextAccessor = httpContextAccessor;
-            _companyService = companyService;
-        }
+        private readonly IUserService _userService = userService;
+        private readonly ILogger<UserController> _logger = logger;
+        private readonly IWebHostEnvironment _webHostEnvironment = webHostEnvironment;
+        private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
 
         // GET: Fetch paginated users
         [HttpPost("get-users")]

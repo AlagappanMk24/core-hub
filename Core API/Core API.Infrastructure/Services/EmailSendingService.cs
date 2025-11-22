@@ -17,8 +17,10 @@ namespace Core_API.Infrastructure.Services
         private readonly ILogger<EmailSendingService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         public async Task SendEmailAsync(EmailRequest request)
         {
-            var message = new MimeMessage();
-            message.Sender = MailboxAddress.Parse(emailSettings.Email);
+            var message = new MimeMessage
+            {
+                Sender = MailboxAddress.Parse(emailSettings.Email)
+            };
             message.To.Add(MailboxAddress.Parse(request.Email));
             message.Subject = request.Subject;
 
@@ -33,8 +35,10 @@ namespace Core_API.Infrastructure.Services
         }
         public async Task SendWelcomeEmailAsync(WelcomeEmailRequest request)
         {
-            var message = new MimeMessage();
-            message.Sender = MailboxAddress.Parse(emailSettings.Email);
+            var message = new MimeMessage
+            {
+                Sender = MailboxAddress.Parse(emailSettings.Email)
+            };
             message.To.Add(MailboxAddress.Parse(request.Email));
             message.Subject = request.Subject;
 
@@ -49,8 +53,10 @@ namespace Core_API.Infrastructure.Services
         }
         public async Task SendOtpEmailAsync(string email, string otpCode)
         {
-            var message = new MimeMessage();
-            message.Sender = MailboxAddress.Parse(emailSettings.Email);
+            var message = new MimeMessage
+            {
+                Sender = MailboxAddress.Parse(emailSettings.Email)
+            };
             message.To.Add(MailboxAddress.Parse(email));
             message.Subject = "Your OTP Code - Angular Core Hub";
 
@@ -65,8 +71,10 @@ namespace Core_API.Infrastructure.Services
         }
         public async Task SendCleanupReportEmailAsync(CleanupReportEmailRequest request)
         {
-            var message = new MimeMessage();
-            message.Sender = MailboxAddress.Parse(emailSettings.Email);
+            var message = new MimeMessage
+            {
+                Sender = MailboxAddress.Parse(emailSettings.Email)
+            };
 
             foreach (var email in request.ToEmails)
             {
@@ -100,8 +108,10 @@ namespace Core_API.Infrastructure.Services
             try
             {
                 var fromEmail = await _emailSettingsService.GetFromEmailAsync(operationContext);
-                var message = new MimeMessage();
-                message.Sender = MailboxAddress.Parse(fromEmail);
+                var message = new MimeMessage
+                {
+                    Sender = MailboxAddress.Parse(fromEmail)
+                };
                 message.From.Add(MailboxAddress.Parse(fromEmail));
 
                 // Add multiple To recipients
@@ -242,267 +252,267 @@ namespace Core_API.Infrastructure.Services
             string logoUrl = string.IsNullOrWhiteSpace(model.LogoUrl) ? "https://angularcorehub.com/images/angularcore.png" : model.LogoUrl;
 
             return $@"
-<!DOCTYPE html>
-<html lang='en'>
-<head>
-    <meta charset='UTF-8'>
-    <meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <title>Invoice #{invoiceNumber} - Angular Core Hub</title>
-    <style>
-        body {{
-            font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            background-color: #f5f6fa;
-            color: #2d3436;
-        }}
-        .email-container {{
-            max-width: 700px;
-            width: 100%;
-            margin: 20px auto;
-            background: #ffffff;
-            border-radius: 16px;
-            overflow: hidden;
-            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
-        }}
-        .email-header {{
-            background: linear-gradient(135deg, #5b4ce0 0%, #8c7cf6 100%);
-            color: #ffffff;
-            text-align: center;
-            padding: 40px 20px;
-            position: relative;
-        }}
-        .email-header img {{
-            max-width: 160px;
-            width: 100%;
-            height: auto;
-            margin-bottom: 15px;
-            display: block;
-            margin-left: auto;
-            margin-right: auto;
-        }}
-        .email-header h1 {{
-            margin: 0;
-            font-size: 34px;
-            font-weight: 700;
-            letter-spacing: 0.5px;
-        }}
-        .email-header p {{
-            margin: 10px 0 0;
-            font-size: 16px;
-            opacity: 0.9;
-        }}
-        .email-body {{
-            padding: 30px;
-        }}
-        .invoice-details {{
-            background: #f8f9fa;
-            padding: 25px;
-            border-radius: 10px;
-            margin-bottom: 25px;
-            text-align: center;
-            border: 1px solid #dfe6e9;
-        }}
-        .invoice-details h2 {{
-            font-size: 24px;
-            color: #5b4ce0;
-            margin: 0 0 15px;
-            font-weight: 600;
-        }}
-        .invoice-details p {{
-            font-size: 16px;
-            margin: 10px 0;
-            line-height: 1.6;
-        }}
-        .highlight {{
-            font-size: 26px;
-            font-weight: bold;
-            color: #2d3436;
-            background: #dfe6e9;
-            padding: 10px 20px;
-            border-radius: 8px;
-            display: inline-block;
-        }}
-        .message-content {{
-            font-size: 16px;
-            line-height: 1.7;
-            margin: 25px 0;
-            white-space: pre-line;
-            color: #2d3436;
-            text-align: left;
-        }}
-        .btn {{
-            display: inline-block;
-            padding: 14px 30px;
-            background: linear-gradient(135deg, #5b4ce0 0%, #8c7cf6 100%);
-            color: #ffffff !important;
-            text-decoration: none;
-            border-radius: 50px;
-            font-weight: 600;
-            font-size: 16px;
-            margin: 20px auto;
-            display: block;
-            width: fit-content;
-            transition: transform 0.2s ease, opacity 0.2s ease;
-        }}
-        .btn:hover {{
-            opacity: 0.9;
-            transform: translateY(-2px);
-        }}
-        .attachment-notice {{
-            font-size: 14px;
-            color: #636e72;
-            margin-top: 20px;
-            text-align: center;
-            font-style: italic;
-        }}
-        .email-footer {{
-            text-align: center;
-            padding: 25px;
-            background: #f8f9fa;
-            font-size: 14px;
-            color: #636e72;
-            border-top: 1px solid #dfe6e9;
-        }}
-        .email-footer a {{
-            color: #5b4ce0;
-            text-decoration: none;
-            font-weight: 600;
-            margin: 0 10px;
-        }}
-        .email-footer a:hover {{
-            text-decoration: underline;
-        }}
-        /* Tablet */
-        @media (max-width: 768px) {{
-            .email-container {{
-                max-width: 90%;
-                margin: 15px auto;
-                border-radius: 12px;
-            }}
-            .email-header h1 {{
-                font-size: 28px;
-            }}
-            .email-header p {{
-                font-size: 15px;
-            }}
-            .email-body {{
-                padding: 25px;
-            }}
-            .invoice-details h2 {{
-                font-size: 22px;
-            }}
-            .highlight {{
-                font-size: 24px;
-            }}
-            .btn {{
-                padding: 12px 25px;
-                font-size: 15px;
-            }}
-        }}
-        /* Mobile */
-        @media (max-width: 480px) {{
-            .email-container {{
-                max-width: 95%;
-                margin: 10px auto;
-                border-radius: 10px;
-            }}
-            .email-header {{
-                padding: 30px 15px;
-            }}
-            .email-header h1 {{
-                font-size: 24px;
-            }}
-            .email-header p {{
-                font-size: 14px;
-            }}
-            .email-header img {{
-                max-width: 120px;
-            }}
-            .email-body {{
-                padding: 20px;
-            }}
-            .invoice-details h2 {{
-                font-size: 20px;
-            }}
-            .invoice-details p {{
-                font-size: 15px;
-            }}
-            .highlight {{
-                font-size: 20px;
-                padding: 8px 15px;
-            }}
-            .message-content {{
-                font-size: 15px;
-            }}
-            .btn {{
-                padding: 10px 20px;
-                font-size: 14px;
-            }}
-        }}
-        /* Small Mobile */
-        @media (max-width: 320px) {{
-            .email-container {{
-                max-width: 100%;
-                margin: 5px;
-                border-radius: 8px;
-            }}
-            .email-header h1 {{
-                font-size: 20px;
-            }}
-            .email-header p {{
-                font-size: 12px;
-            }}
-            .email-header img {{
-                max-width: 100px;
-            }}
-            .btn {{
-                padding: 8px 15px;
-                font-size: 13px;
-            }}
-        }}
-        @keyframes fadeIn {{
-            from {{ opacity: 0; transform: translateY(10px); }}
-            to {{ opacity: 1; transform: translateY(0); }}
-        }}
-        .invoice-details, .btn, .message-content {{
-            animation: fadeIn 0.5s ease-out;
-        }}
-    </style>
-</head>
-<body>
-    <div class='email-container'>
-        <div class='email-header'>
-            <img src='{logoUrl}' alt='Angular Core Hub Logo'>
-            <h1>Your Invoice from Angular Core Hub</h1>
-            <p>Invoice #{invoiceNumber}</p>
-        </div>
-        <div class='email-body'>
-            <div class='invoice-details'>
-                <h2>Invoice Summary</h2>
-                <p><strong>Invoice Number:</strong> #{invoiceNumber}</p>
-                <p><strong>Amount Due:</strong> <span class='highlight'>{amountDueText}</span></p>
-                <p><strong>Due Date:</strong> {dueDateText}</p>
-            </div>
-            <div class='message-content'>
-                {safeContent}
-            </div>
-            <div style='text-align: center;'>
-                <a href='https://angularcorehub.com/invoice' class='btn'>View & Pay Invoice</a>
-            </div>
-            {(model.HasAttachment ? "<div class='attachment-notice'><p>A PDF copy of your invoice is attached for your records.</p></div>" : "")}
-        </div>
-        <div class='email-footer'>
-            <p>Thank you for your business!</p>
-            <p>
-                <a href='https://angularcorehub.com'>Visit Angular Core Hub</a> |
-                <a href='https://angularcorehub.com/support'>Contact Support</a>
-            </p>
-            <p>&copy; {DateTime.Now.Year} Angular Core Hub. All rights reserved.</p>
-        </div>
-    </div>
-</body>
-</html>";
+            <!DOCTYPE html>
+            <html lang='en'>
+            <head>
+                <meta charset='UTF-8'>
+                <meta name='viewport' content='width=device-width, initial-scale=1.0'>
+                <title>Invoice #{invoiceNumber} - Angular Core Hub</title>
+                <style>
+                    body {{
+                        font-family: 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+                        margin: 0;
+                        padding: 0;
+                        background-color: #f5f6fa;
+                        color: #2d3436;
+                    }}
+                    .email-container {{
+                        max-width: 700px;
+                        width: 100%;
+                        margin: 20px auto;
+                        background: #ffffff;
+                        border-radius: 16px;
+                        overflow: hidden;
+                        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+                    }}
+                    .email-header {{
+                        background: linear-gradient(135deg, #5b4ce0 0%, #8c7cf6 100%);
+                        color: #ffffff;
+                        text-align: center;
+                        padding: 40px 20px;
+                        position: relative;
+                    }}
+                    .email-header img {{
+                        max-width: 160px;
+                        width: 100%;
+                        height: auto;
+                        margin-bottom: 15px;
+                        display: block;
+                        margin-left: auto;
+                        margin-right: auto;
+                    }}
+                    .email-header h1 {{
+                        margin: 0;
+                        font-size: 34px;
+                        font-weight: 700;
+                        letter-spacing: 0.5px;
+                    }}
+                    .email-header p {{
+                        margin: 10px 0 0;
+                        font-size: 16px;
+                        opacity: 0.9;
+                    }}
+                    .email-body {{
+                        padding: 30px;
+                    }}
+                    .invoice-details {{
+                        background: #f8f9fa;
+                        padding: 25px;
+                        border-radius: 10px;
+                        margin-bottom: 25px;
+                        text-align: center;
+                        border: 1px solid #dfe6e9;
+                    }}
+                    .invoice-details h2 {{
+                        font-size: 24px;
+                        color: #5b4ce0;
+                        margin: 0 0 15px;
+                        font-weight: 600;
+                    }}
+                    .invoice-details p {{
+                        font-size: 16px;
+                        margin: 10px 0;
+                        line-height: 1.6;
+                    }}
+                    .highlight {{
+                        font-size: 26px;
+                        font-weight: bold;
+                        color: #2d3436;
+                        background: #dfe6e9;
+                        padding: 10px 20px;
+                        border-radius: 8px;
+                        display: inline-block;
+                    }}
+                    .message-content {{
+                        font-size: 16px;
+                        line-height: 1.7;
+                        margin: 25px 0;
+                        white-space: pre-line;
+                        color: #2d3436;
+                        text-align: left;
+                    }}
+                    .btn {{
+                        display: inline-block;
+                        padding: 14px 30px;
+                        background: linear-gradient(135deg, #5b4ce0 0%, #8c7cf6 100%);
+                        color: #ffffff !important;
+                        text-decoration: none;
+                        border-radius: 50px;
+                        font-weight: 600;
+                        font-size: 16px;
+                        margin: 20px auto;
+                        display: block;
+                        width: fit-content;
+                        transition: transform 0.2s ease, opacity 0.2s ease;
+                    }}
+                    .btn:hover {{
+                        opacity: 0.9;
+                        transform: translateY(-2px);
+                    }}
+                    .attachment-notice {{
+                        font-size: 14px;
+                        color: #636e72;
+                        margin-top: 20px;
+                        text-align: center;
+                        font-style: italic;
+                    }}
+                    .email-footer {{
+                        text-align: center;
+                        padding: 25px;
+                        background: #f8f9fa;
+                        font-size: 14px;
+                        color: #636e72;
+                        border-top: 1px solid #dfe6e9;
+                    }}
+                    .email-footer a {{
+                        color: #5b4ce0;
+                        text-decoration: none;
+                        font-weight: 600;
+                        margin: 0 10px;
+                    }}
+                    .email-footer a:hover {{
+                        text-decoration: underline;
+                    }}
+                    /* Tablet */
+                    @media (max-width: 768px) {{
+                        .email-container {{
+                            max-width: 90%;
+                            margin: 15px auto;
+                            border-radius: 12px;
+                        }}
+                        .email-header h1 {{
+                            font-size: 28px;
+                        }}
+                        .email-header p {{
+                            font-size: 15px;
+                        }}
+                        .email-body {{
+                            padding: 25px;
+                        }}
+                        .invoice-details h2 {{
+                            font-size: 22px;
+                        }}
+                        .highlight {{
+                            font-size: 24px;
+                        }}
+                        .btn {{
+                            padding: 12px 25px;
+                            font-size: 15px;
+                        }}
+                    }}
+                    /* Mobile */
+                    @media (max-width: 480px) {{
+                        .email-container {{
+                            max-width: 95%;
+                            margin: 10px auto;
+                            border-radius: 10px;
+                        }}
+                        .email-header {{
+                            padding: 30px 15px;
+                        }}
+                        .email-header h1 {{
+                            font-size: 24px;
+                        }}
+                        .email-header p {{
+                            font-size: 14px;
+                        }}
+                        .email-header img {{
+                            max-width: 120px;
+                        }}
+                        .email-body {{
+                            padding: 20px;
+                        }}
+                        .invoice-details h2 {{
+                            font-size: 20px;
+                        }}
+                        .invoice-details p {{
+                            font-size: 15px;
+                        }}
+                        .highlight {{
+                            font-size: 20px;
+                            padding: 8px 15px;
+                        }}
+                        .message-content {{
+                            font-size: 15px;
+                        }}
+                        .btn {{
+                            padding: 10px 20px;
+                            font-size: 14px;
+                        }}
+                    }}
+                    /* Small Mobile */
+                    @media (max-width: 320px) {{
+                        .email-container {{
+                            max-width: 100%;
+                            margin: 5px;
+                            border-radius: 8px;
+                        }}
+                        .email-header h1 {{
+                            font-size: 20px;
+                        }}
+                        .email-header p {{
+                            font-size: 12px;
+                        }}
+                        .email-header img {{
+                            max-width: 100px;
+                        }}
+                        .btn {{
+                            padding: 8px 15px;
+                            font-size: 13px;
+                        }}
+                    }}
+                    @keyframes fadeIn {{
+                        from {{ opacity: 0; transform: translateY(10px); }}
+                        to {{ opacity: 1; transform: translateY(0); }}
+                    }}
+                    .invoice-details, .btn, .message-content {{
+                        animation: fadeIn 0.5s ease-out;
+                    }}
+                </style>
+            </head>
+            <body>
+                <div class='email-container'>
+                    <div class='email-header'>
+                        <img src='{logoUrl}' alt='Angular Core Hub Logo'>
+                        <h1>Your Invoice from Angular Core Hub</h1>
+                        <p>Invoice #{invoiceNumber}</p>
+                    </div>
+                    <div class='email-body'>
+                        <div class='invoice-details'>
+                            <h2>Invoice Summary</h2>
+                            <p><strong>Invoice Number:</strong> #{invoiceNumber}</p>
+                            <p><strong>Amount Due:</strong> <span class='highlight'>{amountDueText}</span></p>
+                            <p><strong>Due Date:</strong> {dueDateText}</p>
+                        </div>
+                        <div class='message-content'>
+                            {safeContent}
+                        </div>
+                        <div style='text-align: center;'>
+                            <a href='https://angularcorehub.com/invoice' class='btn'>View & Pay Invoice</a>
+                        </div>
+                        {(model.HasAttachment ? "<div class='attachment-notice'><p>A PDF copy of your invoice is attached for your records.</p></div>" : "")}
+                    </div>
+                    <div class='email-footer'>
+                        <p>Thank you for your business!</p>
+                        <p>
+                            <a href='https://angularcorehub.com'>Visit Angular Core Hub</a> |
+                            <a href='https://angularcorehub.com/support'>Contact Support</a>
+                        </p>
+                        <p>&copy; {DateTime.Now.Year} Angular Core Hub. All rights reserved.</p>
+                    </div>
+                </div>
+            </body>
+            </html>";
         }
         private static string CreateOtpEmailTemplate(string code)
         {

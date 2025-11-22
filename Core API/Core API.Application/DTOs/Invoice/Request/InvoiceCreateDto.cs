@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Microsoft.AspNetCore.Http;
+using System.ComponentModel.DataAnnotations;
 
 namespace Core_API.Application.DTOs.Invoice.Request
 {
@@ -31,14 +32,15 @@ namespace Core_API.Application.DTOs.Invoice.Request
         public string Notes { get; set; }
 
         [StringLength(100, ErrorMessage = "Payment method cannot exceed 100 characters")]
-        public string PaymentMethod { get; set; }
-        public string ProjectDetail { get; set; }
+        public string? PaymentMethod { get; set; }
+        public string? ProjectDetail { get; set; }
 
         [Required(ErrorMessage = "At least one invoice item is required")]
         [MinLength(1, ErrorMessage = "At least one invoice item is required")]
         public List<InvoiceItemDto> Items { get; set; } = [];
         public List<TaxDetailDto> TaxDetails { get; set; } = [];
         public List<DiscountDto> Discounts { get; set; } = [];
+        public List<InvoiceAttachmentDto> Attachments { get; set; } = [];
     }
     public class InvoiceItemDto
     {
@@ -57,7 +59,7 @@ namespace Core_API.Application.DTOs.Invoice.Request
         public decimal UnitPrice { get; set; }
 
         [StringLength(50, ErrorMessage = "Tax type cannot exceed 50 characters")]
-        public string TaxType { get; set; }
+        public string? TaxType { get; set; }
 
         [Range(0, double.MaxValue, ErrorMessage = "Amount must be a positive value")]
         public decimal Amount { get; set; }
@@ -71,7 +73,7 @@ namespace Core_API.Application.DTOs.Invoice.Request
 
         [Required(ErrorMessage = "Tax type is required")]
         [StringLength(50, ErrorMessage = "Tax type cannot exceed 50 characters")]
-        public string TaxType { get; set; }
+        public string? TaxType { get; set; }
 
         [Required(ErrorMessage = "Tax rate is required")]
         [Range(0, 100, ErrorMessage = "Tax rate must be between 0 and 100%")]
@@ -111,5 +113,12 @@ namespace Core_API.Application.DTOs.Invoice.Request
         [Required]
         [Range(0, 100)]
         public decimal Rate { get; set; }
+    }
+    public class InvoiceAttachmentDto
+    {
+        public int Id { get; set; }
+        public string FileName { get; set; }
+        public IFormFile? FileContent { get; set; } // For new attachments
+        public string? FileUrl { get; set; } // For existing attachments
     }
 }

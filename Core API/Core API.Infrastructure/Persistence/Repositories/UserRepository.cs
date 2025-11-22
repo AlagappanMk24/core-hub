@@ -8,7 +8,7 @@ namespace Core_API.Infrastructure.Persistence.Repositories
     public class UserRepository(CoreAPIDbContext dbContext) : GenericRepository<ApplicationUser>(dbContext), IUserRepository
     {
         private readonly CoreAPIDbContext _dbContext = dbContext;
-        public void Update(ApplicationUser applicationUser)
+        public new void Update(ApplicationUser applicationUser)
         {
             _dbContext.ApplicationUsers.Update(applicationUser);
         }
@@ -26,7 +26,6 @@ namespace Core_API.Infrastructure.Persistence.Repositories
                 return false;
             }
         }
-
         public async Task<ApplicationUser> GetUserByIdAsync(string id)
         {
             return await _dbContext.ApplicationUsers

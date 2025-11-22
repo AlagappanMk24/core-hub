@@ -40,7 +40,7 @@
         public CleanupReportEmailRequest()
         {
             // Default subject
-            ToEmails = new List<string>();
+            ToEmails = [];
         }
     }
 

@@ -1,6 +1,6 @@
 ﻿using Core_API.Application.Common.Models;
 using Core_API.Application.Common.Results;
-using Core_API.Application.DTOs.EmailDto;
+using Core_API.Application.DTOs.Email;
 using Core_API.Application.DTOs.Invoice.Request;
 using Core_API.Application.DTOs.Invoice.Response;
 
@@ -39,5 +39,6 @@ namespace Core_API.Application.Contracts.Services
         Task<OperationResult<string>> GetNextInvoiceNumberAsync(OperationContext operationContext);
         Task<OperationResult<PaginatedResult<InvoiceResponseDto>>> GetCustomerInvoicesAsync(OperationContext context, int pageNumber, int pageSize, string status);
         Task<OperationResult<InvoiceResponseDto>> GetCustomerInvoiceByIdAsync(int id, OperationContext context);
+        Task<OperationResult<bool>> DeleteAttachmentAsync(int invoiceId, int attachmentId, OperationContext operationContext);
     }
 }

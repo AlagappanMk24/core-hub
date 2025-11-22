@@ -75,7 +75,7 @@ namespace Core_API.Infrastructure.Services.File.Excel
                     issueDateCell.CellStyle = dateStyle;
 
                     ICell dueDateCell = dataRow.CreateCell(colIdx++);
-                    dueDateCell.SetCellValue(invoice.PaymentDue);
+                    dueDateCell.SetCellValue(invoice.DueDate);
                     dueDateCell.CellStyle = dateStyle;
 
                     dataRow.CreateCell(colIdx++).SetCellValue(invoice.InvoiceStatus.ToString());

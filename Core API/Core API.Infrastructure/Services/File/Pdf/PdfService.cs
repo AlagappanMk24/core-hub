@@ -109,7 +109,7 @@ namespace Core_API.Infrastructure.Services.File.Pdf
                     gfx.DrawString($"PO Number: {invoice.PONumber ?? "N/A"}", smallFont, XBrushes.Black, new XRect(40, yPoint, page.Width - 80, 20), XStringFormats.TopLeft);
                     gfx.DrawString($"Issue Date: {invoice.IssueDate:dd MMM yyyy}", smallFont, XBrushes.Black, new XRect(300, yPoint, page.Width - 80, 20), XStringFormats.TopLeft);
                     yPoint += 20;
-                    gfx.DrawString($"Due Date: {invoice.PaymentDue:dd MMM yyyy}", smallFont, XBrushes.Black, new XRect(300, yPoint, page.Width - 80, 20), XStringFormats.TopLeft);
+                    gfx.DrawString($"Due Date: {invoice.DueDate:dd MMM yyyy}", smallFont, XBrushes.Black, new XRect(300, yPoint, page.Width - 80, 20), XStringFormats.TopLeft);
                     yPoint += 20;
                     gfx.DrawString($"Status: {invoice.InvoiceStatus}", smallFont, XBrushes.Black, new XRect(40, yPoint, page.Width - 80, 20), XStringFormats.TopLeft);
                     gfx.DrawString($"Invoice Type: {invoice.InvoiceType}", smallFont, XBrushes.Black, new XRect(300, yPoint, page.Width - 80, 20), XStringFormats.TopLeft);
@@ -410,7 +410,7 @@ namespace Core_API.Infrastructure.Services.File.Pdf
                 gfx.DrawString($"Issue Date: {invoice.IssueDate:dd MMM yyyy}", fontRegular, blackBrush,
                     new XRect(invoiceHeaderX, y, 200, lineHeight), XStringFormats.TopRight);
                 y += lineHeight;
-                gfx.DrawString($"Due Date: {invoice.PaymentDue:dd MMM yyyy}", fontRegular, blackBrush,
+                gfx.DrawString($"Due Date: {invoice.DueDate:dd MMM yyyy}", fontRegular, blackBrush,
                     new XRect(invoiceHeaderX, y, 200, lineHeight), XStringFormats.TopRight);
 
                 // 3. Horizontal line is full of below of company info and invoice info

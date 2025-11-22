@@ -116,12 +116,12 @@ namespace Core_API.Infrastructure.Persistence.Repositories
 
             if (filter.DueDateFrom.HasValue)
             {
-                query = query.Where(i => i.PaymentDue >= filter.DueDateFrom.Value);
+                query = query.Where(i => i.DueDate >= filter.DueDateFrom.Value);
             }
 
             if (filter.DueDateTo.HasValue)
             {
-                query = query.Where(i => i.PaymentDue <= filter.DueDateTo.Value);
+                query = query.Where(i => i.DueDate <= filter.DueDateTo.Value);
             }
 
             var totalCount = await query.CountAsync();

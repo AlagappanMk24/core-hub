@@ -319,7 +319,7 @@ namespace Core_API.Infrastructure.Migrations
                     InvoiceNumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     PONumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     IssueDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    PaymentDue = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    DueDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     InvoiceStatus = table.Column<int>(type: "int", nullable: false),
                     InvoiceType = table.Column<int>(type: "int", nullable: false),
                     PaymentStatus = table.Column<int>(type: "int", nullable: false),
@@ -494,6 +494,32 @@ namespace Core_API.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "InvoiceAttachments",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    FileName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    FileUrl = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    InvoiceId = table.Column<int>(type: "int", nullable: false),
+                    CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UpdatedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
+                    CreatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_InvoiceAttachments", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_InvoiceAttachments_Invoices_InvoiceId",
+                        column: x => x.InvoiceId,
+                        principalTable: "Invoices",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "InvoiceItems",
                 columns: table => new
                 {
@@ -503,7 +529,7 @@ namespace Core_API.Infrastructure.Migrations
                     Quantity = table.Column<int>(type: "int", nullable: false),
                     UnitPrice = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     Amount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    TaxType = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    TaxType = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
                     TaxAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     InvoiceId = table.Column<int>(type: "int", nullable: false),
                     CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
@@ -644,6 +670,11 @@ namespace Core_API.Infrastructure.Migrations
                 column: "InvoiceId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_InvoiceAttachments_InvoiceId",
+                table: "InvoiceAttachments",
+                column: "InvoiceId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_InvoiceItems_InvoiceId",
                 table: "InvoiceItems",
                 column: "InvoiceId");
@@ -725,6 +756,9 @@ namespace Core_API.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "EmailSettings");
+
+            migrationBuilder.DropTable(
+                name: "InvoiceAttachments");
 
             migrationBuilder.DropTable(
                 name: "InvoiceItems");

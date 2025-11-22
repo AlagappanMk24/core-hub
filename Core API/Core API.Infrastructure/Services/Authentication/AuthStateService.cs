@@ -8,7 +8,6 @@ namespace Core_API.Infrastructure.Services.Authentication
     public class AuthStateService(CoreAPIDbContext context) : IAuthStateService
     {
         private readonly CoreAPIDbContext _context = context;
-
         public async Task<AuthState> CreateAuthStateAsync(string userId)
         {
             var authState = new AuthState
@@ -38,8 +37,8 @@ namespace Core_API.Infrastructure.Services.Authentication
         public async Task CleanupExpiredStatesAsync()
         {
             var expiredStates = await _context.AuthStates
-         .Where(x => x.ExpiresAt < DateTime.UtcNow && x.UserId == null)
-         .ToListAsync();
+                 .Where(x => x.ExpiresAt < DateTime.UtcNow && x.UserId == null)
+                 .ToListAsync();
 
             _context.AuthStates.RemoveRange(expiredStates);
             await _context.SaveChangesAsync();

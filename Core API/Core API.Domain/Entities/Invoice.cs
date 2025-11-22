@@ -1,7 +1,7 @@
 ﻿using Core_API.Domain.Entities.Common;
-using System.ComponentModel.DataAnnotations.Schema;
-using System.ComponentModel.DataAnnotations;
 using Core_API.Domain.Enums;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Core_API.Domain.Entities
 {
@@ -10,7 +10,7 @@ namespace Core_API.Domain.Entities
         public string InvoiceNumber { get; set; }
         public string PONumber { get; set; }
         public DateTime IssueDate { get; set; }
-        public DateTime PaymentDue { get; set; }
+        public DateTime DueDate { get; set; }
         public InvoiceStatus InvoiceStatus { get; set; } = InvoiceStatus.Draft;
         public InvoiceType InvoiceType { get; set; } = InvoiceType.Standard;
         public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.Pending;
@@ -29,6 +29,7 @@ namespace Core_API.Domain.Entities
         public List<InvoiceItem> InvoiceItems { get; set; } = [];
         public List<TaxDetail> TaxDetails { get; set; } = [];
         public List<Discount> Discounts { get; set; } = [];
+        public List<InvoiceAttachment> InvoiceAttachments { get; set; } = [];
     }
     public class InvoiceItem : BaseEntity
     {
@@ -48,7 +49,7 @@ namespace Core_API.Domain.Entities
         public decimal Amount { get; set; }
 
         [StringLength(50)]
-        public string TaxType { get; set; }
+        public string? TaxType { get; set; }
 
         [Column(TypeName = "decimal(18,2)")]
         public decimal TaxAmount { get; set; }
@@ -95,5 +96,13 @@ namespace Core_API.Domain.Entities
         /// </summary>
         [ForeignKey("InvoiceId")]
         public Invoice? Invoice { get; set; }
+    }
+    public class InvoiceAttachment : BaseEntity
+    {
+        public string FileName { get; set; }
+        public string FileUrl { get; set; }
+        public int InvoiceId { get; set; }
+        [ForeignKey("InvoiceId")]
+        public Invoice Invoice { get; set; }
     }
 }

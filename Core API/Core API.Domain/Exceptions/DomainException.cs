@@ -22,18 +22,10 @@
             AttemptedValue = attemptedValue;
         }
     }
-    public sealed class InvalidPhoneException : DomainException
+    public sealed class InvalidPhoneException(string attemptedValue, string? countryCode = null) : DomainException(GenerateMessage(attemptedValue, countryCode))
     {
-        public string AttemptedValue { get; }
-        public string? CountryCode { get; }
-
-        public InvalidPhoneException(string attemptedValue, string? countryCode = null)
-            : base(GenerateMessage(attemptedValue, countryCode))
-        {
-            AttemptedValue = attemptedValue;
-            CountryCode = countryCode;
-        }
-
+        public string AttemptedValue { get; } = attemptedValue;
+        public string? CountryCode { get; } = countryCode;
         private static string GenerateMessage(string value, string? countryCode)
         {
             return countryCode switch

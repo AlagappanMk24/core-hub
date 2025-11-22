@@ -43,16 +43,16 @@ namespace Core_API.Application.CrossCuttingConcerns.Logging
 
                 // Create a detailed and styled log entry
                 string logEntry = $@"
-===============================================================
-🕒 TIMESTAMP    : {DateTime.Now:yyyy-MM-dd HH:mm:ss}
-🔍 LOG LEVEL    : {logLevel.ToString().ToUpper()}
-👤 USERNAME     : {currentUsername}
-🌐 IP ADDRESS   : {ipAddress}
-🛠️ REQUEST ID   : {requestId}
-📄 MESSAGE      : {formatter(state, exception)}
-📅 ACTION DATE  : {DateTime.Now:dd-MM-yyyy HH:mm:ss}
-===============================================================
-";
+                    ===============================================================
+                    🕒 TIMESTAMP    : {DateTime.Now:yyyy-MM-dd HH:mm:ss}
+                    🔍 LOG LEVEL    : {logLevel.ToString().ToUpper()}
+                    👤 USERNAME     : {currentUsername}
+                    🌐 IP ADDRESS   : {ipAddress}
+                    🛠️ REQUEST ID   : {requestId}
+                    📄 MESSAGE      : {formatter(state, exception)}
+                    📅 ACTION DATE  : {DateTime.Now:dd-MM-yyyy HH:mm:ss}
+                    ===============================================================
+                ";
 
                 // Write to the log file
                 File.AppendAllText(_logFilePath, logEntry);

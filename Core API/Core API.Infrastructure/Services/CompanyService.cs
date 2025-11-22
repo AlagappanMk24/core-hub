@@ -11,7 +11,6 @@ namespace Core_API.Infrastructure.Services
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly ILogger<CompanyService> _logger = logger;
-
         public async Task<CompanyResponseDto> CreateCompanyAsync(CompanyCreateDto companyDto, string userId)
         {
             if (string.IsNullOrWhiteSpace(companyDto.Name) || companyDto.Name.Length > 100)
@@ -73,7 +72,7 @@ namespace Core_API.Infrastructure.Services
         public async Task<IEnumerable<CompanyResponseDto>> GetAllCompaniesAsync()
         {
             var companies = await _unitOfWork.Companies.GetAllAsync(c => !c.IsDeleted);
-            return companies.Select(c => new CompanyResponseDto
+            return [.. companies.Select(c => new CompanyResponseDto
             {
                 Id = c.Id,
                 Name = c.Name,
@@ -85,7 +84,7 @@ namespace Core_API.Infrastructure.Services
                 CreatedByUserId = c.CreatedByUserId,
                 CreatedAt = (DateTime)c.CreatedDate,
                 UpdatedAt = c.UpdatedDate
-            }).ToList();
+            })];
         }
         public async Task<bool> DeleteCompanyAsync(int id)
         {

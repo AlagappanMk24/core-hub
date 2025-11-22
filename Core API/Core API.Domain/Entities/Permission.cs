@@ -1,6 +1,4 @@
-﻿using Microsoft.AspNetCore.Identity;
-
-namespace Core_API.Domain.Entities
+﻿namespace Core_API.Domain.Entities
 {
     public class Permission
     {

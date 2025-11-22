@@ -1,7 +1,7 @@
 ﻿using AutoMapper;
 using Core_API.Application.DTOs.Authentication.Request;
 using Core_API.Application.DTOs.Customer.Response;
-using Core_API.Application.DTOs.EmailDto.EmailSettings;
+using Core_API.Application.DTOs.Email.EmailSettings;
 using Core_API.Application.DTOs.Invoice.Request;
 using Core_API.Application.DTOs.Invoice.Response;
 using Core_API.Domain.Entities;
@@ -47,10 +47,11 @@ namespace Core_API.Application.Mappings
                 .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.InvoiceType.ToString()))
                 .ForMember(dest => dest.InvoiceStatus, opt => opt.MapFrom(src => src.InvoiceStatus.ToString()))
                 .ForMember(dest => dest.PaymentStatus, opt => opt.MapFrom(src => src.PaymentStatus.ToString()))
-                .ForMember(dest => dest.DueDate, opt => opt.MapFrom(src => src.PaymentDue))
+                .ForMember(dest => dest.DueDate, opt => opt.MapFrom(src => src.DueDate))
                 .ForMember(dest => dest.Items, opt => opt.MapFrom(src => src.InvoiceItems))
                 .ForMember(dest => dest.TaxDetails, opt => opt.MapFrom(src => src.TaxDetails)) 
                 .ForMember(dest => dest.Discounts, opt => opt.MapFrom(src => src.Discounts)) 
+                .ForMember(dest => dest.InvoiceAttachments, opt => opt.MapFrom(src => src.InvoiceAttachments))
                 .ForMember(dest => dest.Customer, opt => opt.Ignore())
                 .ForMember(dest => dest.PdfStream, opt => opt.Ignore());
 
@@ -121,6 +122,15 @@ namespace Core_API.Application.Mappings
             // Email settings mappings
             CreateMap<EmailSettings, EmailSettingsDto>();
             CreateMap<EmailSettingsDto, EmailSettings>()
+                .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedDate, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdatedDate, opt => opt.Ignore())
+                .ForMember(dest => dest.IsDeleted, opt => opt.Ignore());
+
+            // Add mapping for InvoiceAttachment
+            CreateMap<InvoiceAttachment, InvoiceAttachmentDto>();
+            CreateMap<InvoiceAttachmentDto, InvoiceAttachment>()
                 .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
                 .ForMember(dest => dest.CreatedDate, opt => opt.Ignore())
                 .ForMember(dest => dest.UpdatedBy, opt => opt.Ignore())
