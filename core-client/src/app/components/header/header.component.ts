@@ -67,7 +67,6 @@ export class HeaderComponent {
     this.notificationService.notifications$
       .pipe(takeUntil(this.destroy$))
       .subscribe((notifications) => {
-        console.log('Notifications in HeaderComponent:', notifications); // Debug
         this.notifications = notifications;
       });
   }

@@ -12,12 +12,9 @@ export class AdminOrUserGuard implements CanActivate {
 
   canActivate(route: ActivatedRouteSnapshot, state: RouterStateSnapshot): boolean | UrlTree {
     const user = this.authService.getUserDetail();
-    console.log('AdminOrUserGuard: User details:', user);
     if (user?.roles.includes('Admin') || user?.roles.includes('User')) {
-      console.log('AdminOrUserGuard: Access granted for route:', state.url);
       return true;
     }
-    console.log('AdminOrUserGuard: Access denied, redirecting to /notfound');
     return this.router.createUrlTree(['/notfound']);
   }
 }

@@ -1,0 +1,211 @@
+<div class="role-permission-container">
+  <!-- Header Section -->
+  <div class="header-section">
+    <div class="title-section">
+      <h2 class="page-title">Role & Permission Management</h2>
+      <p class="page-subtitle">Configure access permissions for different user roles</p>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="content-wrapper">
+    <!-- Permissions Table -->
+    <div class="permissions-table-container">
+      <div class="table-header">
+        <div class="role-column">
+          <h3>Roles</h3>
+          <span class="role-count">{{filteredRoles.length}} roles</span>
+        </div>
+        
+        <!-- Artifact Permissions Header -->
+        <div class="permission-group-header">
+          <div class="permission-group-title">
+            <span class="material-icons permission-icon">description</span>
+            <span>Permission Description</span>
+          </div>
+          <div class="permission-actions">
+            <div class="permission-column">
+              <span class="permission-label">Create</span>
+              <div class="bulk-actions">
+                <button class="bulk-action-btn select-all" (click)="selectAllPermissions('create')">
+                  <span class="material-icons">check_box</span>
+                </button>
+                <button class="bulk-action-btn deselect-all" (click)="deselectAllPermissions('create')">
+                  <span class="material-icons">check_box_outline_blank</span>
+                </button>
+              </div>
+            </div>
+            <div class="permission-column">
+              <span class="permission-label">Read</span>
+              <div class="bulk-actions">
+                <button class="bulk-action-btn select-all" (click)="selectAllPermissions('read')">
+                  <span class="material-icons">check_box</span>
+                </button>
+                <button class="bulk-action-btn deselect-all" (click)="deselectAllPermissions('read')">
+                  <span class="material-icons">check_box_outline_blank</span>
+                </button>
+              </div>
+            </div>
+            <div class="permission-column">
+              <span class="permission-label">Write</span>
+              <div class="bulk-actions">
+                <button class="bulk-action-btn select-all" (click)="selectAllPermissions('write')">
+                  <span class="material-icons">check_box</span>
+                </button>
+                <button class="bulk-action-btn deselect-all" (click)="deselectAllPermissions('write')">
+                  <span class="material-icons">check_box_outline_blank</span>
+                </button>
+              </div>
+            </div>
+            <div class="permission-column">
+              <span class="permission-label">Delete</span>
+              <div class="bulk-actions">
+                <button class="bulk-action-btn select-all" (click)="selectAllPermissions('delete')">
+                  <span class="material-icons">check_box</span>
+                </button>
+                <button class="bulk-action-btn deselect-all" (click)="deselectAllPermissions('delete')">
+                  <span class="material-icons">check_box_outline_blank</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Field Permissions Header -->
+        <div class="permission-group-header field-permissions">
+          <div class="permission-group-title">
+            <span class="material-icons permission-icon">edit</span>
+            <span>Field permissions</span>
+          </div>
+          <div class="permission-actions">
+            <div class="permission-column">
+              <span class="permission-label">Read</span>
+              <div class="bulk-actions">
+                <button class="bulk-action-btn select-all" (click)="selectAllPermissions('fieldRead')">
+                  <span class="material-icons">check_box</span>
+                </button>
+                <button class="bulk-action-btn deselect-all" (click)="deselectAllPermissions('fieldRead')">
+                  <span class="material-icons">check_box_outline_blank</span>
+                </button>
+              </div>
+            </div>
+            <div class="permission-column">
+              <span class="permission-label">Write</span>
+              <div class="bulk-actions">
+                <button class="bulk-action-btn select-all" (click)="selectAllPermissions('fieldWrite')">
+                  <span class="material-icons">check_box</span>
+                </button>
+                <button class="bulk-action-btn deselect-all" (click)="deselectAllPermissions('fieldWrite')">
+                  <span class="material-icons">check_box_outline_blank</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Roles List -->
+      <div class="roles-list">
+        <div 
+          *ngFor="let role of filteredRoles; trackBy: trackByRole" 
+          class="role-row"
+          [class.highlighted]="role.permissions.create || role.permissions.write || role.permissions.delete">
+          
+          <!-- Role Info -->
+          <div class="role-info">
+            <div class="role-avatar">
+              <span class="material-icons role-icon">{{getRoleIcon(role.id)}}</span>
+            </div>
+            <div class="role-details">
+              <h4 class="role-name">{{role.displayName}}</h4>
+              <p class="role-description">{{role.description}}</p>
+            </div>
+          </div>
+
+          <!-- Artifact Permissions -->
+          <div class="permission-group">
+            <div class="permission-checkboxes">
+              <div class="checkbox-wrapper">
+                <label class="custom-checkbox">
+                  <input 
+                    type="checkbox" 
+                    [checked]="role.permissions.create"
+                    
+                    [disabled]="role.id === 'everyone'">
+                  <span class="checkmark create"></span>
+                </label>
+              </div>
+              
+              <div class="checkbox-wrapper">
+                <label class="custom-checkbox">
+                  <input 
+                    type="checkbox" 
+                    [checked]="role.permissions.read"
+               >
+                  <span class="checkmark read"></span>
+                </label>
+              </div>
+              
+              <div class="checkbox-wrapper">
+                <label class="custom-checkbox">
+                  <input 
+                    type="checkbox" 
+                    [checked]="role.permissions.write"
+                   >
+                  <span class="checkmark write"></span>
+                </label>
+              </div>
+              
+              <div class="checkbox-wrapper">
+                <label class="custom-checkbox">
+                  <input 
+                    type="checkbox" 
+                    [checked]="role.permissions.delete"
+                  >
+                  <span class="checkmark delete"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <!-- Field Permissions -->
+          <div class="permission-group field-permissions">
+            <div class="permission-checkboxes">
+              <div class="checkbox-wrapper">
+                <label class="custom-checkbox">
+                  <input 
+                    type="checkbox" 
+                    [checked]="role.fieldPermissions.read"
+                    >
+                  <span class="checkmark read"></span>
+                </label>
+              </div>
+              
+              <div class="checkbox-wrapper">
+                <label class="custom-checkbox">
+                  <input 
+                    type="checkbox" 
+                    [checked]="role.fieldPermissions.write"
+                >
+                  <span class="checkmark write"></span>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Action Buttons -->
+  <div class="action-buttons">
+    <button class="btn btn-secondary" (click)="cancelChanges()">
+      <span class="material-icons">close</span>
+      Cancel
+    </button>
+    <button class="btn btn-primary" (click)="savePermissions()">
+      <span class="material-icons">save</span>
+      Save Changes
+    </button>
+  </div>
+</div>

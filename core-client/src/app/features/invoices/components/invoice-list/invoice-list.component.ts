@@ -25,11 +25,8 @@ import { AuthService } from '../../../../services/auth/auth.service';
 import { DeleteConfirmationDialogComponent } from '../../../common/delete-confirmation/delete-confirmation-dialog.component';
 import { NotificationDialogComponent } from '../../../../components/notification/notification-dialog.component';
 import { MoreFiltersDialogComponent } from '../invoice-filters/more-filters-dialog.component';
-import {
-  Customer,
-  CustomerService,
-} from '../../../../services/customer/customer.service';
-
+import { CustomerService } from '../../../../services/customer/customer.service';
+import { Customer, CustomerFilterRequest } from '../../../../services/customer/models/customer.model';
 @Component({
   selector: 'app-invoice',
   templateUrl: './invoice-list.component.html',
@@ -104,7 +101,7 @@ export class InvoiceComponent implements OnInit {
   isAdmin: boolean = false;
   isUser: boolean = false;
   isCustomer: boolean = false;
-    customerId: string | null = null;
+  customerId: string | null = null;
   customers: { id: number; name: string }[] = [];
   taxTypes: { name: string }[] = [];
   moreFiltersForm: FormGroup;
@@ -141,12 +138,6 @@ export class InvoiceComponent implements OnInit {
     // Get customerId from JWT for Customer role
     const user = this.authService.getUserDetail();
     this.customerId = user?.customerId || null;
-    console.log(
-      'InvoiceComponent: User details:',
-      user,
-      'Customer ID:',
-      this.customerId
-    );
 
     // Load customers for Admin/User, skip for Customer
     if (this.isAdmin || this.isUser) {
@@ -227,17 +218,23 @@ export class InvoiceComponent implements OnInit {
         : undefined,
       issueDateFrom: this.isAdmin
         ? this.moreFiltersForm.get('issueDateFrom')?.value
-          ? new Date(this.moreFiltersForm.get('issueDateFrom')?.value).toISOString()
+          ? new Date(
+              this.moreFiltersForm.get('issueDateFrom')?.value
+            ).toISOString()
           : undefined
         : undefined,
       issueDateTo: this.isAdmin
         ? this.moreFiltersForm.get('issueDateTo')?.value
-          ? new Date(this.moreFiltersForm.get('issueDateTo')?.value).toISOString()
+          ? new Date(
+              this.moreFiltersForm.get('issueDateTo')?.value
+            ).toISOString()
           : undefined
         : undefined,
       dueDateFrom: this.isAdmin
         ? this.moreFiltersForm.get('dueDateFrom')?.value
-          ? new Date(this.moreFiltersForm.get('dueDateFrom')?.value).toISOString()
+          ? new Date(
+              this.moreFiltersForm.get('dueDateFrom')?.value
+            ).toISOString()
           : undefined
         : undefined,
       dueDateTo: this.isAdmin
@@ -309,7 +306,13 @@ export class InvoiceComponent implements OnInit {
 
   loadCustomers(): void {
     this.isLoading = true;
-    this.customerService.getCustomers(1, 100).subscribe({
+    const filter: CustomerFilterRequest = {
+      pageNumber: 1,
+      pageSize: 100,
+      search: '',
+      status: 'Active', // Adjust based on requirements (e.g., 'All' or 'Active')
+    };
+    this.customerService.getCustomers(filter).subscribe({
       next: (result: PaginatedResult<Customer>) => {
         this.customers = result.items.map((customer) => ({
           id: customer.id,
@@ -429,7 +432,7 @@ export class InvoiceComponent implements OnInit {
     }
   }
 
-  trackByInvoice(index: number, invoice: Invoice): string {
+  trackByInvoice(index: number, invoice: Invoice): number {
     return invoice.id;
   }
 
@@ -501,6 +504,7 @@ export class InvoiceComponent implements OnInit {
   }
 
   onSendInvoice(invoice: any): void {
+    console.log(invoice, "Invoice");
     this.dialog
       .open(SendInvoiceDialogComponent, {
         width: '600px',
@@ -581,7 +585,7 @@ export class InvoiceComponent implements OnInit {
 
   onExport(format: 'excel' | 'pdf'): void {
     this.exportingFormat = format;
-     const filter: InvoiceFilter = {
+    const filter: InvoiceFilter = {
       pageNumber: this.currentPage,
       pageSize: this.itemsPerPage,
       search: this.searchTerm || undefined,
@@ -590,65 +594,61 @@ export class InvoiceComponent implements OnInit {
       customerId: this.isCustomer ? Number(this.customerId) : undefined,
     };
     if (format === 'excel') {
-      this.invoiceService
-        .exportInvoicesExcel(filter)
-        .subscribe({
-          next: (blob) => {
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `invoices_${new Date().toISOString()}.xlsx`;
-            link.click();
-            window.URL.revokeObjectURL(url);
-            this.openDialog(
-              'success',
-              'Export Successful',
-              'Invoices exported successfully as Excel!',
-              'The Excel file containing your invoice data has been downloaded. You can now open it in Excel or other spreadsheet applications for further analysis.'
-            );
-            this.exportingFormat = null;
-          },
-          error: (error) => {
-            console.error('Error exporting Excel:', error);
-            this.openDialog(
-              'error',
-              'Export Failed',
-              'Failed to export Excel. Please try again.',
-              'The Excel export could not be completed due to a system error. Please try again or contact support if the issue persists.'
-            );
-            this.exportingFormat = null;
-          },
-        });
+      this.invoiceService.exportInvoicesExcel(filter).subscribe({
+        next: (blob) => {
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `invoices_${new Date().toISOString()}.xlsx`;
+          link.click();
+          window.URL.revokeObjectURL(url);
+          this.openDialog(
+            'success',
+            'Export Successful',
+            'Invoices exported successfully as Excel!',
+            'The Excel file containing your invoice data has been downloaded. You can now open it in Excel or other spreadsheet applications for further analysis.'
+          );
+          this.exportingFormat = null;
+        },
+        error: (error) => {
+          console.error('Error exporting Excel:', error);
+          this.openDialog(
+            'error',
+            'Export Failed',
+            'Failed to export Excel. Please try again.',
+            'The Excel export could not be completed due to a system error. Please try again or contact support if the issue persists.'
+          );
+          this.exportingFormat = null;
+        },
+      });
     } else if (format === 'pdf') {
-      this.invoiceService
-        .exportInvoicesPdf(filter)
-        .subscribe({
-          next: (blob) => {
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.download = `invoices_${new Date().toISOString()}.pdf`;
-            link.click();
-            window.URL.revokeObjectURL(url);
-            this.openDialog(
-              'success',
-              'Export Successful',
-              'Invoices exported successfully as PDF!',
-              'The PDF file containing your invoice data has been downloaded. You can now view, print, or share the consolidated invoice report.'
-            );
-            this.exportingFormat = null;
-          },
-          error: (error) => {
-            console.error('Error exporting PDF:', error);
-            this.openDialog(
-              'error',
-              'Export Failed',
-              'Failed to export PDF. Please try again.',
-              'The PDF export could not be completed due to a system error. Please try again or contact support if the issue persists.'
-            );
-            this.exportingFormat = null;
-          },
-        });
+      this.invoiceService.exportInvoicesPdf(filter).subscribe({
+        next: (blob) => {
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `invoices_${new Date().toISOString()}.pdf`;
+          link.click();
+          window.URL.revokeObjectURL(url);
+          this.openDialog(
+            'success',
+            'Export Successful',
+            'Invoices exported successfully as PDF!',
+            'The PDF file containing your invoice data has been downloaded. You can now view, print, or share the consolidated invoice report.'
+          );
+          this.exportingFormat = null;
+        },
+        error: (error) => {
+          console.error('Error exporting PDF:', error);
+          this.openDialog(
+            'error',
+            'Export Failed',
+            'Failed to export PDF. Please try again.',
+            'The PDF export could not be completed due to a system error. Please try again or contact support if the issue persists.'
+          );
+          this.exportingFormat = null;
+        },
+      });
     }
   }
 

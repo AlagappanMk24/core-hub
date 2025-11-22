@@ -86,10 +86,8 @@ export class ProductComponent implements OnInit {
       if (!this.wishlistedProducts.some(p => p.id === product.id)) {
         this.wishlistedProducts.push(product);
       }
-      console.log(`${product.name} added to wishlist`);
     } else {
       this.wishlistedProducts = this.wishlistedProducts.filter(p => p.id !== product.id);
-      console.log(`${product.name} removed from wishlist`);
     }
   }
 
@@ -102,15 +100,12 @@ export class ProductComponent implements OnInit {
     if (product.isCompared) {
       if (!this.comparedProducts.some(p => p.id === product.id) && this.comparedProducts.length < 4) {
         this.comparedProducts.push(product);
-        console.log(`${product.name} added to compare`);
       } else if (this.comparedProducts.length >= 4) {
         product.isCompared = false;
-        console.log('Cannot compare more than 4 products');
         alert('You can compare a maximum of 4 products at a time.');
       }
     } else {
       this.comparedProducts = this.comparedProducts.filter(p => p.id !== product.id);
-      console.log(`${product.name} removed from compare`);
     }
   }
 
@@ -141,7 +136,6 @@ export class ProductComponent implements OnInit {
   clearComparedProducts(): void {
     this.comparedProducts.forEach(product => (product.isCompared = false));
     this.comparedProducts = [];
-    console.log('Comparison list cleared');
   }
 
   switchDisplayMode(mode: 'all' | 'trending'): void {

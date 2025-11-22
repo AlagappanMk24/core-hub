@@ -7,19 +7,15 @@ import { MatMenuModule } from '@angular/material/menu';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDialog, MatDialogModule } from '@angular/material/dialog';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, takeUntil } from 'rxjs/operators';
 import { animate, style, transition, trigger } from '@angular/animations';
-import { Customer, CustomerService, PaginatedResult } from '../../services/customer/customer.service';
 import { AuthService } from '../../services/auth/auth.service';
+import { CustomerDialogComponent } from '../../features/invoices/components/customer-dialog/customer-dialog.component';
 import { DeleteConfirmationDialogComponent } from '../../features/common/delete-confirmation/delete-confirmation-dialog.component';
-
-interface CustomerStats {
-  all: { count: number; change: number };
-  active: { count: number; change: number };
-  inactive: { count: number; change: number };
-}
+import { NotificationDialogComponent } from '../../components/notification/notification-dialog.component';
+import { Customer, CustomerFilterRequest, CustomerStats, PaginatedResult } from '../../services/customer/models/customer.model';
+import { CustomerService } from '../../services/customer/customer.service';
 
 @Component({
   selector: 'app-customer-list',
@@ -79,15 +75,17 @@ export class CustomerListComponent implements OnInit, OnDestroy {
   isAdmin: boolean = false;
   isUser: boolean = false;
   stats: CustomerStats = {
-    all: { count: 0, change: 0 },
-    active: { count: 0, change: 0 },
-    inactive: { count: 0, change: 0 },
+    allCount: 0,
+    allChange: 0,
+    activeCount: 0,
+    activeChange: 0,
+    inactiveCount: 0,
+    inactiveChange: 0,
   };
 
   constructor(
     private customerService: CustomerService,
     private authService: AuthService,
-    private router: Router,
     private dialog: MatDialog
   ) {}
 
@@ -120,37 +118,50 @@ export class CustomerListComponent implements OnInit, OnDestroy {
 
   loadCustomers(): void {
     this.isLoading = true;
-    this.customerService
-      .getCustomers(this.currentPage, this.itemsPerPage, this.searchTerm)
-      .subscribe({
-        next: (result: PaginatedResult<Customer>) => {
-          this.customers = result.items;
-          this.totalItems = result.totalCount;
-          this.totalPages = Math.ceil(result.totalCount / this.itemsPerPage);
-          this.isLoading = false;
-        },
-        error: (error) => {
-          console.error('Error fetching customers:', error);
-          this.openDialog(
-            'error',
-            'Load Failed',
-            'Failed to load customers. Please try again.',
-            'Customer data could not be retrieved from the server. Please check your internet connection and refresh the page.'
-          );
-          this.isLoading = false;
-        },
-      });
+    const filter: CustomerFilterRequest = {
+      pageNumber: this.currentPage,
+      pageSize: this.itemsPerPage,
+      search: this.searchTerm,
+      status: this.selectedStatus
+    };
+    this.customerService.getCustomers(filter).subscribe({
+      next: (result: PaginatedResult<Customer>) => {
+        this.customers = result.items;
+        this.totalItems = result.totalCount;
+        this.totalPages = Math.ceil(result.totalCount / this.itemsPerPage);
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error fetching customers:', error);
+        this.openDialog(
+          'error',
+          'Load Failed',
+          'Failed to load customers. Please try again.',
+          'Customer data could not be retrieved from the server. Please check your internet connection and refresh the page.'
+        );
+        this.isLoading = false;
+      },
+    });
   }
 
   loadStats(): void {
     this.isLoading = true;
-    // Mock stats for now; replace with actual API call if available
-    this.stats = {
-      all: { count: 100, change: 5.2 },
-      active: { count: 80, change: 3.1 },
-      inactive: { count: 20, change: -2.4 },
-    };
-    this.isLoading = false;
+    this.customerService.getCustomerStats().subscribe({
+      next: (stats: CustomerStats) => {
+        this.stats = stats;
+        this.isLoading = false;
+      },
+      error: (error) => {
+        console.error('Error fetching customer stats:', error);
+        this.openDialog(
+          'error',
+          'Stats Load Failed',
+          'Failed to load customer statistics. Please try again.',
+          'Customer statistics could not be retrieved from the server.'
+        );
+        this.isLoading = false;
+      },
+    });
   }
 
   getInitials(name: string): string {
@@ -233,15 +244,59 @@ export class CustomerListComponent implements OnInit, OnDestroy {
   }
 
   onCreateCustomer(): void {
-    this.router.navigate(['/customers/create']);
+    const dialogRef = this.dialog.open(CustomerDialogComponent, {
+      width: '600px',
+      disableClose: true,
+      data: { mode: 'create' },
+    });
+
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result) {
+        this.loadCustomers();
+        this.loadStats();
+        this.openDialog(
+          'success',
+          'Customer Created Successfully',
+          `Customer ${result.name} has been created successfully!`,
+          'The customer has been added to the system.'
+        );
+      }
+    });
   }
 
   onEditCustomer(customer: Customer): void {
-    this.router.navigate([`/customers/edit/${customer.id}`]);
-  }
+    const dialogRef = this.dialog.open(CustomerDialogComponent, {
+      width: '600px',
+      disableClose: true,
+      data: {
+        mode: 'edit',
+        customer: {
+          id: customer.id,
+          name: customer.name,
+          email: customer.email,
+          phoneNumber: customer.phoneNumber,
+          address1: customer.address.address1,
+          address2: customer.address.address2 || '',
+          city: customer.address.city,
+          state: customer.address.state || '',
+          country: customer.address.country,
+          zipCode: customer.address.zipCode,
+        },
+      },
+    });
 
-  onViewCustomer(customer: Customer): void {
-    this.router.navigate([`/customers/view/${customer.id}`]);
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result) {
+        this.loadCustomers();
+        this.loadStats();
+        this.openDialog(
+          'success',
+          'Customer Updated Successfully',
+          `Customer ${result.name} has been updated successfully!`,
+          'The customer details have been updated in the system.'
+        );
+      }
+    });
   }
 
   onDeleteCustomer(customer: Customer): void {
@@ -258,129 +313,103 @@ export class CustomerListComponent implements OnInit, OnDestroy {
       },
     });
 
-    // dialogRef.afterClosed().subscribe((result) => {
-    //   if (result) {
-    //     this.isLoading = true;
-    //     // Assuming a deleteCustomer method exists in CustomerService
-    //     this.customerService.deleteCustomer(customer.id).subscribe({
-    //       next: () => {
-    //         this.loadCustomers();
-    //         this.loadStats();
-    //         this.openDialog(
-    //           'success',
-    //           'Customer Deleted Successfully',
-    //           `Customer ${customer.name} has been deleted successfully!`,
-    //           'The customer has been removed from the system.'
-    //         );
-    //         this.isLoading = false;
-    //       },
-    //       error: (error) => {
-    //         console.error('Error deleting customer:', error);
-    //         this.openDialog(
-    //           'error',
-    //           'Delete Failed',
-    //           'Failed to delete customer. Please try again.',
-    //           'The customer could not be deleted due to a system error. Please try again or contact support.'
-    //         );
-    //         this.isLoading = false;
-    //       },
-    //     });
-    //   }
-    // });
+    dialogRef.afterClosed().subscribe((result) => {
+      if (result) {
+        this.isLoading = true;
+        this.customerService.deleteCustomer(customer.id).subscribe({
+          next: () => {
+            this.loadCustomers();
+            this.loadStats();
+            this.openDialog(
+              'success',
+              'Customer Deleted Successfully',
+              `Customer ${customer.name} has been deleted successfully!`,
+              'The customer has been removed from the system.'
+            );
+            this.isLoading = false;
+          },
+          error: (error) => {
+            console.error('Error deleting customer:', error);
+            this.openDialog(
+              'error',
+              'Delete Failed',
+              'Failed to delete customer. Please try again.',
+              'The customer could not be deleted due to a system error. Please try again or contact support.'
+            );
+            this.isLoading = false;
+          },
+        });
+      }
+    });
   }
 
   onExport(format: 'excel' | 'pdf'): void {
     this.exportingFormat = format;
-    // Assuming export methods exist in CustomerService
-    // if (format === 'excel') {
-    //   this.customerService.exportCustomersExcel(this.searchTerm).subscribe({
-    //     next: (blob) => {
-    //       const url = window.URL.createObjectURL(blob);
-    //       const link = document.createElement('a');
-    //       link.href = url;
-    //       link.download = `customers_${new Date().toISOString()}.xlsx`;
-    //       link.click();
-    //       window.URL.revokeObjectURL(url);
-    //       this.openDialog(
-    //         'success',
-    //         'Export Successful',
-    //         'Customers exported successfully as Excel!',
-    //         'The Excel file containing your customer data has been downloaded.'
-    //       );
-    //       this.exportingFormat = null;
-    //     },
-    //     error: (error) => {
-    //       console.error('Error exporting Excel:', error);
-    //       this.openDialog(
-    //         'error',
-    //         'Export Failed',
-    //         'Failed to export Excel. Please try again.',
-    //         'The Excel export could not be completed due to a system error.'
-    //       );
-    //       this.exportingFormat = null;
-    //     },
-    //   });
-    // } else if (format === 'pdf') {
-    //   this.customerService.exportCustomersPdf(this.searchTerm).subscribe({
-    //     next: (blob) => {
-    //       const url = window.URL.createObjectURL(blob);
-    //       const link = document.createElement('a');
-    //       link.href = url;
-    //       link.download = `customers_${new Date().toISOString()}.pdf`;
-    //       link.click();
-    //       window.URL.revokeObjectURL(url);
-    //       this.openDialog(
-    //         'success',
-    //         'Export Successful',
-    //         'Customers exported successfully as PDF!',
-    //         'The PDF file containing your customer data has been downloaded.'
-    //       );
-    //       this.exportingFormat = null;
-    //     },
-    //     error: (error) => {
-    //       console.error('Error exporting PDF:', error);
-    //       this.openDialog(
-    //         'error',
-    //         'Export Failed',
-    //         'Failed to export PDF. Please try again.',
-    //         'The PDF export could not be completed due to a system error.'
-    //       );
-    //       this.exportingFormat = null;
-    //     },
-    //   });
-    // }
+    if (format === 'excel') {
+      this.customerService.exportCustomersExcel(this.searchTerm).subscribe({
+        next: (blob) => {
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `customers_${new Date().toISOString()}.xlsx`;
+          link.click();
+          window.URL.revokeObjectURL(url);
+          this.openDialog(
+            'success',
+            'Export Successful',
+            'Customers exported successfully as Excel!',
+            'The Excel file containing your customer data has been downloaded.'
+          );
+          this.exportingFormat = null;
+        },
+        error: (error) => {
+          console.error('Error exporting Excel:', error);
+          this.openDialog(
+            'error',
+            'Export Failed',
+            'Failed to export Excel. Please try again.',
+            'The Excel export could not be completed due to a system error.'
+          );
+          this.exportingFormat = null;
+        },
+      });
+    } else if (format === 'pdf') {
+      this.customerService.exportCustomersPdf(this.searchTerm).subscribe({
+        next: (blob) => {
+          const url = window.URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `customers_${new Date().toISOString()}.pdf`;
+          link.click();
+          window.URL.revokeObjectURL(url);
+          this.openDialog(
+            'success',
+            'Export Successful',
+            'Customers exported successfully as PDF!',
+            'The PDF file containing your customer data has been downloaded.'
+          );
+          this.exportingFormat = null;
+        },
+        error: (error) => {
+          console.error('Error exporting PDF:', error);
+          this.openDialog(
+            'error',
+            'Export Failed',
+            'Failed to export PDF. Please try again.',
+            'The PDF export could not be completed due to a system error.'
+          );
+          this.exportingFormat = null;
+        },
+      });
+    }
   }
 
   onImport(): void {
-    // // Assuming a CustomerImportDialogComponent exists
-    // const dialogRef = this.dialog.open(CustomerImportDialogComponent, {
-    //   width: '600px',
-    // });
-
-    // dialogRef.afterClosed().subscribe((result) => {
-    //   if (result) {
-    //     this.loadCustomers();
-    //     this.loadStats();
-    //   }
-    // });
+    // Placeholder for import logic
   }
 
   onMoreFilters(): void {
-    // // Assuming a CustomerFiltersDialogComponent exists
-    // const dialogRef = this.dialog.open(CustomerFiltersDialogComponent, {
-    //   width: '600px',
-    //   data: {
-    //     // Pass filter data if needed
-    //   },
-    // });
-
-    // dialogRef.afterClosed().subscribe((result) => {
-    //   if (result) {
-    //     // Apply filters and reload customers
-    //     this.currentPage = 1;
-    //     this.loadCustomers();
-    //   }
-    // });
+    // Placeholder for filter logic
   }
 
   openDialog(
@@ -389,9 +418,9 @@ export class CustomerListComponent implements OnInit, OnDestroy {
     message: string,
     submessage: string
   ): void {
-    // this.dialog.open(NotificationDialogComponent, {
-    //   width: '400px',
-    //   data: { type, title, message, submessage },
-    // });
+    this.dialog.open(NotificationDialogComponent, {
+      width: '400px',
+      data: { type, title, message, submessage },
+    });
   }
 }

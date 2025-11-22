@@ -62,16 +62,16 @@
       >
         <div class="stat-header">
           <mat-icon class="stat-icon">people</mat-icon>
-          <span class="stat-label">All Customers ({{ stats.all.count }})</span>
+          <span class="stat-label">All Customers ({{ stats.allCount }})</span>
         </div>
-        <div class="stat-amount">{{ stats.all.count }}</div>
+        <div class="stat-amount">{{ stats.allCount }}</div>
         <div
           class="stat-change"
-          [ngClass]="stats.all.change >= 0 ? 'positive' : 'negative'"
+          [ngClass]="stats.allChange >= 0 ? 'positive' : 'negative'"
         >
-          {{ stats.all.change >= 0 ? "+" : "" }}{{ stats.all.change | number : "1.1-1" }}%
+          {{ stats.allChange >= 0 ? "+" : "" }}{{ stats.allChange | number : "1.1-1" }}%
           <mat-icon class="change-icon">{{
-            stats.all.change >= 0 ? "trending_up" : "trending_down"
+            stats.allChange >= 0 ? "trending_up" : "trending_down"
           }}</mat-icon>
         </div>
       </div>
@@ -84,16 +84,16 @@
       >
         <div class="stat-header">
           <mat-icon class="stat-icon">person_check</mat-icon>
-          <span class="stat-label">Active ({{ stats.active.count }})</span>
+          <span class="stat-label">Active ({{ stats.activeCount }})</span>
         </div>
-        <div class="stat-amount">{{ stats.active.count }}</div>
+        <div class="stat-amount">{{ stats.activeCount }}</div>
         <div
           class="stat-change"
-          [ngClass]="stats.active.change >= 0 ? 'positive' : 'negative'"
+          [ngClass]="stats.activeChange >= 0 ? 'positive' : 'negative'"
         >
-          {{ stats.active.change >= 0 ? "+" : "" }}{{ stats.active.change | number : "1.1-1" }}%
+          {{ stats.activeChange >= 0 ? "+" : "" }}{{ stats.activeChange | number : "1.1-1" }}%
           <mat-icon class="change-icon">{{
-            stats.active.change >= 0 ? "trending_up" : "trending_down"
+            stats.activeChange >= 0 ? "trending_up" : "trending_down"
           }}</mat-icon>
         </div>
       </div>
@@ -106,16 +106,16 @@
       >
         <div class="stat-header">
           <mat-icon class="stat-icon">person_off</mat-icon>
-          <span class="stat-label">Inactive ({{ stats.inactive.count }})</span>
+          <span class="stat-label">Inactive ({{ stats.inactiveCount }})</span>
         </div>
-        <div class="stat-amount">{{ stats.inactive.count }}</div>
+        <div class="stat-amount">{{ stats.inactiveCount }}</div>
         <div
           class="stat-change"
-          [ngClass]="stats.inactive.change >= 0 ? 'positive' : 'negative'"
+          [ngClass]="stats.inactiveChange >= 0 ? 'positive' : 'negative'"
         >
-          {{ stats.inactive.change >= 0 ? "+" : "" }}{{ stats.inactive.change | number : "1.1-1" }}%
+          {{ stats.inactiveChange >= 0 ? "+" : "" }}{{ stats.inactiveChange | number : "1.1-1" }}%
           <mat-icon class="change-icon">{{
-            stats.inactive.change >= 0 ? "trending_up" : "trending_down"
+            stats.inactiveChange >= 0 ? "trending_up" : "trending_down"
           }}</mat-icon>
         </div>
       </div>
@@ -205,15 +205,6 @@
                   [disabled]="exportingFormat || isLoading"
                 >
                   <mat-icon>edit</mat-icon>
-                </button>
-                <button
-                  mat-icon-button
-                  class="action-icon view-btn"
-                  (click)="onViewCustomer(customer)"
-                  title="View Customer"
-                  [disabled]="exportingFormat || isLoading"
-                >
-                  <mat-icon>visibility</mat-icon>
                 </button>
                 <button
                   *ngIf="isAdmin"

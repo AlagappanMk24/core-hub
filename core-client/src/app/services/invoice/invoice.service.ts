@@ -4,6 +4,7 @@ import { Observable, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { AuthService } from '../auth/auth.service';
 import {
+  Attachment,
   Invoice,
   InvoiceApiResponse,
   InvoiceFilter,
@@ -60,6 +61,7 @@ export class InvoiceService {
       isAutomated: apiResponse.isAutomated || false,
       customer: apiResponse.customer,
       subtotal: apiResponse.subtotal,
+      invoiceAttachments: apiResponse.invoiceAttachments || [],
     };
   }
 
@@ -120,7 +122,7 @@ export class InvoiceService {
     });
   }
 
-  getInvoiceById(id: string): Observable<Invoice> {
+  getInvoiceById(id: Number): Observable<Invoice> {
     return this.http
       .get<InvoiceApiResponse>(`${this.apiUrl}/${id}`, {
         headers: this.getHeaders(),
@@ -145,13 +147,31 @@ export class InvoiceService {
       );
   }
 
-  createInvoice(invoice: InvoiceUpsert): Observable<{ model: number }> {
+  // createInvoice(invoice: InvoiceUpsert): Observable<{ model: number }> {
+  //   return this.http
+  //     .post<{ model: number }>(
+  //       this.apiUrl,
+  //       { invoiceDto: invoice },
+  //       {
+  //         headers: this.getHeaders(),
+  //       }
+  //     )
+  //     .pipe(
+  //       catchError((error) =>
+  //         this.handleError(error, 'Failed to create invoice')
+  //       )
+  //     );
+  // }
+
+  createInvoice(formData: FormData): Observable<InvoiceApiResponse> {
+    const headers = this.getHeaders().delete('Content-Type');
     return this.http
-      .post<{ model: number }>(
+      .post<InvoiceApiResponse>(
         this.apiUrl,
-        { invoiceDto: invoice },
+        // { invoiceDto: formData },
+        formData,
         {
-          headers: this.getHeaders(),
+          headers,
         }
       )
       .pipe(
@@ -161,43 +181,44 @@ export class InvoiceService {
       );
   }
 
-  updateInvoice(invoice: InvoiceUpsert): Observable<{ model: number }> {
-    if (!invoice.id) {
+  // updateInvoice(invoice: InvoiceUpsert): Observable<{ model: number }> {
+  //   if (!invoice.id) {
+  //     return throwError(() => new Error('Invoice ID is required for update'));
+  //   }
+  //   return this.http
+  //     .put<{ model: number }>(
+  //       `${this.apiUrl}/${invoice.id}`,
+  //       { invoiceDto: invoice },
+  //       {
+  //         headers: this.getHeaders(),
+  //       }
+  //     )
+  //     .pipe(
+  //       catchError((error) =>
+  //         this.handleError(error, 'Failed to update invoice')
+  //       )
+  //     );
+  // }
+
+  updateInvoice(formData: FormData): Observable<InvoiceApiResponse> {
+    const invoiceId = formData.get('id');
+    if (!invoiceId) {
       return throwError(() => new Error('Invoice ID is required for update'));
     }
+    const headers = this.getHeaders().delete('Content-Type');
     return this.http
-      .put<{ model: number }>(
-        `${this.apiUrl}/${invoice.id}`,
-        { invoiceDto: invoice },
+      .put<InvoiceApiResponse>(
+        `${this.apiUrl}/${invoiceId}`,
+        // { invoiceDto: formData },
+        formData,
         {
-          headers: this.getHeaders(),
+          headers,
         }
       )
       .pipe(
         catchError((error) =>
           this.handleError(error, 'Failed to update invoice')
         )
-      );
-  }
-
-  sendInvoice1(invoiceId: number): Observable<any> {
-    const token = this.authService.getAuthToken();
-    if (!token) {
-      return throwError(() => new Error('No authentication token found'));
-    }
-    return this.http
-      .post(
-        `${this.apiUrl}/${invoiceId}/send`,
-        {},
-        {
-          headers: new HttpHeaders({ Authorization: `Bearer ${token}` }),
-        }
-      )
-      .pipe(
-        catchError((err) => {
-          console.error('Error sending invoice:', err);
-          return throwError(() => new Error('Failed to send invoice'));
-        })
       );
   }
 
@@ -225,7 +246,7 @@ export class InvoiceService {
       );
   }
 
-  downloadInvoicePdf(invoiceId: string): Observable<Blob> {
+  downloadInvoicePdf(invoiceId: number): Observable<Blob> {
     return this.http
       .get(`${this.apiUrl}/${invoiceId}/pdf`, {
         headers: this.getHeaders(),
@@ -248,7 +269,7 @@ export class InvoiceService {
       );
   }
 
-  deleteInvoice(id: string): Observable<void> {
+  deleteInvoice(id: number): Observable<void> {
     return this.http
       .delete<void>(`${this.apiUrl}/${id}`, {
         headers: this.getHeaders(),
@@ -260,7 +281,7 @@ export class InvoiceService {
       );
   }
 
-  duplicateInvoice(id: string): Observable<void> {
+  duplicateInvoice(id: number): Observable<void> {
     return this.http
       .post<void>(
         `${this.apiUrl}/${id}/duplicate`,
@@ -348,18 +369,90 @@ export class InvoiceService {
   //   });
   // }
 
-   exportInvoicesExcel(filter: InvoiceFilter): Observable<Blob> {
-    return this.http.get(`${this.apiUrl}/export/excel`, {
-      params: { ...filter },
-      responseType: 'blob',
-    });
+  exportInvoicesExcel(filter: InvoiceFilter): Observable<Blob> {
+    let params = new HttpParams()
+      .set('pageNumber', filter.pageNumber.toString())
+      .set('pageSize', filter.pageSize.toString());
+
+    if (filter.search) params = params.set('search', filter.search);
+    if (filter.invoiceStatus)
+      params = params.set('invoiceStatus', filter.invoiceStatus);
+    if (filter.paymentStatus)
+      params = params.set('paymentStatus', filter.paymentStatus);
+    if (filter.customerId)
+      params = params.set('customerId', filter.customerId.toString());
+    if (filter.taxType)
+      params = params.set('taxType', filter.taxType.toString());
+    if (filter.minAmount)
+      params = params.set('minAmount', filter.minAmount.toString());
+    if (filter.maxAmount)
+      params = params.set('maxAmount', filter.maxAmount.toString());
+    if (filter.invoiceNumberFrom)
+      params = params.set('invoiceNumberFrom', filter.invoiceNumberFrom);
+    if (filter.invoiceNumberTo)
+      params = params.set('invoiceNumberTo', filter.invoiceNumberTo);
+    if (filter.issueDateFrom)
+      params = params.set('issueDateFrom', filter.issueDateFrom);
+    if (filter.issueDateTo)
+      params = params.set('issueDateTo', filter.issueDateTo);
+    if (filter.dueDateFrom)
+      params = params.set('dueDateFrom', filter.dueDateFrom);
+    if (filter.dueDateTo) params = params.set('dueDateTo', filter.dueDateTo);
+
+    return this.http
+      .get(`${this.apiUrl}/export/excel`, {
+        headers: this.getHeaders(),
+        params,
+        responseType: 'blob',
+      })
+      .pipe(
+        catchError((error) =>
+          this.handleError(error, 'Failed to export invoices to Excel')
+        )
+      );
   }
 
   exportInvoicesPdf(filter: InvoiceFilter): Observable<Blob> {
-    return this.http.get(`${this.apiUrl}/export/pdf`, {
-      params: { ...filter },
-      responseType: 'blob',
-    });
+    let params = new HttpParams()
+      .set('pageNumber', filter.pageNumber.toString())
+      .set('pageSize', filter.pageSize.toString());
+
+    if (filter.search) params = params.set('search', filter.search);
+    if (filter.invoiceStatus)
+      params = params.set('invoiceStatus', filter.invoiceStatus);
+    if (filter.paymentStatus)
+      params = params.set('paymentStatus', filter.paymentStatus);
+    if (filter.customerId)
+      params = params.set('customerId', filter.customerId.toString());
+    if (filter.taxType)
+      params = params.set('taxType', filter.taxType.toString());
+    if (filter.minAmount)
+      params = params.set('minAmount', filter.minAmount.toString());
+    if (filter.maxAmount)
+      params = params.set('maxAmount', filter.maxAmount.toString());
+    if (filter.invoiceNumberFrom)
+      params = params.set('invoiceNumberFrom', filter.invoiceNumberFrom);
+    if (filter.invoiceNumberTo)
+      params = params.set('invoiceNumberTo', filter.invoiceNumberTo);
+    if (filter.issueDateFrom)
+      params = params.set('issueDateFrom', filter.issueDateFrom);
+    if (filter.issueDateTo)
+      params = params.set('issueDateTo', filter.issueDateTo);
+    if (filter.dueDateFrom)
+      params = params.set('dueDateFrom', filter.dueDateFrom);
+    if (filter.dueDateTo) params = params.set('dueDateTo', filter.dueDateTo);
+
+    return this.http
+      .get(`${this.apiUrl}/export/pdf`, {
+        headers: this.getHeaders(),
+        params,
+        responseType: 'blob',
+      })
+      .pipe(
+        catchError((error) =>
+          this.handleError(error, 'Failed to export invoices to PDF')
+        )
+      );
   }
 
   importInvoices(file: File): Observable<{
@@ -393,6 +486,30 @@ export class InvoiceService {
       .pipe(
         catchError((error) =>
           this.handleError(error, 'Failed to download import template')
+        )
+      );
+  }
+
+  deleteAttachment(invoiceId: number, attachmentId: number): Observable<void> {
+    return this.http
+      .delete<void>(`${this.apiUrl}/${invoiceId}/attachments/${attachmentId}`, {
+        headers: this.getHeaders(),
+      })
+      .pipe(
+        catchError((error) =>
+          this.handleError(error, 'Failed to delete attachment')
+        )
+      );
+  }
+  getAttachment(fileUrl: string): Observable<Blob> {
+    return this.http
+      .get(fileUrl, {
+        headers: this.getHeaders(),
+        responseType: 'blob',
+      })
+      .pipe(
+        catchError((error) =>
+          this.handleError(error, 'Failed to fetch attachment')
         )
       );
   }

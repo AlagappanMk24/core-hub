@@ -1,0 +1,703 @@
+/* Import Google Material Icons */
+@import url('https://fonts.googleapis.com/icon?family=Material+Icons');
+
+* {
+  box-sizing: border-box;
+}
+
+.role-permission-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem;
+  /* background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); */
+  min-height: 100vh;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Header Section */
+.header-section {
+  margin-bottom: 2rem;
+}
+
+.title-section {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.page-title {
+  color: white;
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0 0 0.5rem 0;
+  text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.page-subtitle {
+  color: rgba(255,255,255,0.9);
+  font-size: 1.1rem;
+  margin: 0;
+  font-weight: 300;
+}
+
+/* Filter Section */
+.filter-section {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.search-container {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+}
+
+.search-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: rgba(255,255,255,0.95);
+  border-radius: 50px;
+  padding: 0 1rem;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.2);
+  transition: all 0.3s ease;
+}
+
+.search-input-wrapper:focus-within {
+  box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+  transform: translateY(-2px);
+}
+
+.search-icon {
+  color: #666;
+  margin-right: 0.75rem;
+  font-size: 1.25rem;
+}
+
+.search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  padding: 1rem 0;
+  font-size: 1rem;
+  background: transparent;
+  color: #333;
+}
+
+.search-input::placeholder {
+  color: #999;
+}
+
+.clear-button {
+  background: none;
+  border: none;
+  color: #666;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.clear-button:hover {
+  background: #f0f0f0;
+  color: #333;
+}
+
+/* Content Wrapper */
+.content-wrapper {
+  background: rgba(255,255,255,0.95);
+  border-radius: 20px;
+  padding: 2rem;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.2);
+  margin-bottom: 2rem;
+}
+
+/* Table Header */
+.table-header {
+  display: grid;
+  grid-template-columns: 300px 1fr auto;
+  gap: 2rem;
+  padding: 1.5rem 0;
+  border-bottom: 2px solid #e9ecef;
+  margin-bottom: 1.5rem;
+  align-items: center;
+}
+
+.role-column h3 {
+  color: #2c3e50;
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin: 0 0 0.25rem 0;
+}
+
+.role-count {
+  color: #6c757d;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+.permission-group-header {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.permission-group-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #2c3e50;
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+.permission-icon {
+  color: #667eea;
+  font-size: 1.5rem;
+}
+
+.permission-actions {
+  display: flex;
+  gap: 2rem;
+}
+
+.permission-column {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 80px;
+}
+
+.permission-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #495057;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.bulk-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.bulk-action-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  color: #6c757d;
+}
+
+.bulk-action-btn:hover {
+  background: #f8f9fa;
+  color: #495057;
+  transform: scale(1.1);
+}
+
+.bulk-action-btn.select-all:hover {
+  color: #28a745;
+}
+
+.bulk-action-btn.deselect-all:hover {
+  color: #dc3545;
+}
+
+/* Roles List */
+.roles-list {
+  max-height: 600px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #ccc #f8f9fa;
+}
+
+.roles-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.roles-list::-webkit-scrollbar-track {
+  background: #f8f9fa;
+  border-radius: 3px;
+}
+
+.roles-list::-webkit-scrollbar-thumb {
+  background: #ccc;
+  border-radius: 3px;
+}
+
+.roles-list::-webkit-scrollbar-thumb:hover {
+  background: #aaa;
+}
+
+.role-row {
+  display: grid;
+  grid-template-columns: 300px 1fr auto;
+  gap: 2rem;
+  padding: 1.5rem 0;
+  border-bottom: 1px solid #e9ecef;
+  align-items: center;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.role-row:hover {
+  background: linear-gradient(90deg, rgba(102, 126, 234, 0.03) 0%, rgba(102, 126, 234, 0.01) 100%);
+  transform: translateX(5px);
+}
+
+.role-row.highlighted {
+  background: linear-gradient(90deg, rgba(102, 126, 234, 0.08) 0%, rgba(102, 126, 234, 0.02) 100%);
+  border-left: 4px solid #667eea;
+  padding-left: calc(1.5rem - 4px);
+}
+
+.role-row:last-child {
+  border-bottom: none;
+}
+
+/* Role Info */
+.role-info {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.role-avatar {
+  width: 50px;
+  height: 50px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  transition: all 0.3s ease;
+}
+
+.role-row:hover .role-avatar {
+  transform: scale(1.05);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.role-icon {
+  color: white;
+  font-size: 1.5rem;
+}
+
+.role-details {
+  flex: 1;
+}
+
+.role-name {
+  color: #2c3e50;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 0.25rem 0;
+}
+
+.role-description {
+  color: #6c757d;
+  font-size: 0.9rem;
+  margin: 0;
+  font-style: italic;
+}
+
+/* Permission Groups */
+.permission-group {
+  display: flex;
+  justify-content: center;
+}
+
+.permission-checkboxes {
+  display: flex;
+  gap: 2rem;
+  align-items: center;
+}
+
+.field-permissions .permission-checkboxes {
+  gap: 2rem;
+}
+
+/* Custom Checkbox */
+.checkbox-wrapper {
+  position: relative;
+}
+
+.custom-checkbox {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+}
+
+.custom-checkbox input {
+  position: absolute;
+  opacity: 0;
+  cursor: pointer;
+  width: 0;
+  height: 0;
+}
+
+.checkmark {
+  display: inline-block;
+  width: 24px;
+  height: 24px;
+  border: 2px solid #dee2e6;
+  border-radius: 6px;
+  position: relative;
+  transition: all 0.3s ease;
+  background: white;
+}
+
+.checkmark::after {
+  content: '';
+  position: absolute;
+  display: none;
+  left: 6px;
+  top: 2px;
+  width: 6px;
+  height: 12px;
+  border: solid white;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.custom-checkbox input:checked ~ .checkmark::after {
+  display: block;
+}
+
+.custom-checkbox input:disabled ~ .checkmark {
+  background: #f8f9fa;
+  border-color: #e9ecef;
+  cursor: not-allowed;
+}
+
+.custom-checkbox:hover .checkmark {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+/* Permission Type Colors */
+.checkmark.create {
+  border-color: #28a745;
+}
+
+.custom-checkbox input:checked ~ .checkmark.create {
+  background: #28a745;
+  border-color: #28a745;
+}
+
+.checkmark.read {
+  border-color: #17a2b8;
+}
+
+.custom-checkbox input:checked ~ .checkmark.read {
+  background: #17a2b8;
+  border-color: #17a2b8;
+}
+
+.checkmark.write {
+  border-color: #ffc107;
+}
+
+.custom-checkbox input:checked ~ .checkmark.write {
+  background: #ffc107;
+  border-color: #ffc107;
+}
+
+.checkmark.delete {
+  border-color: #dc3545;
+}
+
+.custom-checkbox input:checked ~ .checkmark.delete {
+  background: #dc3545;
+  border-color: #dc3545;
+}
+
+/* Action Buttons */
+.action-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+}
+
+.btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 1rem 2rem;
+  border: none;
+  border-radius: 50px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.btn::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.btn:hover::before {
+  left: 100%;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+}
+
+.btn:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.btn-secondary {
+  background: linear-gradient(135deg, #6c757d, #495057);
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: linear-gradient(135deg, #5a6268, #3d4043);
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #5a67d8, #6b46c1);
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .table-header,
+  .role-row {
+    grid-template-columns: 250px 1fr auto;
+    gap: 1rem;
+  }
+  
+  .permission-actions {
+    gap: 1rem;
+  }
+  
+  .permission-checkboxes {
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 992px) {
+  .role-permission-container {
+    padding: 1rem;
+  }
+  
+  .page-title {
+    font-size: 2rem;
+  }
+  
+  .content-wrapper {
+    padding: 1rem;
+  }
+  
+  .table-header,
+  .role-row {
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    text-align: center;
+  }
+  
+  .permission-group-header {
+    align-items: center;
+  }
+  
+  .permission-actions {
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+  
+  .role-info {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .page-title {
+    font-size: 1.75rem;
+  }
+  
+  .page-subtitle {
+    font-size: 1rem;
+  }
+  
+  .search-container {
+    max-width: 100%;
+  }
+  
+  .permission-actions {
+    gap: 0.5rem;
+  }
+  
+  .permission-column {
+    min-width: 60px;
+  }
+  
+  .permission-label {
+    font-size: 0.8rem;
+  }
+  
+  .action-buttons {
+    flex-direction: column;
+    align-items: center;
+  }
+  
+  .btn {
+    width: 200px;
+    justify-content: center;
+  }
+}
+
+@media (max-width: 576px) {
+  .role-permission-container {
+    padding: 0.5rem;
+  }
+  
+  .content-wrapper {
+    padding: 0.5rem;
+    border-radius: 15px;
+  }
+  
+  .role-info {
+    flex-direction: column;
+    text-align: center;
+    gap: 0.5rem;
+  }
+  
+  .role-avatar {
+    width: 40px;
+    height: 40px;
+  }
+  
+  .role-icon {
+    font-size: 1.25rem;
+  }
+  
+  .permission-actions {
+    flex-direction: column;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  .permission-checkboxes {
+    flex-direction: column;
+    gap: 0.75rem;
+  }
+}
+
+/* Animation Classes */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.role-row {
+  animation: fadeInUp 0.3s ease-out;
+}
+
+.role-row:nth-child(even) {
+  animation: slideInRight 0.3s ease-out;
+}
+
+/* Loading States */
+.loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.loading::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 20px;
+  height: 20px;
+  margin: -10px 0 0 -10px;
+  border: 2px solid #f3f3f3;
+  border-top: 2px solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Focus States for Accessibility */
+.search-input:focus,
+.custom-checkbox input:focus ~ .checkmark,
+.btn:focus,
+.bulk-action-btn:focus {
+  outline: 2px solid #667eea;
+  outline-offset: 2px;
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+  .role-permission-container {
+    background: #000;
+  }
+  
+  .content-wrapper {
+    background: #fff;
+    border: 2px solid #000;
+  }
+  
+  .checkmark {
+    border-width: 3px;
+  }
+}
+
+/* Reduced Motion Support */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

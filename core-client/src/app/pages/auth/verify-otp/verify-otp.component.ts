@@ -269,7 +269,6 @@ export class VerifyOtpComponent implements OnInit, OnDestroy {
       setTimeout(() => this.focusInput(focusIndex), 500);
 
       this.updateInputStyling();
-      // console.log('onPaste:', { pastedData, otpDigits: [...this.otpDigits], focusIndex, inputValues: this.otpInputs.map(inp => inp.nativeElement.value) });
     }
   }
 

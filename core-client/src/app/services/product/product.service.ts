@@ -18,7 +18,6 @@ export class ProductService {
 
   private getHeaders(): HttpHeaders {
     const token = this.authService.getAuthToken();
-    console.log('Sending token:', token);
     return new HttpHeaders({
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {})

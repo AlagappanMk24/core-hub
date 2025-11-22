@@ -52,7 +52,6 @@ export class NotificationService implements OnDestroy {
         invoiceNumber: string;
         message: string;
       }) => {
-        console.log('Received SignalR notification:', notification); // Debug notification
         const newNotification: InvoiceNotification = {
           invoiceId: notification.invoiceId,
           invoiceNumber: notification.invoiceNumber,
@@ -96,7 +95,6 @@ export class NotificationService implements OnDestroy {
 
   get hasNotifications(): boolean {
     const hasUnread = this.notificationsSubject.value.some((n) => !n.read);
-    console.log('Has unread notifications:', hasUnread); // Debug
     return hasUnread;
   }
 

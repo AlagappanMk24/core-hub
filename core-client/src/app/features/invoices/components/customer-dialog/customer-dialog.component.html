@@ -3,7 +3,7 @@
   @dialogFadeIn
 >
   <div class="dialog-header flex justify-between items-center p-6 bg-white">
-    <h2 class="text-xl font-bold text-purple-600">Create New Customer</h2>
+    <h2 class="text-xl font-bold text-purple-600">{{ data.mode === 'edit' ? 'Edit Customer' : 'Create New Customer' }}</h2>
     <button
       class="text-gray-600 hover:text-purple-600 transition-transform duration-300 transform hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
       (click)="onCancel()"
@@ -300,7 +300,7 @@
             <div
               *ngIf="
                 countryInput.invalid &&
-                (cityInput.dirty || countryInput.touched)
+                (countryInput.dirty || countryInput.touched)
               "
               class="text-red-500 text-sm mt-1"
             >
@@ -370,7 +370,7 @@
       aria-live="polite"
     >
       <mat-spinner diameter="24" class="text-purple-500"></mat-spinner>
-      <span class="text-gray-800 text-sm font-medium">Saving customer...</span>
+      <span class="text-gray-800 text-sm font-medium">{{ data.mode === 'edit' ? 'Updating customer...' : 'Saving customer...' }}</span>
     </div>
   </div>
   <div
@@ -391,13 +391,13 @@
       [matTooltip]="
         customerForm.invalid
           ? 'Please fill all required fields correctly'
-          : 'Save customer'
+          : data.mode === 'edit' ? 'Update customer' : 'Save customer'
       "
       matTooltipPosition="above"
     >
       <mat-icon *ngIf="!isSaving">save</mat-icon>
       <mat-spinner *ngIf="isSaving" diameter="18"></mat-spinner>
-      Save
+      {{ data.mode === 'edit' ? 'Update' : 'Save' }}
     </button>
   </div>
 </div>

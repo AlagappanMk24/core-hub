@@ -16,12 +16,9 @@ export class UserGuard implements CanActivate {
     // this.router.navigate(['/notfound']);
     // return false;
     const user = this.authService.getUserDetail();
-    console.log('UserGuard: User details:', user); // Debug
     if (this.authService.hasRole('User') || this.authService.hasRole('Admin')) {
-      console.log('UserGuard: Access granted for route:', state.url);
       return true;
     }
-    console.log('UserGuard: Access denied, redirecting to /notfound');
     this.router.navigate(['/notfound']);
     return false;
   }

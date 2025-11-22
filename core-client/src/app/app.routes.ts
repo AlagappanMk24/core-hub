@@ -36,6 +36,7 @@ import { InvoiceAccessGuard } from './guards/invoice-access.guard';
 import { RedirectGuard } from './guards/redirect.guard';
 import { AdminOrUserGuard } from './guards/admin-or-user.guard';
 import { CustomerListComponent } from './pages/customers/customer-list.component';
+import { RoleMangementComponent } from './features/areas/admin/role-management/role-management.component';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -156,7 +157,7 @@ export const routes: Routes = [
       },
       {
         path: 'role-management',
-        component: UserRoleManagementComponent,
+        component: RoleMangementComponent,
         canActivate: [AdminGuard],
       },
     ],

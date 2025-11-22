@@ -21,8 +21,10 @@ import { MatSnackBar, MatSnackBarModule } from '@angular/material/snack-bar';
 import { CommonModule } from '@angular/common';
 import { animate, style, transition, trigger } from '@angular/animations';
 import { CustomerService } from '../../../../services/customer/customer.service';
+import { CustomerUpdateDto, CustomerCreateDto } from '../../../../services/customer/models/customer.model';
 
 interface CustomerFormData {
+  id?: number;
   name: string;
   email: string;
   phoneNumber: string;
@@ -92,9 +94,9 @@ export class ZipCodeValidatorDirective implements Validator {
 }
 
 @Component({
-  selector: 'app-create-customer-dialog',
-  templateUrl: './create-customer-dialog.component.html',
-  styleUrls: ['./create-customer-dialog.component.css'],
+  selector: 'app-customer-dialog',
+  templateUrl: './customer-dialog.component.html',
+  styleUrls: ['./customer-dialog.component.css'],
   standalone: true,
   imports: [
     CommonModule,
@@ -126,7 +128,7 @@ export class ZipCodeValidatorDirective implements Validator {
     ]),
   ],
 })
-export class CreateCustomerDialogComponent {
+export class CustomerDialogComponent {
   customer: CustomerFormData = {
     name: '',
     email: '',
@@ -141,12 +143,14 @@ export class CreateCustomerDialogComponent {
   isSaving = false;
 
   constructor(
-    public dialogRef: MatDialogRef<CreateCustomerDialogComponent>,
-    @Inject(MAT_DIALOG_DATA) public data: any,
+    public dialogRef: MatDialogRef<CustomerDialogComponent>,
+    @Inject(MAT_DIALOG_DATA) public data: { mode: 'create' | 'edit'; customer?: CustomerFormData },
     private customerService: CustomerService,
     private snackBar: MatSnackBar
   ) {
-    this.dialogRef.updateSize('600px');
+    if (this.data.mode === 'edit' && this.data.customer) {
+      this.customer = { ...this.data.customer };
+    }
   }
 
   onCancel(): void {
@@ -154,9 +158,8 @@ export class CreateCustomerDialogComponent {
   }
 
   onSave(customerForm: NgForm): void {
-    console.log(customerForm, 'cf');
     if (customerForm.invalid) {
-      customerForm.control.markAllAsTouched(); // Mark all fields as touched to show errors
+      customerForm.control.markAllAsTouched();
       this.snackBar.open(
         'Please fill all required fields correctly.',
         'Close',
@@ -169,51 +172,66 @@ export class CreateCustomerDialogComponent {
     }
 
     this.isSaving = true;
-    const newCustomer = {
+    const customerData: CustomerUpdateDto = {
+      id: this.customer.id!, // Non-null assertion since id is guaranteed in edit mode
       name: this.customer.name,
       email: this.customer.email,
       phoneNumber: this.customer.phoneNumber,
       address1: this.customer.address1,
-      address2: this.customer.address2,
+      address2: this.customer.address2 || undefined,
       city: this.customer.city,
-      state: this.customer.state,
+      state: this.customer.state || undefined,
       country: this.customer.country,
       zipCode: this.customer.zipCode,
     };
 
-    console.log(newCustomer, 'newCustomer');
-
-    this.customerService.createCustomer(newCustomer).subscribe({
-      next: (response) => {
-        this.isSaving = false;
-        this.snackBar.open('Customer created successfully!', 'Close', {
-          duration: 3000,
-          panelClass: ['success-snackbar'],
-        });
-        this.dialogRef.close({
-          id: response.id,
-          name: response.name,
-          email: response.email,
-          phoneNumber: response.phoneNumber,
-          address1: response.address.address1,
-          address2: response.address.address2,
-          city: response.address.city,
-          state: response.address.state,
-          country: response.address.country,
-          zipCode: response.address.zipCode,
-        });
-      },
-      error: (err) => {
-        this.isSaving = false;
-        let errorMessage = 'Failed to create customer. Please try again.';
-        if (err.status === 400 && err.error?.detail) {
-          errorMessage = err.error.detail; // e.g., "A customer with this email already exists."
-        }
-        this.snackBar.open(errorMessage, 'Close', {
-          duration: 5000,
-          panelClass: ['error-snackbar'],
-        });
-      },
-    });
+    if (this.data.mode === 'edit' && this.customer.id) {
+      this.customerService.updateCustomer(this.customer.id, customerData).subscribe({
+        next: (response) => {
+          this.isSaving = false;
+          this.snackBar.open('Customer updated successfully!', 'Close', {
+            duration: 3000,
+            panelClass: ['success-snackbar'],
+          });
+          this.dialogRef.close(response);
+        },
+        error: (err) => {
+          this.isSaving = false;
+          this.snackBar.open(err.message || 'Failed to update customer', 'Close', {
+            duration: 5000,
+            panelClass: ['error-snackbar'],
+          });
+        },
+      });
+    } else {
+      const createData: CustomerCreateDto = {
+        name: customerData.name,
+        email: customerData.email,
+        phoneNumber: customerData.phoneNumber,
+        address1: customerData.address1,
+        address2: customerData.address2,
+        city: customerData.city,
+        state: customerData.state,
+        country: customerData.country,
+        zipCode: customerData.zipCode,
+      };
+      this.customerService.createCustomer(createData).subscribe({
+        next: (response) => {
+          this.isSaving = false;
+          this.snackBar.open('Customer created successfully!', 'Close', {
+            duration: 3000,
+            panelClass: ['success-snackbar'],
+          });
+          this.dialogRef.close(response);
+        },
+        error: (err) => {
+          this.isSaving = false;
+          this.snackBar.open(err.message || 'Failed to create customer', 'Close', {
+            duration: 5000,
+            panelClass: ['error-snackbar'],
+          });
+        },
+      });
+    }
   }
 }

@@ -24,10 +24,11 @@ export interface InvoiceUpsert {
   discounts: { description: string; amount: number; isPercentage: boolean }[];
   invoiceStatus?: string;
   paymentStatus?: string;
+  attachments: Attachment[]; 
 }
 
 export interface Invoice {
-  id: string;
+  id: number;
   customerName: string;
   invoiceNumber: string;
   invoiceStatus: 'Draft' | 'Sent' | 'Approved' | 'Cancelled';
@@ -62,6 +63,7 @@ export interface Invoice {
   customer: Customer;
   company?: Company; // Added for company info
   subtotal: number;
+  invoiceAttachments: Attachment[];
 }
 
 export interface Address {
@@ -89,7 +91,7 @@ export interface Customer {
 //   address: Address;
 // }
 export interface InvoiceApiResponse {
-  id: string;
+  id: number;
   invoiceNumber: string;
   invoiceStatus: 'Draft' | 'Sent' | 'Approved' | 'Cancelled';
   paymentStatus:
@@ -122,6 +124,7 @@ export interface InvoiceApiResponse {
   isAutomated: boolean;
   customer: Customer;
   subtotal: number;
+  invoiceAttachments: Attachment[];
 }
 
 export interface TaxType {
@@ -195,4 +198,10 @@ export interface InvoiceFilter {
   issueDateTo?: string;
   dueDateFrom?: string;
   dueDateTo?: string;
+}
+export interface Attachment {
+  id?: number; // Optional, as new attachments may not have an ID yet
+  fileName: string;
+  fileUrl: string;
+  file?: File; // Optional, used for client-side file handling
 }

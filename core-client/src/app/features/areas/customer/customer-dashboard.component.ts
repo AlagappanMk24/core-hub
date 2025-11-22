@@ -416,7 +416,6 @@ export class CustomerDashboardComponent implements OnInit, OnDestroy {
       );
       return;
     }
-    console.log('Auth token:', token);
     this.hubConnection = new HubConnectionBuilder()
       .withUrl(`${this.signalRBaseUrl}/notificationHub`, {
         accessTokenFactory: () => token,

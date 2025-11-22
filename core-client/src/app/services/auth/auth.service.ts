@@ -68,7 +68,6 @@ export class AuthService {
         if (response.isAuthenticated && response.token) {
           localStorage.setItem(this.tokenKey, response.token);
           // const decoded: any = jwtDecode(response.token);
-          // console.log(decoded);
           // if (!decoded.companyId) {
           //   // Redirect to company selection if no companyId
           //   window.location.href = '/auth/select-company';
@@ -109,7 +108,6 @@ export class AuthService {
     if (!token) return null;
     try {
       const decodedToken: any = jwtDecode(token);
-         console.log('Decoded JWT:', decodedToken); // Debug
       const roles = Array.isArray(
         decodedToken[
           'http://schemas.microsoft.com/ws/2008/06/identity/claims/role'
@@ -260,7 +258,6 @@ export class AuthService {
   hasRole(role: string): boolean {
     const user = this.getUserDetail();
     const roles = user?.roles || [];
-    console.log(`Checking for role ${role}:`, roles); // Debug
     return roles.includes(role);
   }
 

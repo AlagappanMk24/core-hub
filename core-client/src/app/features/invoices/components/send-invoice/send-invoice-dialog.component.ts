@@ -457,7 +457,6 @@ export class SendInvoiceDialogComponent {
         ? [...uniqueCc.filter(email => email !== this.emailData.from), this.emailData.from]
         : uniqueCc,
     };
-    console.log('Sending payload:', JSON.stringify(payload, null, 2));
     this.invoiceService.sendInvoice(this.data.invoiceId, payload).subscribe({
       next: () => {
         this.isSending = false;

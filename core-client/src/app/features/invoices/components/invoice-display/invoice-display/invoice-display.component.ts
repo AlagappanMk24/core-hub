@@ -86,9 +86,17 @@ export class InvoiceDisplayComponent implements OnInit {
   ngOnInit(): void {
     if (this.mode === 'view') {
       const id = this.route.snapshot.paramMap.get('id');
-       console.log('Invoice ID from route:', id); // Debug
       if (id) {
-        this.loadInvoiceAndCompany(id);
+        const invoiceId = Number(id);
+        if (isNaN(invoiceId)) {
+          this.snackBar.open('Invalid invoice ID format.', 'Close', {
+            duration: 3000,
+            panelClass: ['error-snackbar'],
+          });
+          this.router.navigate(['/invoices']);
+          return;
+        }
+        this.loadInvoiceAndCompany(invoiceId);
       } else {
         this.snackBar.open('Invalid invoice ID.', 'Close', {
           duration: 3000,
@@ -110,7 +118,7 @@ export class InvoiceDisplayComponent implements OnInit {
     }
   }
 
-  loadInvoiceAndCompany(id: string): void {
+  loadInvoiceAndCompany(id: number): void {
     this.isLoading = true;
     // Get the company ID from AuthService
     const companyId = this.authService.getUserDetail()?.companyId;

@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{{ isEditMode ? "Edit Invoice" : "Create Invoice" }}</title>
+    <title>{{ isEditMode || invoiceData.id ? 'Edit Invoice' : 'Create Invoice' }}</title>
     <link
       href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
       rel="stylesheet"
@@ -39,7 +39,7 @@
           <h1
             class="page-title text-2xl sm:text-3xl font-semibold text-gray-800"
           >
-            {{ isEditMode ? "Edit Invoice" : "Create Invoice" }}
+            {{ isEditMode || invoiceData.id ? 'Edit Invoice' : 'Create Invoice' }}
           </h1>
         </div>
         <div class="header-right flex flex-col sm:flex-row gap-3 mt-4 sm:mt-0">
@@ -70,7 +70,7 @@
             class="primary-btn px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
             (click)="saveAndContinue()"
           >
-            {{ isEditMode ? "Update Invoice" : "Save and Continue" }}
+           {{ isEditMode || invoiceData.id ? "Update and Continue" : "Save and Continue" }}
           </button>
           <button
             *ngIf="isEditMode"
@@ -227,6 +227,7 @@
                     type="text"
                     class="form-input w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     [(ngModel)]="invoiceData.invoiceNumber"
+                    (ngModelChange)="onInvoiceNumberChange()"
                     placeholder="003"
                     [disabled]="invoiceData.isAutomated"
                   />
@@ -239,6 +240,9 @@
                     <circle cx="12" cy="12" r="10" />
                     <path d="M12 16v.01M12 12a2 2 0 0 0 2-2V8" />
                   </svg>
+                  <div *ngIf="errors['invoiceNumber']" class="error-text text-red-500 text-sm mt-1">
+                    {{ errors['invoiceNumber'] }}
+                  </div>
                 </div>
               </div>
               <div class="field-group">
@@ -248,21 +252,35 @@
                 <input
                   type="text"
                   class="form-input w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Enter PO number"
                   [(ngModel)]="invoiceData.poNumber"
-                  placeholder="INV1812230002"
+                  (ngModelChange)="onPoNumberChange()"
                 />
+                <div *ngIf="errors['poNumber']" class="error-text text-red-500 text-sm mt-1">
+                  {{ errors['poNumber'] }}
+                </div>
               </div>
             </div>
             <div class="field-group">
               <label class="field-label text-sm font-medium text-gray-700"
                 >Project Detail</label
               >
-              <input
+              <!-- <input
                 type="text"
                 class="form-input w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                 [(ngModel)]="invoiceData.projectDetail"
                 placeholder="Summary (e.g. project name, description of invoice)"
-              />
+              /> -->
+              <textarea
+                class="form-input w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
+                placeholder="Enter project details"
+                [(ngModel)]="invoiceData.projectDetail"
+                (ngModelChange)="onProjectDetailChange()"
+                rows="3"
+              ></textarea>
+              <div *ngIf="errors['projectDetail']" class="error-text text-red-500 text-sm mt-1">
+                {{ errors['projectDetail'] }}
+              </div>
             </div>
           </div>
 
@@ -297,7 +315,11 @@
                     class="item-input w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     [(ngModel)]="item.description"
                     placeholder="Enter item description"
+                    (ngModelChange)="onItemDescriptionChange(i)"
                   />
+                  <div *ngIf="errors['items[' + i + '].description']" class="error-text text-red-500 text-sm mt-1">
+                  {{ errors['items[' + i + '].description'] }}
+                </div>
                   <div class="tax-section flex items-center gap-2">
                     <span class="tax-label text-sm text-gray-600">Tax</span>
                     <select
@@ -389,6 +411,135 @@
               </svg>
               Add Item
             </button>
+          </div>
+
+          <!-- Attachments Section -->
+          <div
+            class="attachments-section bg-white p-4 sm:p-6 rounded-lg shadow-sm"
+          >
+            <h2 class="section-title text-xl font-semibold text-gray-800 mb-4">
+              Attachments
+            </h2>
+            <div class="field-group mb-6">
+              <label
+                class="field-label text-sm font-medium text-gray-700 mb-2 block"
+              >
+                Upload Attachments
+              </label>
+              <div
+                class="drag-drop-area relative border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-purple-600 transition"
+                (dragover)="onDragOver($event)"
+                (dragleave)="onDragLeave($event)"
+                (drop)="onFileDropped($event)"
+              >
+                <input
+                  type="file"
+                  class="hidden"
+                  accept="image/jpeg,image/png,application/pdf"
+                  multiple
+                  (change)="onFileSelected($event)"
+                  #fileInput
+                />
+                <svg
+                  class="w-10 h-10 mx-auto text-purple-600 mb-2"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    stroke-width="2"
+                    d="M7 16a4 4 0 01-4-4V7a4 4 0 014-4h10a4 4 0 014 4v5a4 4 0 01-4 4m-3 4l3-3m0 0l3 3m-3-3v12"
+                  />
+                </svg>
+                <p class="text-sm text-gray-600">
+                  Drag and drop files here or
+                  <span
+                    class="text-purple-600 hover:text-purple-700 cursor-pointer font-medium"
+                    (click)="fileInput.click()"
+                    >browse</span
+                  >
+                </p>
+                <p class="text-xs text-gray-500 mt-1">
+                  Supported formats: JPEG, PNG, PDF (Max 5MB each)
+                </p>
+              </div>
+            </div>
+            <div class="attachments-list flex flex-col gap-4">
+              <div
+                class="attachment-card bg-gray-50 p-4 rounded-lg shadow-sm flex items-center justify-between"
+                *ngFor="
+                  let attachment of invoiceData.invoiceAttachments;
+                  let i = index
+                "
+              >
+                <div class="attachment-info flex items-center gap-3">
+                  <svg
+                    class="w-6 h-6 text-gray-500"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                  <div>
+                    <p
+                      class="attachment-name text-sm font-medium text-gray-800"
+                    >
+                      {{ attachment.fileName }}
+                    </p>
+                  </div>
+                </div>
+                <div class="attachment-actions flex gap-2">
+                  <button
+                    class="preview-btn p-2 rounded-full hover:bg-gray-200 transition"
+                    (click)="previewAttachment(attachment)"
+                    title="Preview Attachment"
+                  >
+                    <svg
+                      class="w-5 h-5 text-gray-600"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                      <circle cx="12" cy="12" r="3" />
+                    </svg>
+                  </button>
+                  <button
+                    class="delete-attachment-btn p-2 rounded-full hover:bg-red-100 transition"
+                    (click)="removeAttachment(i)"
+                    title="Remove Attachment"
+                  >
+                    <svg
+                      class="w-5 h-5 text-red-500"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        stroke-width="2"
+                        d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4m-4 4v12m4-12v12"
+                      />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div
+                class="no-attachments text-sm text-gray-500 text-center py-4"
+                *ngIf="!invoiceData.invoiceAttachments.length"
+              >
+                No attachments added yet.
+              </div>
+            </div>
           </div>
 
           <!-- Notes Section -->
@@ -520,6 +671,9 @@
                     </div>
                   </div>
                 </div>
+                <div *ngIf="errors['customerId']" class="error-text text-red-500 text-sm mt-1">
+                {{ errors['customerId'] }}
+              </div>
               </div>
               <div class="helper-text text-xs text-gray-600 mt-1">
                 *Select one customer
@@ -701,6 +855,8 @@
                     [(ngModel)]="invoiceData.dueDate"
                     (ngModelChange)="onDueDateChange()"
                     placeholder="dd/mm/yyyy"
+                    pattern="\d{2}/\d{2}/\d{4}"
+                    title="Enter date in dd/mm/yyyy format (e.g., 31/12/2024)"
                     (click)="toggleCalendar('due')"
                   />
                   <svg
