@@ -88,6 +88,32 @@ namespace Core_API.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "CompanyRequests",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    FullName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Email = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    CompanyName = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    RequestedAt = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Status = table.Column<int>(type: "int", nullable: false),
+                    ProcessedAt = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    ProcessedBy = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    RejectionReason = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    RequestToken = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UpdatedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
+                    CreatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_CompanyRequests", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "EmailSettings",
                 columns: table => new
                 {
@@ -750,6 +776,9 @@ namespace Core_API.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "AuthTokens");
+
+            migrationBuilder.DropTable(
+                name: "CompanyRequests");
 
             migrationBuilder.DropTable(
                 name: "Discounts");

@@ -126,7 +126,7 @@ public class DbInitializer(UserManager<ApplicationUser> userManager, RoleManager
     }
     private async Task CreateAdminUserAsync(CancellationToken cancellationToken)
     {
-        const string adminEmail = "alagappanmk98@gmail.com";
+        const string adminEmail = "alagappanmuthukumar1998@gmail.com";
 
         try
         {
@@ -210,7 +210,7 @@ public class DbInitializer(UserManager<ApplicationUser> userManager, RoleManager
         try
         {
             _logger.LogInformation("Seeding companies...");
-            var adminEmail = "alagappanmk98@gmail.com";
+            var adminEmail = "alagappanmuthukumar1998@gmail.com";
             var adminUser = await _userManager.FindByEmailAsync(adminEmail);
             if (adminUser == null)
             {
@@ -394,7 +394,7 @@ public class DbInitializer(UserManager<ApplicationUser> userManager, RoleManager
                 // KL Infotech - 8 Customers
                 new() {
                     Name = "Alagappan M",
-                    Email = "alagappanmuthukumar1998@gmail.com",
+                    Email = "alagappanmk984@gmail.com",
                     PhoneNumber = "555-0101",
                     CompanyId = companyMap["KL Infotech"],
                     Address = new Address { Address1 = "123 Maple St", Address2 = "Apt 4B", City = "Springfield", State = "IL", Country = "USA", ZipCode = "62701" }
@@ -784,26 +784,26 @@ public class DbInitializer(UserManager<ApplicationUser> userManager, RoleManager
             var customerUsersToSeed = new List<(Customer Customer, ApplicationUser User, string Role)>
             {
                 // Customer Role
-                (customers.First(c => c.Email == "alagappanmuthukumar1998@gmail.com"), new ApplicationUser
+                (customers.First(c => c.Email == "alagappanmk984@gmail.com"), new ApplicationUser
                 {
                     UserName = "alaga.muthu@example.com",
-                    Email = "alagappanmuthukumar1998@gmail.com",
+                    Email = "alagappanmk984@gmail.com",
                     FullName = "Alagappan M",
-                    CustomerId = customerMap["alagappanmuthukumar1998@gmail.com"],
+                    CustomerId = customerMap["alagappanmk984@gmail.com"],
                     EmailConfirmed = true,
                     CompanyId = companyMap["KL Infotech"]
                 }, AppConstants.Role_Customer),
 
-                // User Role
-                (customers.First(c => c.Email == "alagappantest@gmail.com"), new ApplicationUser
-                {
-                    UserName = "alagappantest@gmail.com",
-                    Email = "alagappantest@gmail.com",
-                    FullName = "Alagappan T",
-                    CustomerId = customerMap["alagappantest@gmail.com"],
-                    EmailConfirmed = true,
-                    CompanyId = companyMap["KL Infotech"]
-                }, AppConstants.Role_User)
+                //// User Role
+                //(customers.First(c => c.Email == "alagappantest@gmail.com"), new ApplicationUser
+                //{
+                //    UserName = "alagappantest@gmail.com",
+                //    Email = "alagappantest@gmail.com",
+                //    FullName = "Alagappan T",
+                //    CustomerId = customerMap["alagappantest@gmail.com"],
+                //    EmailConfirmed = true,
+                //    CompanyId = companyMap["KL Infotech"]
+                //}, AppConstants.Role_User)
             };
 
             foreach (var (customer, user, role) in customerUsersToSeed)
@@ -848,7 +848,7 @@ public class DbInitializer(UserManager<ApplicationUser> userManager, RoleManager
                     InvoiceNumber = "INV-001", PONumber = "PO-001", IssueDate = DateTime.UtcNow.AddDays(-30), DueDate = DateTime.UtcNow.AddDays(-15),
                     InvoiceStatus = InvoiceStatus.Approved, PaymentStatus = PaymentStatus.Completed,
                     InvoiceType = InvoiceType.Standard,
-                    CustomerId = customerMap["alagappanmuthukumar1998@gmail.com"],
+                    CustomerId = customerMap["alagappanmk984@gmail.com"],
                     CompanyId = companyMap["KL Infotech"],
                     Subtotal = 2950.00m, Tax =  295.00m, TotalAmount = 3095.00m, // Subtotal(2950) + Tax(295) - Discount (150) = Total Amount (3095)
                     Notes = "Payment received on time.", PaymentMethod = "Bank Transfer",
@@ -1009,7 +1009,7 @@ public class DbInitializer(UserManager<ApplicationUser> userManager, RoleManager
                     InvoiceNumber = "INV-013", PONumber = "PO-013", IssueDate = DateTime.UtcNow.AddDays(-40), DueDate = DateTime.UtcNow.AddDays(-25),
                     InvoiceStatus = InvoiceStatus.Approved, PaymentStatus = PaymentStatus.Completed,
                     InvoiceType = InvoiceType.Standard,
-                    CustomerId = customerMap["alagappanmuthukumar1998@gmail.com"], CompanyId = companyMap["KL Infotech"],
+                    CustomerId = customerMap["alagappanmk984@gmail.com"], CompanyId = companyMap["KL Infotech"],
                     Subtotal = 3450.00m, Tax = 345.00m, TotalAmount = 3795.00m,
                     Notes = "Payment received in full early.", PaymentMethod = "Bank Transfer",
                     Currency = "USD",
@@ -1048,7 +1048,7 @@ public class DbInitializer(UserManager<ApplicationUser> userManager, RoleManager
                     InvoiceNumber = "INV-016", PONumber = "PO-016", IssueDate = DateTime.UtcNow.AddDays(-22), DueDate = DateTime.UtcNow.AddDays(-5),
                     InvoiceStatus = InvoiceStatus.Sent, PaymentStatus = PaymentStatus.Pending,
                     InvoiceType = InvoiceType.Standard,
-                    CustomerId = customerMap["alagappanmuthukumar1998@gmail.com"], CompanyId = companyMap["KL Infotech"],
+                    CustomerId = customerMap["alagappanmk984@gmail.com"], CompanyId = companyMap["KL Infotech"],
                     Subtotal = 4000.00m, Tax = 400.00m, TotalAmount = 4400.00m,
                     Notes = "Awaiting client payment.", PaymentMethod = "PayPal",
                     Currency = "USD",
@@ -1086,8 +1086,8 @@ public class DbInitializer(UserManager<ApplicationUser> userManager, RoleManager
                 {
                     InvoiceNumber = "INV-019", PONumber = "PO-019", IssueDate = DateTime.UtcNow.AddDays(-10), DueDate = DateTime.UtcNow.AddDays(10),
                     InvoiceStatus = InvoiceStatus.Sent, PaymentStatus = PaymentStatus.Pending,
-                    InvoiceType = InvoiceType.Standard,
-                    CustomerId = customerMap["alagappanmuthukumar1998@gmail.com"], CompanyId = companyMap["KL Infotech"],
+                    InvoiceType = InvoiceType.Standard, 
+                    CustomerId = customerMap["alagappanmk984@gmail.com"], CompanyId = companyMap["KL Infotech"],
                     Subtotal = 4500.00m, Tax = 450.00m, TotalAmount = 4950.00m,
                     Notes = "Awaiting final payment.", PaymentMethod = "Stripe",
                     Currency = "USD",

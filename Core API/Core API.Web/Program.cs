@@ -418,7 +418,7 @@ void ConfigureCORS(IServiceCollection services)
     services.AddCors(options =>
     {
         options.AddPolicy("AllowMyOrigin",
-            builder => builder.WithOrigins("http://localhost:4200", "https://localhost:4200")
+            builder => builder.WithOrigins("http://localhost:4200", "https://localhost:4200", "https://localhost:64622", "http://localhost:64622")
                               .AllowAnyHeader()
                               .AllowAnyMethod()
                               .AllowCredentials());

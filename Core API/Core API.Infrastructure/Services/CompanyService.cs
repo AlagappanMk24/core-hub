@@ -72,7 +72,7 @@ namespace Core_API.Infrastructure.Services
         public async Task<IEnumerable<CompanyResponseDto>> GetAllCompaniesAsync()
         {
             var companies = await _unitOfWork.Companies.GetAllAsync(c => !c.IsDeleted);
-            return [.. companies.Select(c => new CompanyResponseDto
+            return companies.Select(c => new CompanyResponseDto
             {
                 Id = c.Id,
                 Name = c.Name,
@@ -84,7 +84,7 @@ namespace Core_API.Infrastructure.Services
                 CreatedByUserId = c.CreatedByUserId,
                 CreatedAt = (DateTime)c.CreatedDate,
                 UpdatedAt = c.UpdatedDate
-            })];
+            }).ToList();
         }
         public async Task<bool> DeleteCompanyAsync(int id)
         {

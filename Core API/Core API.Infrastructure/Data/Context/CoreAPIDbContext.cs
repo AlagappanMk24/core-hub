@@ -24,6 +24,7 @@ namespace Core_API.Infrastructure.Data.Context
         public DbSet<RefreshToken> RefreshTokens { get; set; }
         public DbSet<InvoiceSettings> InvoiceSettings { get; set; }
         public DbSet<EmailSettings> EmailSettings { get; set; }
+        public DbSet<CompanyRequest> CompanyRequests { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

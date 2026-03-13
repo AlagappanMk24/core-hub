@@ -5,7 +5,6 @@ using Core_API.Application.Contracts.Services.Auth;
 using Core_API.Application.Contracts.Services.File.Excel;
 using Core_API.Application.Contracts.Services.File.Pdf;
 using Core_API.Infrastructure.Data.Initializers;
-using Core_API.Infrastructure.External.SMS;
 using Core_API.Infrastructure.Persistence;
 using Core_API.Infrastructure.Service;
 using Core_API.Infrastructure.Services;
@@ -39,6 +38,7 @@ namespace Core_API.Infrastructure.DI
             services.AddScoped<ICustomerService, CustomerService>();
             services.AddScoped<IInvoiceService, InvoiceService>();
             services.AddScoped<ITaxService, TaxService>();
+            services.AddScoped<ICompanyRequestService, CompanyRequestService>();
 
             // Register utility and helper services
             services.AddScoped<IEmailSendingService, EmailSendingService>();

@@ -11,6 +11,7 @@ namespace Core_API.Application.Contracts.Persistence
         Task RemoveAsync(T entity);
         Task RemoveRangeAsync(IEnumerable<T> entity);
         Task<int> CountAsync(Expression<Func<T, bool>> filter = null);
+        Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate);
         IQueryable<T> Query();
         void Update(T entity);
         void Delete(T entity);

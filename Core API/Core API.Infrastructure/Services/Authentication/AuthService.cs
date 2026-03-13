@@ -644,7 +644,6 @@ namespace Core_API.Infrastructure.Service
                     Email = userInfo.Email,
                     FullName = userInfo.Name
                 };
-
                 var createResult = await _accountService.CreateUserAsync(user, userInfo.Provider, userInfo.ProviderKey);
                 if (!createResult.Succeeded)
                 {

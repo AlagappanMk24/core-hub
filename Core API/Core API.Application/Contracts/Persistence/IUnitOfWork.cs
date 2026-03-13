@@ -1,4 +1,6 @@
-﻿namespace Core_API.Application.Contracts.Persistence
+﻿using Microsoft.EntityFrameworkCore.Storage;
+
+namespace Core_API.Application.Contracts.Persistence
 {
     public interface IUnitOfWork : IDisposable
     {
@@ -11,6 +13,10 @@
         IInvoiceSettingsRepository InvoiceSettings { get; }
         IEmailSettingsRepository EmailSettings { get; }
         ICompanyRepository Companies { get; }
+        ICompanyRequestRepository CompanyRequests { get; }
         Task SaveChangesAsync();
+        Task<IDbContextTransaction> BeginTransactionAsync(); 
+        Task CommitTransactionAsync(); 
+        Task RollbackTransactionAsync(); 
     }
 }

@@ -1,4 +1,5 @@
 ﻿using Core_API.Application.Common.Models;
+using Core_API.Application.DTOs.Authentication.Request;
 using Core_API.Domain.Models.Email;
 using System.Threading.Tasks;
 
@@ -42,5 +43,7 @@ namespace Core_API.Application.Contracts.Services
         Task SendWelcomeEmailAsync(WelcomeEmailRequest request);
 
         Task SendInvoiceEmailAsync(InvoiceEmailRequest request, OperationContext operationContext, MemoryStream pdfStream, string pdfFileName);
+
+        //Task SendCompanyRequestEmailAsync(CompanyRequestDto request);
     }
 }

@@ -119,6 +119,11 @@ namespace Core_API.Infrastructure.Persistence.Repositories
             }
             return await query.CountAsync();
         }
+
+        public async Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate)
+        {
+            return await dbset.AnyAsync(predicate);
+        }
         public IQueryable<T> Query()
         {
             return dbset.AsQueryable();
