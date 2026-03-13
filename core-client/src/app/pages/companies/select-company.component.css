@@ -418,7 +418,114 @@
   font-size: 16px;
   text-align: center;
 }
+/* Add these styles to your existing CSS */
+.request-company-link {
+  text-align: center;
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid #e5e7eb;
+  font-size: 14px;
+  color: #6b7280;
+}
 
+.request-link {
+  color: #8b5cf6;
+  text-decoration: none;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.request-link:hover {
+  text-decoration: underline;
+}
+
+.request-company-form {
+  width: 100%;
+  animation: fadeIn 0.3s ease;
+}
+
+.request-title {
+  font-size: 24px;
+  font-weight: bold;
+  color: #333;
+  margin: 0 0 8px 0;
+  text-align: center;
+}
+
+.request-subtitle {
+  font-size: 14px;
+  color: #666;
+  margin: 0 0 20px 0;
+  text-align: center;
+}
+
+.back-link {
+  text-align: center;
+  margin-top: 15px;
+}
+
+.toggle-form-link {
+  text-align: center;
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid #e5e7eb;
+  font-size: 14px;
+  color: #6b7280;
+}
+
+.toggle-link {
+  color: #8b5cf6;
+  text-decoration: none;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.toggle-link:hover {
+  text-decoration: underline;
+}
+
+.success-message {
+  color: #10b981;
+  font-size: 14px;
+  margin-bottom: 15px;
+  text-align: center;
+  padding: 10px;
+  background: #d1fae5;
+  border-radius: 8px;
+   border-left: 4px solid #10b981;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  animation: slideIn 0.3s ease;
+}
+.success-message i {
+  font-size: 18px;
+}
+
+.global-success {
+  margin-bottom: 15px;
+  margin-left: 0;
+}
+
+.user-icon {
+  background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23666"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>');
+}
+
+.email-icon {
+  background-image: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23666"><path d="M20 4H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>');
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 /* Responsive Design */
 @media (max-width: 768px) {
   .main-content {

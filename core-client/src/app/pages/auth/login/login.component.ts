@@ -10,6 +10,7 @@ import { Router, RouterModule, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../../services/auth/auth.service';
 import { LoginRequest } from '../../../interfaces/auth/auth-request/login-request';
 import { CommonModule } from '@angular/common';
+import { jwtDecode } from 'jwt-decode';
 
 /**
  * Component for handling user login with email/password and external providers.
@@ -70,34 +71,108 @@ export class LoginComponent implements OnInit {
       const authCode = params['code'];
       const provider = params['state'];
       if (authCode && provider) {
-        this.loading = true;
-        this.loadingText = `Processing ${provider} login...`;
-        // Process external login
-        this.authService.externalLogin(authCode, provider).subscribe({
-          next: (response) => {
-            if (response.token) {
-              localStorage.setItem('authToken', response.token);
-              this.loadingText = 'Navigating to dashboard...';
-              setTimeout(() => {
-                this.loading = false;
-                this.router.navigate(['/dashboard']);
-              }, 2000);
-            } else {
-              this.loading = false;
-              this.loginError =
-                response.message || 'External login failed. Please try again.';
-            }
-          },
-          error: (error) => {
-            this.loading = false;
-            this.loginError =
-              error.error?.message ||
-              'An error occurred during external login.';
-            console.error('External login error:', error);
-          },
-        });
+        this.handleExternalLogin(authCode, provider);
       }
     });
+  }
+
+    /**
+   * Handle external login response
+   */
+  private handleExternalLogin(authCode: string, provider: string): void {
+    this.loading = true;
+    this.loadingText = `Processing ${provider} login...`;
+
+    this.authService.externalLogin(authCode, provider).subscribe({
+      next: (response) => {
+        if (response.token) {
+          localStorage.setItem('authToken', response.token);
+          
+          // Decode token to get user information
+          const decoded: any = jwtDecode(response.token);
+          console.log('Decoded token in login:', decoded);
+          
+          // Extract roles from token
+          const roles = this.extractRoles(decoded);
+          console.log('User roles:', roles);
+          
+          // Check if company selection is needed
+          const companyId = decoded['companyId'];
+          const customerId = decoded['customerId'];
+          
+          this.loadingText = 'Login successful! Redirecting...';
+          
+          setTimeout(() => {
+            this.loading = false;
+            this.redirectBasedOnRole(roles, companyId, customerId);
+          }, 1500);
+        } else {
+          this.loading = false;
+          this.loginError =
+            response.message || 'External login failed. Please try again.';
+        }
+      },
+      error: (error) => {
+        this.loading = false;
+        this.loginError =
+          error.error?.message ||
+          'An error occurred during external login.';
+        console.error('External login error:', error);
+      },
+    });
+  }
+
+  
+  /**
+   * Extract roles from decoded token
+   */
+  private extractRoles(decoded: any): string[] {
+    const roleClaim = 'http://schemas.microsoft.com/ws/2008/06/identity/claims/role';
+    let roles: string[] = [];
+    
+    if (decoded[roleClaim]) {
+      roles = Array.isArray(decoded[roleClaim]) 
+        ? decoded[roleClaim] 
+        : [decoded[roleClaim]];
+    }
+    
+    return roles;
+  }
+
+  /**
+   * Redirect user based on their role and company selection status
+   */
+  private redirectBasedOnRole(roles: string[], companyId: string, customerId: string): void {
+    // Check if company selection is needed
+    if (!companyId || companyId === '0') {
+      console.log('Company selection needed - redirecting to select-company');
+      this.router.navigate(['/auth/select-company']);
+      return;
+    }
+
+    // Customer role (and not Admin/User)
+    if (roles.includes('Customer') && 
+        !roles.includes('Admin') && 
+        !roles.includes('User') && 
+        !roles.includes('Super Admin')) {
+
+      
+      console.log('Redirecting customer to customer-dashboard');
+      this.router.navigate(['/customer-dashboard']);
+    } 
+    // Admin, User, or Super Admin roles
+    else if (roles.includes('Admin') || 
+             roles.includes('User') || 
+             roles.includes('Super Admin')) {
+      
+      console.log('Redirecting admin/user to dashboard');
+      this.router.navigate(['/dashboard']);
+    } 
+    // Fallback for any other case
+    else {
+      console.error('Unknown user role:', roles);
+      this.router.navigate(['/notfound']);
+    }
   }
 
   /**

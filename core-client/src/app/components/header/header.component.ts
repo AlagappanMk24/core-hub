@@ -1,35 +1,13 @@
 // header.component.ts
-// import { Component, Input, Output, EventEmitter } from '@angular/core';
-// import { CommonModule } from '@angular/common';
-// import { FormsModule } from '@angular/forms';
-
-// @Component({
-//   selector: 'app-header',
-//   standalone: true,
-//   imports: [CommonModule, FormsModule],
-//   templateUrl: './header.component.html',
-//   styleUrls: ['./header.component.css'],
-// })
-// export class HeaderComponent {
-//   @Input() userName: string = 'David Greyhenak';
-//   @Input() userAvatar: string = 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face';
-//   @Input() hasNotifications: boolean = true;
-
-//   @Output() themeChanged = new EventEmitter<string>();
-
-//   searchQuery: string = '';
-
-//   onThemeChange(theme: string): void {
-//     this.themeChanged.emit(theme);
-//   }
-// }
-
 import { Component, Input, Output, EventEmitter, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { AuthService } from '../../services/auth/auth.service';
 import { CommonModule } from '@angular/common';
-import { InvoiceNotification, NotificationService } from '../../services/notification/notification.service';
+import {
+  InvoiceNotification,
+  NotificationService,
+} from '../../services/notification/notification.service';
 import { Subject, takeUntil } from 'rxjs';
 
 @Component({
@@ -47,7 +25,8 @@ export class HeaderComponent {
   @Input() userName: string = 'Guest';
   @Input() userAvatar: string =
     'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face';
-
+  @Input() isSidebarCollapsed: boolean = false; // Add this input
+  @Output() toggleSidebar = new EventEmitter<void>(); // Add this output
   searchQuery: string = '';
   isDropdownOpen: boolean = false;
   isNotificationDropdownOpen: boolean = false;
@@ -115,7 +94,11 @@ export class HeaderComponent {
   get hasNotifications(): boolean {
     return this.notificationService.hasNotifications;
   }
-    get unreadCount(): number {
+  get unreadCount(): number {
     return this.notifications.filter((n) => !n.read).length;
+  }
+  // Add this method to handle sidebar toggle
+  onToggleSidebar(): void {
+    this.toggleSidebar.emit();
   }
 }

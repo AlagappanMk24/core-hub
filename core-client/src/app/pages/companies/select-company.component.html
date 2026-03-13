@@ -1,6 +1,6 @@
 <div class="select-company-container">
   <div class="select-company-card">
-    <!-- Header -->
+    <!-- Header (unchanged) -->
     <div class="header">
       <div class="logo">
         <span class="logo-text">
@@ -16,10 +16,10 @@
 
     <!-- Main Content -->
     <div class="main-content">
-      <!-- Illustration Section -->
+      <!-- Illustration Section (unchanged) -->
       <div class="illustration-section">
         <div class="illustration">
-          <!-- Man illustration -->
+          <!-- ... your existing illustration code ... -->
           <div class="character man">
             <div class="man-head"></div>
             <div class="man-body"></div>
@@ -28,8 +28,6 @@
             <div class="man-leg-left"></div>
             <div class="man-leg-right"></div>
           </div>
-
-          <!-- Woman illustration -->
           <div class="character woman">
             <div class="woman-head"></div>
             <div class="woman-body"></div>
@@ -38,8 +36,6 @@
             <div class="woman-leg-left"></div>
             <div class="woman-leg-right"></div>
           </div>
-
-          <!-- Decorative elements -->
           <div class="plant-pot"></div>
           <div class="leaves leaf1"></div>
           <div class="leaves leaf2"></div>
@@ -49,15 +45,41 @@
 
       <!-- Form Section -->
       <div class="form-section" [class.has-errors]="errorMessage">
+        <!-- Dynamic Welcome Text -->
         <div class="welcome-text">
-          <h2>Select Your Company</h2>
-          <p>Choose the company you are associated with</p>
+          <h2>
+            {{
+              showRequestForm ? "Request New Company" : "Select Your Company"
+            }}
+          </h2>
+          <p>
+            {{
+              showRequestForm
+                ? "Fill in the details to request a new company"
+                : "Choose the company you are associated with"
+            }}
+          </p>
         </div>
+
+        <!-- Success Message (show when request is successful) -->
+        <div class="success-message global-success" *ngIf="showSuccessMessage">
+          <i class="fas fa-check-circle"></i>
+          {{ requestSuccess }}
+        </div>
+
+        <!-- Error Message -->
         <div class="error-message global-error" *ngIf="errorMessage">
+          <i class="fas fa-exclamation-circle"></i>
           {{ errorMessage }}
         </div>
-        <form class="select-company-form" (ngSubmit)="saveCompany()" #form="ngForm">
-          <!-- Company Selection Input -->
+
+        <!-- Company Selection Form (shown when NOT in request mode) -->
+        <form
+          *ngIf="!showRequestForm"
+          class="select-company-form"
+          (ngSubmit)="saveCompany()"
+          #form="ngForm"
+        >
           <div class="input-group">
             <div
               class="input-wrapper"
@@ -84,16 +106,96 @@
               Company selection is required
             </div>
           </div>
-          <!-- Save Button -->
+
           <button
             type="submit"
             class="select-btn"
             [disabled]="isLoading || !selectedCompanyId"
           >
-            SAVE
+            {{ isLoading ? "SAVING..." : "SAVE" }}
           </button>
+
+          <!-- Link to switch to request form -->
+          <div class="toggle-form-link">
+            <span>Your company not listed? </span>
+            <a
+              href="#"
+              (click)="toggleToRequestForm(); $event.preventDefault()"
+              class="toggle-link"
+            >
+              Request to add company
+            </a>
+          </div>
         </form>
-        <!-- Loading Overlay -->
+
+        <!-- Company Request Form (shown when in request mode) -->
+        <form
+          *ngIf="showRequestForm"
+          class="select-company-form"
+          (ngSubmit)="requestCompany()"
+          #requestForm="ngForm"
+        >
+          <div class="input-group">
+            <div class="input-wrapper">
+              <i class="icon user-icon"></i>
+              <input
+                type="text"
+                [(ngModel)]="requestFullName"
+                name="fullName"
+                placeholder="Your Full Name"
+                class="form-input"
+                required
+              />
+            </div>
+          </div>
+
+          <div class="input-group">
+            <div class="input-wrapper">
+              <i class="icon email-icon"></i>
+              <input
+                type="email"
+                [(ngModel)]="requestEmail"
+                name="email"
+                placeholder="Your Email Address"
+                class="form-input"
+                required
+                readonly
+              />
+            </div>
+          </div>
+
+          <div class="input-group">
+            <div class="input-wrapper">
+              <i class="icon company-icon"></i>
+              <input
+                type="text"
+                [(ngModel)]="requestCompanyName"
+                name="companyName"
+                placeholder="Company Name"
+                class="form-input"
+                required
+              />
+            </div>
+          </div>
+
+          <button type="submit" class="select-btn" [disabled]="isLoading">
+            {{ isLoading ? "SENDING..." : "SEND REQUEST" }}
+          </button>
+
+          <!-- Link to switch back to selection form -->
+          <div class="toggle-form-link">
+            <span>Already have a company? </span>
+            <a
+              href="#"
+              (click)="toggleToSelectionForm(); $event.preventDefault()"
+              class="toggle-link"
+            >
+              Select existing company
+            </a>
+          </div>
+        </form>
+
+        <!-- Loading Overlay (unchanged) -->
         <div class="loading-overlay" *ngIf="isLoading">
           <div class="violet-loader"></div>
           <p class="loading-text">{{ loadingText }}</p>

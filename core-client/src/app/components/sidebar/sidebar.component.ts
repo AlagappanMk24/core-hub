@@ -1,101 +1,10 @@
-// import { Component, OnInit } from '@angular/core';
-// import { CommonModule } from '@angular/common';
-// import { Router, NavigationEnd } from '@angular/router';
-// import { filter } from 'rxjs/operators';
-
-// interface MenuItem {
-//   label: string;
-//   icon: string;
-//   route: string;
-//   active: boolean;
-//   hasSubmenu?: boolean;
-//   submenuOpen?: boolean;
-//   subItems?: MenuItem[];
-// }
-
-// @Component({
-//   selector: 'app-sidebar',
-//   standalone: true,
-//   imports: [CommonModule],
-//   templateUrl: './sidebar.component.html',
-//   styleUrls: ['./sidebar.component.css'],
-// })
-
-// export class SidebarComponent implements OnInit {
-//   menuItems: MenuItem[] = [
-//     { label: 'Dashboard', icon: 'fas fa-th-large', route: '/dashboard', active: true },
-//     { label: 'Invoices', icon: 'fas fa-file-invoice', route: '/invoices', active: false },
-//      {
-//       label: 'Settings',
-//       icon: 'fas fa-cog',
-//       route: '/settings',
-//       active: false,
-//       hasSubmenu: true,
-//       submenuOpen: false,
-//       subItems: [
-//         { label: 'Invoice Settings', icon: 'fas fa-file-invoice-dollar', route: '/settings/invoice', active: false },
-//        { label: 'Email Settings', icon: 'fas fa-envelope', route: '/settings/email', active: false },
-//       ],
-//     },
-//   ];
-
-//   constructor(private router: Router) {}
-
-//   ngOnInit(): void {
-//     // Sync active state with current route
-//     this.router.events
-//       .pipe(filter((event) => event instanceof NavigationEnd))
-//       .subscribe((event: NavigationEnd) => {
-//         this.updateActiveMenuItem(event.urlAfterRedirects);
-//       });
-
-//     // Set initial active state based on current route
-//     this.updateActiveMenuItem(this.router.url);
-//   }
-
-//  toggleSubmenu(item: MenuItem): void {
-//     if (item.hasSubmenu) {
-//       item.submenuOpen = !item.submenuOpen;
-//     }
-//   }
-
-//   onMenuItemClick(item: MenuItem): void {
-//     if (item.hasSubmenu) {
-//       this.toggleSubmenu(item);
-//     } else {
-//       this.menuItems.forEach((menuItem) => {
-//         menuItem.active = false;
-//         if (menuItem.subItems) {
-//           menuItem.subItems.forEach((subItem) => (subItem.active = false));
-//         }
-//       });
-//       item.active = true;
-//       this.router.navigate([item.route]).catch((err) => {
-//         console.error('Navigation error:', err);
-//       });
-//     }
-//   }
-
-//    private updateActiveMenuItem(currentUrl: string): void {
-//     this.menuItems.forEach((item) => {
-//       if (item.hasSubmenu && item.subItems) {
-//         item.submenuOpen = item.subItems.some((subItem) => currentUrl.startsWith(subItem.route));
-//         item.active = item.submenuOpen;
-//         item.subItems.forEach((subItem) => {
-//           subItem.active = currentUrl === subItem.route || currentUrl.startsWith(subItem.route + '/');
-//         });
-//       } else {
-//         item.active = currentUrl === item.route || currentUrl.startsWith(item.route + '/');
-//       }
-//     });
-//   }
-// }
-
-import { Component, OnInit } from '@angular/core';
+// sidebar.component.ts
+import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router, NavigationEnd } from '@angular/router';
 import { filter } from 'rxjs/operators';
 import { AuthService } from '../../services/auth/auth.service';
+import { trigger, transition, style, animate } from '@angular/animations';
 
 interface MenuItem {
   label: string;
@@ -114,9 +23,23 @@ interface MenuItem {
   imports: [CommonModule],
   templateUrl: './sidebar.component.html',
   styleUrls: ['./sidebar.component.css'],
+  animations: [
+    trigger('slideIn', [
+      transition(':enter', [
+        style({ height: 0, opacity: 0 }),
+        animate('0.3s ease-out', style({ height: '*', opacity: 1 })),
+      ]),
+      transition(':leave', [
+        animate('0.3s ease-in', style({ height: 0, opacity: 0 })),
+      ]),
+    ]),
+  ],
 })
 export class SidebarComponent implements OnInit {
+  @Input() isCollapsed = false;
+  @Output() collapsedChange = new EventEmitter<boolean>();
   user: { fullName: string; roles: string[] } | null = null;
+  isDarkTheme = false;
   menuItems: MenuItem[] = [
     {
       label: 'Dashboard',
@@ -137,7 +60,7 @@ export class SidebarComponent implements OnInit {
       active: false,
       requiredRole: 'Admin', // Users can view (read-only) if endpoint allows
     },
-     {
+    {
       label: 'Payments',
       icon: 'fas fa-credit-card',
       route: '/payments',
@@ -179,7 +102,14 @@ export class SidebarComponent implements OnInit {
         },
       ],
     },
-     {
+    {
+      label: 'Company Requests',
+      icon: 'fas fa-building',
+      route: '/company-requests',
+      active: false,
+      requiredRole: 'Admin',
+    },
+    {
       label: 'Support',
       icon: 'fas fa-headset',
       route: '/support',
@@ -218,15 +148,23 @@ export class SidebarComponent implements OnInit {
     },
   ];
 
-  constructor(private router: Router, private authService: AuthService) {}
+  constructor(
+    private router: Router,
+    private authService: AuthService,
+  ) {}
 
   ngOnInit(): void {
     // Get user details
     this.user = this.authService.getUserDetail();
 
-     // Override Dashboard route for Customer role
-    if (this.user?.roles.includes('Customer') && !this.user?.roles.includes('Admin')) {
-      const dashboardItem = this.menuItems.find((item) => item.label === 'Dashboard');
+    // Override Dashboard route for Customer role
+    if (
+      this.user?.roles.includes('Customer') &&
+      !this.user?.roles.includes('Admin')
+    ) {
+      const dashboardItem = this.menuItems.find(
+        (item) => item.label === 'Dashboard',
+      );
       if (dashboardItem) {
         dashboardItem.route = '/customer-dashboard';
       }
@@ -246,19 +184,23 @@ export class SidebarComponent implements OnInit {
     this.updateActiveMenuItem(this.router.url);
   }
 
-filterMenuItems(): void {
+  filterMenuItems(): void {
     const userRoles = this.user?.roles || [];
     this.menuItems = this.menuItems
       .map((item) => {
         if (item.hasSubmenu && item.subItems) {
           const filteredSubItems = item.subItems.filter(
-            (subItem) => !subItem.requiredRole || userRoles.includes(subItem.requiredRole)
+            (subItem) =>
+              !subItem.requiredRole || userRoles.includes(subItem.requiredRole),
           );
           return {
             ...item,
             subItems: filteredSubItems,
             // Only show parent menu if it has sub-items or no required role
-            requiredRole: item.requiredRole && filteredSubItems.length === 0 ? item.requiredRole : undefined,
+            requiredRole:
+              item.requiredRole && filteredSubItems.length === 0
+                ? item.requiredRole
+                : undefined,
           };
         }
         return item;
@@ -266,25 +208,30 @@ filterMenuItems(): void {
       .filter(
         (item) =>
           (!item.requiredRole || userRoles.includes(item.requiredRole)) &&
-          (!item.hasSubmenu || (item.subItems && item.subItems.length > 0))
+          (!item.hasSubmenu || (item.subItems && item.subItems.length > 0)),
       );
 
     // Special case for Customers: Remove Customers and Reports
-    if (userRoles.includes('Customer') && !userRoles.includes('Admin') && !userRoles.includes('User')) {
+    if (
+      userRoles.includes('Customer') &&
+      !userRoles.includes('Admin') &&
+      !userRoles.includes('User')
+    ) {
       this.menuItems = this.menuItems.filter(
-        (item) => item.label !== 'Customers' && item.label !== 'Reports'
+        (item) => item.label !== 'Customers' && item.label !== 'Reports',
       );
     }
 
     // Special case for Users: Make Customers read-only (if endpoint exists)
     if (userRoles.includes('User') && !userRoles.includes('Admin')) {
-      const customersItem = this.menuItems.find((item) => item.label === 'Customers');
+      const customersItem = this.menuItems.find(
+        (item) => item.label === 'Customers',
+      );
       if (customersItem) {
         customersItem.route = '/customers/view'; // Hypothetical read-only route
       }
     }
   }
-
 
   toggleSubmenu(item: MenuItem): void {
     if (item.hasSubmenu) {
@@ -312,21 +259,26 @@ filterMenuItems(): void {
   private updateActiveMenuItem(currentUrl: string): void {
     this.menuItems.forEach((item) => {
       if (item.hasSubmenu && item.subItems) {
-        item.submenuOpen = item.subItems.some((subItem) => currentUrl.startsWith(subItem.route));
+        item.submenuOpen = item.subItems.some((subItem) =>
+          currentUrl.startsWith(subItem.route),
+        );
         item.active = item.submenuOpen;
         item.subItems.forEach((subItem) => {
-          subItem.active = currentUrl === subItem.route || currentUrl.startsWith(subItem.route + '/');
+          subItem.active =
+            currentUrl === subItem.route ||
+            currentUrl.startsWith(subItem.route + '/');
         });
       } else {
-        item.active = currentUrl === item.route || currentUrl.startsWith(item.route + '/');
+        item.active =
+          currentUrl === item.route || currentUrl.startsWith(item.route + '/');
       }
     });
   }
 
-   logout(): void {
+  logout(): void {
     this.authService.logout();
     this.router.navigate(['/login']);
-  }  
+  }
   getInitials(fullName: string): string {
     if (!fullName) return '??';
     const names = fullName.trim().split(/\s+/);
@@ -335,5 +287,27 @@ filterMenuItems(): void {
     return `${names[0].charAt(0)}${names[names.length - 1].charAt(0)}`.toUpperCase();
   }
 
+  toggleSidebar(): void {
+    this.isCollapsed = !this.isCollapsed;
+    this.collapsedChange.emit(this.isCollapsed);
 
+    // Close all submenus when collapsing
+    if (this.isCollapsed) {
+      this.menuItems.forEach((item) => {
+        if (item.hasSubmenu) {
+          item.submenuOpen = false;
+        }
+      });
+    }
+  }
+  toggleTheme(): void {
+    this.isDarkTheme = !this.isDarkTheme;
+    document.body.classList.toggle('dark-theme', this.isDarkTheme);
+  }
+  getUserRole(roles: string[]): string {
+    if (roles.includes('Admin')) return 'Administrator';
+    if (roles.includes('User')) return 'Team Member';
+    if (roles.includes('Customer')) return 'Client';
+    return 'Guest';
+  }
 }

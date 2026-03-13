@@ -37,11 +37,11 @@ export class AuthService {
             localStorage.setItem(this.otpTokenKey, response.model.otpToken);
             localStorage.setItem(
               this.otpIdentifierKey,
-              response.model.otpIdentifier
+              response.model.otpIdentifier,
             );
           }
           return response;
-        })
+        }),
       );
   }
 
@@ -54,7 +54,7 @@ export class AuthService {
       .pipe(
         map((response) => {
           return response;
-        })
+        }),
       );
   }
 
@@ -77,23 +77,23 @@ export class AuthService {
           const roles = Array.isArray(
             decoded[
               'http://schemas.microsoft.com/ws/2008/06/identity/claims/role'
-            ]
+            ],
           )
             ? decoded[
                 'http://schemas.microsoft.com/ws/2008/06/identity/claims/role'
               ]
             : decoded[
-                'http://schemas.microsoft.com/ws/2008/06/identity/claims/role'
-              ]
-            ? [
-                decoded[
                   'http://schemas.microsoft.com/ws/2008/06/identity/claims/role'
-                ],
-              ]
-            : [];
+                ]
+              ? [
+                  decoded[
+                    'http://schemas.microsoft.com/ws/2008/06/identity/claims/role'
+                  ],
+                ]
+              : [];
         }
         return response;
-      })
+      }),
     );
   }
 
@@ -111,20 +111,20 @@ export class AuthService {
       const roles = Array.isArray(
         decodedToken[
           'http://schemas.microsoft.com/ws/2008/06/identity/claims/role'
-        ]
+        ],
       )
         ? decodedToken[
             'http://schemas.microsoft.com/ws/2008/06/identity/claims/role'
           ]
         : decodedToken[
-            'http://schemas.microsoft.com/ws/2008/06/identity/claims/role'
-          ]
-        ? [
-            decodedToken[
               'http://schemas.microsoft.com/ws/2008/06/identity/claims/role'
-            ],
-          ]
-        : [];
+            ]
+          ? [
+              decodedToken[
+                'http://schemas.microsoft.com/ws/2008/06/identity/claims/role'
+              ],
+            ]
+          : [];
       return {
         id: decodedToken[
           'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/nameidentifier'
@@ -136,7 +136,7 @@ export class AuthService {
         email: decodedToken['email'],
         roles: roles,
         companyId: decodedToken['companyId'],
-        customerId : decodedToken['customerId']
+        customerId: decodedToken['customerId'],
       };
     } catch (error) {
       console.error('Error decoding token:', error);
@@ -181,7 +181,7 @@ export class AuthService {
   // Get external login URL
   getExternalLoginUrl(provider: string): Observable<any> {
     return this.http.get(
-      `${this.baseApiUrl}/auth/external-login-url?provider=${provider}`
+      `${this.baseApiUrl}/auth/external-login-url?provider=${provider}`,
     );
   }
 
@@ -196,14 +196,14 @@ export class AuthService {
         map((response: any) => {
           if (response.token) {
             localStorage.setItem(this.tokenKey, response.token);
-            const decoded: any = jwtDecode(response.token);
-            if (!decoded.companyId) {
-              // Redirect to company selection if no companyId
-              window.location.href = '/auth/select-company';
-            }
+            // const decoded: any = jwtDecode(response.token);
+            // if (!decoded.companyId) {
+            //   // Redirect to company selection if no companyId
+            //   window.location.href = '/auth/select-company';
+            // }
           }
           return response;
-        })
+        }),
       );
   }
 
@@ -237,21 +237,21 @@ export class AuthService {
    * Forgot password
    */
   forgotPassword(email: string): Observable<any> {
-    return this.http.post(`${this.baseApiUrl}auth/forgot-password`, { email });
+    return this.http.post(`${this.baseApiUrl}/auth/forgot-password`, { email });
   }
 
   /**
    * Reset password
    */
   resetPassword(data: ResetPasswordRequest): Observable<any> {
-    return this.http.put(`${this.baseApiUrl}auth/reset-password`, data);
+    return this.http.put(`${this.baseApiUrl}/auth/reset-password`, data);
   }
 
   /**
    * Change password
    */
   changePassword(data: ChangePasswordRequest): Observable<any> {
-    return this.http.put(`${this.baseApiUrl}account/change-password`, data);
+    return this.http.put(`${this.baseApiUrl}/account/change-password`, data);
   }
 
   // Check if user has a specific role
@@ -261,27 +261,36 @@ export class AuthService {
     return roles.includes(role);
   }
 
+  // auth.service.ts - Update the updateCompany method
   updateCompany(companyId: number): Observable<any> {
-    return this.http.post(`${this.baseApiUrl}auth/update-company`, {
-      companyId,
-    });
+    return this.http
+      .post(`${this.baseApiUrl}/auth/update-company`, { companyId }) // Matches DTO structure
+      .pipe(
+        map((response: any) => {
+          if (response.token) {
+            localStorage.setItem(this.tokenKey, response.token);
+            console.log('Company updated, new token stored');
+          }
+          return response;
+        }),
+      );
   }
 
-  /**
-   * Requests a new company to be added by sending an email to the admin.
-   * @param request - Object containing user details and requested company name
-   * @returns Observable<any> - Response from the API
-   */
-  requestCompany(request: {
-    fullName: string;
-    email: string;
-    companyName: string;
-  }): Observable<any> {
-    const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
-    return this.http.post(`${this.baseApiUrl}/request-company`, request, {
-      headers,
-    });
-  }
+  // /**
+  //  * Requests a new company to be added by sending an email to the admin.
+  //  * @param request - Object containing user details and requested company name
+  //  * @returns Observable<any> - Response from the API
+  //  */
+  // requestCompany(request: {
+  //   fullName: string;
+  //   email: string;
+  //   companyName: string;
+  // }): Observable<any> {
+  //   const headers = new HttpHeaders({ 'Content-Type': 'application/json' });
+  //   return this.http.post(`${this.baseApiUrl}/auth/request-company`, request, {
+  //     headers,
+  //   });
+  // }
 
   getUserCompanyId(): Observable<number | null> {
     const token = this.getAuthToken();
@@ -300,7 +309,7 @@ export class AuthService {
       })
       .pipe(
         map((profile) => profile.companyId || null),
-        catchError(() => of(null))
+        catchError(() => of(null)),
       );
   }
 }

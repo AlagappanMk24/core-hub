@@ -1,17 +1,224 @@
+/* layout.component.css - Complete Responsive Solution */
 .layout-container {
+  display: flex;
   min-height: 100vh;
+  background: #f8fafc;
+  position: relative;
+  overflow: hidden; /* Prevent double scrollbars */
 }
 
+/* Sidebar - Fixed position */
+app-sidebar {
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 280px;
+  z-index: 40;
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Main Content Area */
+.main-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  margin-left: 280px; /* Same as sidebar width */
+  width: calc(100% - 280px);
+  height: 100vh;
+  overflow: hidden; /* Prevent double scrollbars */
+  transition: margin-left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.main-content.expanded {
+  margin-left: 80px; /* Collapsed sidebar width */
+  width: calc(100% - 80px);
+}
+
+/* Header - Fixed at top */
+app-header {
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: white;
+}
+/* Content Area */
 .content-area {
-  transition: margin-left 0.3s ease-in-out;
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 24px;
+  background: #f8fafc;
+  min-height: 0; /* Important for flex child scrolling */
+  height: calc(100vh - 73px); /* Subtract header height */
 }
 
-.sidebar-collapsed .content-area {
-  margin-left: 0;
+.content-wrapper {
+  max-width: 1600px;
+  margin: 0 auto;
+  width: 100%;
+  padding-bottom: 24px; /* Space at bottom for scrolling */
 }
 
-@media (max-width: 1024px) {
-  .mobile-sidebar-overlay {
-    backdrop-filter: blur(4px);
+/* Mobile Overlay */
+.mobile-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+  z-index: 45;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+}
+
+.mobile-overlay.show {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* ===== RESPONSIVE BREAKPOINTS ===== */
+
+/* Large Desktop (1200px and above) */
+@media (min-width: 1200px) {
+  .content-wrapper {
+    max-width: 1400px;
+  }
+}
+
+/* Desktop (1024px to 1199px) */
+@media (min-width: 1025px) and (max-width: 1199px) {
+  app-sidebar {
+    width: 260px;
+  }
+  .main-content {
+    margin-left: 260px;
+    width: calc(100% - 260px);
+  }
+
+  .main-content.expanded {
+    margin-left: 70px;
+    width: calc(100% - 70px);
+  }
+
+  .content-area {
+    padding: 20px;
+  }
+}
+
+/* Tablet Landscape (768px to 1024px) */
+@media (min-width: 769px) and (max-width: 1024px) {
+  app-sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+
+  app-sidebar.mobile-open {
+    transform: translateX(0);
+  }
+
+  .main-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+
+  .content-area {
+    padding: 20px;
+    height: calc(100vh - 73px);
+  }
+}
+
+/* Tablet Portrait (481px to 768px) */
+@media (min-width: 481px) and (max-width: 768px) {
+  app-sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+
+  app-sidebar.mobile-open {
+    transform: translateX(0);
+  }
+  .main-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+
+  .content-area {
+    padding: 16px;
+    height: calc(100vh - 65px);
+  }
+
+  .content-wrapper {
+    padding: 0;
+  }
+}
+
+/* Mobile (320px to 480px) */
+@media (max-width: 480px) {
+  app-sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+
+  app-sidebar.mobile-open {
+    transform: translateX(0);
+  }
+  .main-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+  }
+
+  .content-area {
+    padding: 12px;
+    height: calc(100vh - 57px);
+  }
+
+  .content-wrapper {
+    padding: 0;
+  }
+}
+
+/* Small Mobile (below 320px) */
+@media (max-width: 320px) {
+  .content-area {
+    padding: 8px;
+    height: calc(100vh - 53px);
+  }
+}
+
+/* Dark Theme Support */
+:host-context(body.dark-theme) {
+  .layout-container {
+    background: #0f172a;
+  }
+
+  .content-area {
+    background: #0f172a;
+  }
+  app-header {
+    background: #1e293b;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .main-content {
+    margin-left: 0 !important;
+    width: 100% !important;
+    overflow: visible;
+  }
+
+  app-sidebar,
+  app-header,
+  .mobile-overlay {
+    display: none;
+  }
+  .content-area {
+    overflow: visible;
+    height: auto;
   }
 }

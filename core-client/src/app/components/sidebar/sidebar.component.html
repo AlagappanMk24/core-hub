@@ -1,97 +1,131 @@
-<div class="w-68 bg-white shadow-lg flex flex-col h-full">
-  <!-- Sidebar Header -->
-  <div class="p-6 border-b border-gray-200">
-    <div class="flex items-center space-x-3">
-      <div class="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
-        <span class="text-white font-bold text-sm">📄</span>
+<!-- sidebar.component.html -->
+<div class="sidebar-container" [class.collapsed]="isCollapsed">
+  <!-- Sidebar Header with Toggle -->
+  <div class="sidebar-header">
+    <div class="flex items-center justify-between">
+      <div class="flex items-center space-x-3" [class.hidden]="isCollapsed">
+        <div class="logo-wrapper">
+          <div class="logo-gradient">
+            <span class="text-white font-bold text-lg">💰</span>
+          </div>
+        </div>
+        <div>
+          <h2 class="text-lg font-bold app-title">InvoiceFlow</h2>
+          <p class="text-xs text-purple-200">Professional Invoicing</p>
+        </div>
       </div>
-      <div>
-        <h2 class="text-lg font-bold text-gray-800">Invoicing App</h2>
+      <div *ngIf="isCollapsed" class="logo-wrapper mx-auto">
+        <div class="logo-gradient">
+          <span class="text-white font-bold text-sm">💰</span>
+        </div>
+      </div>
+      <button 
+        class="toggle-btn" 
+        (click)="toggleSidebar()"
+        [attr.aria-label]="isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'"
+      >
+        <i class="fas" [ngClass]="isCollapsed ? 'fa-chevron-right' : 'fa-chevron-left'"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- User Profile Section - Enhanced -->
+  <div class="user-profile-wrapper" *ngIf="user">
+    <div class="user-profile" [class.justify-center]="isCollapsed">
+      <div class="avatar-container">
+        <div class="avatar-gradient">
+          <span class="avatar-text">{{ getInitials(user.fullName) }}</span>
+        </div>
+        <div class="status-indicator"></div>
+      </div>
+      <div class="user-info" [class.hidden]="isCollapsed">
+        <h3 class="user-name" [title]="user.fullName">{{ user.fullName }}</h3>
+        <p class="user-role">{{ getUserRole(user.roles) }}</p>
       </div>
     </div>
   </div>
 
-  <!-- User Profile Section -->
-  <div class="p-4 border-b border-gray-200">
-    <div class="flex items-center space-x-3" *ngIf="user">
-      <div class="w-10 h-10 bg-gradient-to-br from-purple-400 to-purple-600 rounded-full flex items-center justify-center">
-        <span class="text-white font-medium text-sm">{{ getInitials(user.fullName) }}</span>
-      </div>
-      <div class="flex-1 truncate">
-        <h3 class="text-sm font-medium text-gray-800 truncate" [title]="user.fullName">{{ user.fullName }}</h3>
-        <p class="text-xs text-gray-500">{{ user.roles.includes('Admin') ? 'Admin' : user.roles.includes('User') ? 'User' : 'Customer' }}</p>
-      </div>
-      <div class="w-3 h-3 bg-green-400 rounded-full"></div>
+  <!-- Navigation Menu with Tooltips -->
+  <nav class="sidebar-nav">
+    <div class="nav-section" *ngIf="!isCollapsed">
+      <p class="nav-section-title">MAIN</p>
     </div>
-  </div>
-
-  <!-- Navigation Menu -->
-  <nav class="flex-1 p-4 space-y-1">
+    
     <div
       *ngFor="let item of menuItems"
-      class="menu-item"
-      [ngClass]="{'bg-purple-50 text-purple-600': item.active, 'hover:bg-gray-50': !item.active}"
+      class="nav-item-wrapper"
+      [class.active]="item.active"
+      [class.has-submenu]="item.hasSubmenu"
+      [class.submenu-open]="item.submenuOpen"
     >
       <div
-        class="flex items-center space-x-3 px-3 py-2 rounded-lg cursor-pointer transition-colors"
+        class="nav-item"
+        [class.active]="item.active"
+        [class.collapsed]="isCollapsed"
         (click)="onMenuItemClick(item)"
+        [attr.data-tooltip]="isCollapsed ? item.label : null"
       >
-        <i
-          [ngClass]="{
-            'text-lg': true,
-            'text-purple-600': !item.active,
-            'text-purple-800': item.active
-          }"
-          [class]="item.icon"
-        ></i>
-        <span class="font-medium" [ngClass]="{'text-purple-600': item.active}">{{ item.label }}</span>
-        <div class="ml-auto">
-          <div
-            *ngIf="item.label === 'Dashboard'"
-            class="w-2 h-2 bg-purple-600 rounded-full"
-          ></div>
+        <div class="nav-item-content">
+          <i [class]="item.icon" class="nav-icon"></i>
+          <span class="nav-label" [class.hidden]="isCollapsed">{{ item.label }}</span>
+        </div>
+        
+        <div class="nav-item-indicators" *ngIf="!isCollapsed">
+          <div *ngIf="item.label === 'Dashboard'" class="active-dot"></div>
           <i
             *ngIf="item.hasSubmenu"
-            class="fas fa-chevron-down transform transition-transform duration-200"
-            [ngClass]="{'rotate-180': item.submenuOpen}"
+            class="fas fa-chevron-down submenu-arrow"
+            [class.rotated]="item.submenuOpen"
           ></i>
         </div>
       </div>
-      <!-- Submenu -->
+
+      <!-- Submenu with Animation -->
       <div
-        *ngIf="item.hasSubmenu && item.submenuOpen"
-        class="submenu pl-6 space-y-1 mt-1"
+        *ngIf="item.hasSubmenu && item.submenuOpen && !isCollapsed"
+        class="submenu-container"
+        @slideIn
       >
         <div
           *ngFor="let subItem of item.subItems"
-          class="flex items-center space-x-3 px-3 py-2 rounded-lg cursor-pointer transition-colors"
-          [ngClass]="{
-            'bg-purple-100 text-purple-700': subItem.active,
-            'hover:bg-gray-50': !subItem.active
-          }"
+          class="submenu-item"
+          [class.active]="subItem.active"
           (click)="onMenuItemClick(subItem)"
         >
-          <i
-            [ngClass]="{
-              'text-base': true,
-              'text-purple-600': !subItem.active,
-              'text-purple-800': subItem.active
-            }"
-            [class]="subItem.icon"
-          ></i>
-          <span class="text-sm font-medium" [ngClass]="{'text-purple-600': subItem.active}">{{ subItem.label }}</span>
+          <i [class]="subItem.icon" class="submenu-icon"></i>
+          <span class="submenu-label">{{ subItem.label }}</span>
+          <div *ngIf="subItem.active" class="active-indicator"></div>
         </div>
       </div>
     </div>
   </nav>
 
-  <!-- Bottom Section -->
-  <div class="p-4 border-t border-gray-200">
-    <button
-      class="w-full bg-purple-600 text-white py-2 px-4 rounded-lg hover:bg-purple-700 transition-colors text-sm font-medium"
-      (click)="logout()"
-    >
-      <i class="fas fa-sign-out-alt mr-2"></i> Logout
-    </button>
+  <!-- Bottom Actions -->
+  <div class="sidebar-footer">
+    <div class="footer-actions">
+      <button 
+        class="footer-btn" 
+        [class.justify-center]="isCollapsed"
+        (click)="logout()"
+        [attr.data-tooltip]="isCollapsed ? 'Logout' : null"
+      >
+        <i class="fas fa-sign-out-alt footer-icon"></i>
+        <span class="footer-label" [class.hidden]="isCollapsed">Logout</span>
+      </button>
+      
+      <button 
+        class="footer-btn theme-btn"
+        [class.justify-center]="isCollapsed"
+        (click)="toggleTheme()"
+        [attr.data-tooltip]="isCollapsed ? 'Toggle theme' : null"
+      >
+        <i class="fas fa-moon footer-icon"></i>
+        <span class="footer-label" [class.hidden]="isCollapsed">Dark mode</span>
+      </button>
+    </div>
+    
+    <div class="app-version" *ngIf="!isCollapsed">
+      <span>v2.1.0</span>
+    </div>
   </div>
 </div>

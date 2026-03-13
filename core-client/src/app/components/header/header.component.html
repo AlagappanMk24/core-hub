@@ -1,211 +1,144 @@
-<!-- <header class="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
-  <div class="flex justify-between items-center">
-    <div class="flex items-center space-x-4">
-      <button class="text-gray-500 hover:text-gray-700 transition-colors">
-        <i class="fas fa-search text-lg"></i>
-      </button>
-      <input
-        type="text"
-        placeholder="Search projects..."
-        class="bg-gray-50 border-0 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 w-64"
-        [(ngModel)]="searchQuery"
-      />
-    </div>
-
-    <div class="flex items-center space-x-6">
-      <div class="flex items-center space-x-4 text-sm text-gray-600">
-        <div
-          class="relative cursor-pointer hover:text-purple-600 transition-colors"
-        >
-          <i class="fas fa-envelope text-lg"></i>
-        </div>
-        <div
-          class="relative cursor-pointer hover:text-purple-600 transition-colors"
-        >
-          <i class="fas fa-bell text-lg"></i>
-          <span
-            *ngIf="hasNotifications"
-            class="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"
-          ></span>
-        </div>
-        <div class="cursor-pointer hover:text-purple-600 transition-colors">
-          <i class="fas fa-question-circle text-lg"></i>
-        </div>
-      </div>
-
-      <div
-        class="flex items-center space-x-3 cursor-pointer hover:bg-gray-50 rounded-lg px-3 py-2 transition-colors"
+<!-- header.component.html - Updated with responsive structure -->
+<header>
+  <div class="header-container">
+    <!-- Left Section -->
+    <div class="header-left">
+      <button 
+        class="mobile-menu-btn"
+        (click)="onToggleSidebar()"
+        aria-label="Toggle sidebar"
       >
-        <img
-          [src]="userAvatar"
-          [alt]="userName"
-          class="w-8 h-8 rounded-full object-cover"
+        <i class="fas fa-bars"></i>
+      </button>
+      
+      <div class="search-container">
+        <i class="fas fa-search search-icon"></i>
+        <input
+          type="text"
+          class="search-input"
+          placeholder="Search projects, invoices, customers..."
+          [(ngModel)]="searchQuery"
         />
-        <span class="text-sm font-medium text-gray-700">{{ userName }}</span>
-        <i class="fas fa-chevron-down text-xs text-gray-400"></i>
       </div>
     </div>
-  </div>
-</header> -->
 
-<header class="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
-  <div class="flex justify-between items-center">
-    <div class="flex items-center space-x-4">
-      <button class="text-gray-500 hover:text-gray-700 transition-colors">
-        <i class="fas fa-search text-lg"></i>
-      </button>
-      <input
-        type="text"
-        placeholder="Search projects..."
-        class="bg-gray-50 border-0 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500 w-64"
-        [(ngModel)]="searchQuery"
-      />
-    </div>
- <div class="flex items-center space-x-6">
-      <div class="flex items-center space-x-4 text-sm text-gray-600">
-        <div
-          class="relative cursor-pointer hover:text-purple-600 transition-colors"
+    <!-- Right Section -->
+    <div class="header-right">
+      <div class="header-actions">
+        <!-- Messages -->
+        <button 
+          class="action-btn"
           aria-label="Messages"
+          title="Messages"
         >
-          <i class="fas fa-envelope text-lg"></i>
-        </div>
-        <div
-          class="relative cursor-pointer hover:text-purple-600 transition-colors"
-          (click)="toggleNotificationDropdown()"
-          role="button"
-          aria-label="Notifications"
-          [attr.aria-expanded]="isNotificationDropdownOpen"
-        >
-          <i class="fas fa-bell text-lg"></i>
-          <span
-            *ngIf="hasNotifications"
-            class="absolute -top-2 -right-2 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center shadow-md"
+          <i class="fas fa-envelope"></i>
+        </button>
+
+        <!-- Notifications -->
+        <div class="relative">
+          <button 
+            class="action-btn"
+            (click)="toggleNotificationDropdown()"
+            aria-label="Notifications"
+            [attr.aria-expanded]="isNotificationDropdownOpen"
           >
-            {{ unreadCount }}
-          </span>
-          <div
+            <i class="fas fa-bell"></i>
+            <span 
+              *ngIf="hasNotifications" 
+              class="notification-badge"
+            >
+              {{ unreadCount > 9 ? '9+' : unreadCount }}
+            </span>
+          </button>
+
+          <!-- Notification Dropdown -->
+          <div 
             *ngIf="isNotificationDropdownOpen"
-            class="notification-dropdown dropdown-menu animate-slide-down"
+            class="notification-dropdown"
           >
-            <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gradient-to-r from-purple-50 to-indigo-50">
-              <h3 class="text-sm font-semibold text-gray-800">Notifications</h3>
-              <button
+            <div class="dropdown-header">
+              <h3>Notifications</h3>
+              <button 
                 *ngIf="notifications.length > 0"
-                class="text-xs text-purple-600 hover:text-purple-800"
+                class="clear-btn"
                 (click)="clearNotifications()"
-                aria-label="Clear all notifications"
               >
                 Clear All
               </button>
             </div>
-            <div class="max-h-80 overflow-y-auto">
-              <div
+            
+            <div class="dropdown-content">
+              <div 
                 *ngIf="notifications.length === 0"
-                class="px-4 py-3 text-sm text-gray-500 text-center"
+                class="notification-empty"
               >
                 No notifications
               </div>
-              <div
-                *ngFor="let notification of notifications; let i = index"
-                class="px-4 py-3 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition-colors cursor-pointer"
-                [ngClass]="{ 'bg-blue-50': !notification.read }"
+              
+              <div 
+                *ngFor="let notification of notifications"
+                class="dropdown-item"
+                [class.unread]="!notification.read"
                 (click)="viewInvoice(notification)"
-                role="button"
-                [attr.aria-label]="'View invoice ' + notification.invoiceNumber"
               >
-                <div class="flex items-start space-x-3">
-                  <i class="fas fa-file-invoice text-purple-500 mt-1"></i>
-                  <div class="flex-1">
-                    <p class="text-sm font-medium" [ngClass]="{ 'text-gray-800 font-semibold': !notification.read, 'text-gray-600': notification.read }">
-                      {{ notification.message }}
-                    </p>
-                    <p class="text-xs text-gray-400">
-                      {{ notification.timestamp | date:'MMM d, yyyy, h:mm a' }}
-                    </p>
-                  </div>
+                <div class="notification-icon">
+                  <i class="fas fa-file-invoice"></i>
+                </div>
+                <div class="notification-content">
+                  <p class="notification-message">{{ notification.message }}</p>
+                  <p class="notification-time">
+                    {{ notification.timestamp | date:'MMM d, h:mm a' }}
+                  </p>
                 </div>
               </div>
             </div>
           </div>
         </div>
-        <div class="cursor-pointer hover:text-purple-600 transition-colors" aria-label="Help">
-          <i class="fas fa-question-circle text-lg"></i>
-        </div>
-      </div>
-      <div class="relative header-dropdown" [ngClass]="{ open: isDropdownOpen }">
-        <div
-          class="flex items-center space-x-3 cursor-pointer hover:bg-gray-50 rounded-lg px-3 py-2 transition-colors"
-          (click)="toggleDropdown()"
-          role="button"
-          aria-label="User menu"
-          [attr.aria-expanded]="isDropdownOpen"
+
+        <!-- Help -->
+        <button 
+          class="action-btn"
+          aria-label="Help"
+          title="Help"
         >
-          <img
-            [src]="userAvatar"
+          <i class="fas fa-question-circle"></i>
+        </button>
+      </div>
+
+      <!-- User Menu -->
+      <div class="user-menu" [class.open]="isDropdownOpen">
+        <button 
+          class="user-menu-btn"
+          (click)="toggleDropdown()"
+          aria-label="User menu"
+        >
+          <img 
+            [src]="userAvatar" 
             [alt]="userName"
-            class="w-8 h-8 rounded-full object-cover"
-          />
-          <span class="text-sm font-medium text-gray-700">{{ userName }}</span>
-          <i class="fas fa-chevron-down text-xs text-gray-400"></i>
-        </div>
-        <div *ngIf="isDropdownOpen" class="dropdown-menu animate-slide-down">
-          <div class="py-1">
-            <button
-              class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-              (click)="logout()"
-              aria-label="Logout"
-            >
-              Logout
-            </button>
-          </div>
+            class="user-avatar"
+            onerror="this.src='assets/default-avatar.png'"
+          >
+          <span class="user-name">{{ userName }}</span>
+          <i class="fas fa-chevron-down dropdown-icon"></i>
+        </button>
+
+        <!-- User Dropdown -->
+        <div *ngIf="isDropdownOpen" class="dropdown-menu">
+          <button class="dropdown-menu-item">
+            <i class="fas fa-user"></i>
+            Profile
+          </button>
+          <button class="dropdown-menu-item">
+            <i class="fas fa-cog"></i>
+            Settings
+          </button>
+          <div class="dropdown-divider"></div>
+          <button class="dropdown-menu-item" (click)="logout()">
+            <i class="fas fa-sign-out-alt"></i>
+            Logout
+          </button>
         </div>
       </div>
     </div>
-    <!-- <div class="flex items-center space-x-6">
-      <div class="flex items-center space-x-4 text-sm text-gray-600">
-        <div
-          class="relative cursor-pointer hover:text-purple-600 transition-colors"
-        >
-          <i class="fas fa-envelope text-lg"></i>
-        </div>
-        <div
-          class="relative cursor-pointer hover:text-purple-600 transition-colors"
-        >
-          <i class="fas fa-bell text-lg"></i>
-          <span
-            *ngIf="hasNotifications"
-            class="absolute -top-1 -right-1 w-2 h-2 bg-red-500 rounded-full"
-          ></span>
-        </div>
-        <div class="cursor-pointer hover:text-purple-600 transition-colors">
-          <i class="fas fa-question-circle text-lg"></i>
-        </div>
-      </div>
-
-      <div class="relative header-dropdown">
-        <div
-          class="flex items-center space-x-3 cursor-pointer hover:bg-gray-50 rounded-lg px-3 py-2 transition-colors"
-          (click)="toggleDropdown()"
-        >
-          <img
-            [src]="userAvatar"
-            [alt]="userName"
-            class="w-8 h-8 rounded-full object-cover"
-          />
-          <span class="text-sm font-medium text-gray-700">{{ userName }}</span>
-          <i class="fas fa-chevron-down text-xs text-gray-400"></i>
-        </div>
-        <div *ngIf="isDropdownOpen" class="dropdown-menu">
-          <div class="py-1">
-            <button
-              class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-gray-900"
-              (click)="logout()"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-      </div>
-    </div> -->
   </div>
 </header>

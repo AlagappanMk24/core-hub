@@ -6,6 +6,7 @@ import { AuthService } from '../../../services/auth/auth.service';
 import { RegisterRequest } from '../../../interfaces/auth/auth-request/register-request';
 import { AuthResponse } from '../../../interfaces/auth/auth-response/auth-response';
 import { CompanyService } from '../../../services/company/company.service';
+import { CompanyRequestService } from '../../../services/company-request/company-request.service';
 
 interface Company {
   id: number;
@@ -25,6 +26,7 @@ export class RegisterComponent implements OnInit {
 
   authService = inject(AuthService);
   companyService = inject(CompanyService);
+    companyRequestService = inject(CompanyRequestService);
   router = inject(Router);
 
   fullName: string = '';
@@ -134,7 +136,7 @@ export class RegisterComponent implements OnInit {
     this.isLoading = true;
     this.loadingText = 'Sending request, please wait...';
 
-    this.authService.requestCompany({
+    this.companyRequestService.createRequest({
       fullName: this.fullName,
       email: this.email,
       companyName: this.companySearchTerm,
