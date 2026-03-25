@@ -1,9 +1,9 @@
-﻿using Core_API.Application.Contracts.Persistence;
+﻿using Core_API.Application.Contracts.Persistence.Invoice;
 using Core_API.Domain.Entities;
 using Core_API.Infrastructure.Data.Context;
 using Microsoft.EntityFrameworkCore;
 
-namespace Core_API.Infrastructure.Persistence.Repositories;
+namespace Core_API.Infrastructure.Persistence.Repositories.Invoice;
 
 public class InvoiceSettingsRepository(CoreAPIDbContext dbContext) : IInvoiceSettingsRepository
 {
@@ -12,6 +12,14 @@ public class InvoiceSettingsRepository(CoreAPIDbContext dbContext) : IInvoiceSet
     {
         return await _dbContext.InvoiceSettings
             .FirstOrDefaultAsync(s => s.CompanyId == companyId);
+    }
+    public async Task AddAsync(InvoiceSettings settings)
+    {
+        await _dbContext.InvoiceSettings.AddAsync(settings);
+    }
+    public void Update(InvoiceSettings settings)
+    {
+        _dbContext.InvoiceSettings.Update(settings);
     }
     public async Task SaveAsync(InvoiceSettings settings)
     {

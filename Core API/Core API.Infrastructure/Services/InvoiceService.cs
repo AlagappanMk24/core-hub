@@ -14,7 +14,7 @@ using Core_API.Domain.Models.Email;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using NPOI.OpenXmlFormats.Spreadsheet;
+using System.Text.Json;
 
 namespace Core_API.Infrastructure.Services
 {
@@ -26,9 +26,11 @@ namespace Core_API.Infrastructure.Services
         private readonly ILogger<InvoiceService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         private readonly IMapper _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         private readonly string[] _supportedCurrencies = ["USD", "EUR", "INR"];
-        private readonly IHubContext<NotificationHub> _hubContext = hubContext ;
+        private readonly IHubContext<NotificationHub> _hubContext = hubContext;
         public async Task<OperationResult<InvoiceResponseDto>> CreateAsync(InvoiceCreateDto dto, OperationContext operationContext)
         {
+            // Start transaction
+            using var transaction = await _unitOfWork.BeginTransactionAsync();
             try
             {
                 // Validate CompanyId
@@ -39,7 +41,7 @@ namespace Core_API.Infrastructure.Services
                 }
                 int companyId = operationContext.CompanyId.Value;
 
-                // Validate customer and company
+                // Validate customer
                 var customer = await _unitOfWork.Customers.GetAsync(c => c.Id == dto.CustomerId && c.CompanyId == companyId && !c.IsDeleted);
                 if (customer == null)
                 {
@@ -52,12 +54,6 @@ namespace Core_API.Infrastructure.Services
                     return OperationResult<InvoiceResponseDto>.FailureResult("Invoice number already exists.");
                 }
 
-                // Validate invoice type
-                if (!Enum.TryParse<InvoiceType>(dto.Type, true, out var invoiceType))
-                {
-                    return OperationResult<InvoiceResponseDto>.FailureResult("Invalid invoice type.");
-                }
-
                 // Validate currency
                 if (!_supportedCurrencies.Contains(dto.Currency))
                 {
@@ -65,7 +61,10 @@ namespace Core_API.Infrastructure.Services
                 }
 
                 // Validate tax types
-                var taxTypes = await _unitOfWork.TaxTypes.Query().Where(t => t.CompanyId == companyId && !t.IsDeleted).ToListAsync();
+                var taxTypes = await _unitOfWork.TaxTypes.Query()
+                    .Where(t => t.CompanyId == companyId && !t.IsDeleted)
+                    .ToListAsync();
+
                 foreach (var item in dto.Items)
                 {
                     if (!string.IsNullOrEmpty(item.TaxType) && !taxTypes.Any(t => t.Name == item.TaxType))
@@ -82,129 +81,81 @@ namespace Core_API.Infrastructure.Services
 
                 // Map DTO to entity
                 var invoice = _mapper.Map<Invoice>(dto);
-                invoice.InvoiceNumber = dto.IsAutomated ? (await _unitOfWork.InvoiceSettings.GetNextInvoiceNumberAsync(companyId)) : dto.InvoiceNumber;
+
+                // Set system-generated fields
+                invoice.InvoiceNumber = dto.IsAutomated
+                        ? await _unitOfWork.InvoiceSettings.GetNextInvoiceNumberAsync(companyId)
+                        : dto.InvoiceNumber ?? $"INV{DateTime.UtcNow.Ticks}";
+
                 invoice.CompanyId = companyId;
-                //invoice.Status = InvoiceStatus.Draft;
-                //invoice.PaymentStatus = PaymentStatus.Pending;
                 invoice.CreatedBy = operationContext.UserId;
                 invoice.CreatedDate = DateTime.UtcNow;
+                invoice.InvoiceStatus = InvoiceStatus.Draft;
+                invoice.PaymentStatus = PaymentStatus.Pending;
+                invoice.AmountPaid = 0;
+                invoice.AmountRefunded = 0;
+                invoice.AmountDue = 0;
+                invoice.SourceSystem = dto.SourceSystem ?? "Manual";
 
-                // Add invoice items
-                invoice.InvoiceItems = dto.Items.Select(item => new InvoiceItem
-                {
-                    Description = item.Description,
-                    Quantity = item.Quantity,
-                    UnitPrice = item.UnitPrice,
-                    Amount = item.Quantity * item.UnitPrice,
-                    TaxType = item.TaxType,
-                    TaxAmount = item.TaxAmount,
-                    CreatedBy = operationContext.UserId,
-                    CreatedDate = DateTime.UtcNow
-                }).ToList();
+                // Add invoice items with all fields
+                invoice.InvoiceItems = MapInvoiceItems(dto.Items, operationContext.UserId);
 
-                // Add tax details
-                invoice.TaxDetails = dto.TaxDetails.Select(tax => new TaxDetail
-                {
-                    TaxType = tax.TaxType,
-                    Rate = tax.Rate,
-                    Amount = tax.Amount,
-                    CreatedBy = operationContext.UserId,
-                    CreatedDate = DateTime.UtcNow
-                }).ToList();
+                // Add tax details with all fields
+                invoice.TaxDetails = MapTaxDetails(dto.TaxDetails, operationContext.UserId, invoice.Subtotal);
 
-                // Add discounts
-                invoice.Discounts = dto.Discounts.Select(discount => new Discount
-                {
-                    Description = discount.Description,
-                    Amount = discount.Amount,
-                    IsPercentage = discount.IsPercentage,
-                    CreatedBy = operationContext.UserId,
-                    CreatedDate = DateTime.UtcNow
-                }).ToList();
+                // Add discounts with all fields
+                invoice.Discounts = MapDiscounts(dto.Discounts, operationContext.UserId);
 
-                // Calculate totals
-                invoice.Subtotal = invoice.InvoiceItems.Sum(i => i.Amount);
-                invoice.Tax = invoice.TaxDetails.Sum(t => t.Amount);
-                var discountAmount = invoice.Discounts.Sum(d => d.IsPercentage ? (invoice.Subtotal * d.Amount / 100) : d.Amount);
-                invoice.TotalAmount = invoice.Subtotal + invoice.Tax - discountAmount;
+                // Calculate financial totals
+                CalculateInvoiceTotals(invoice);
 
-                //// Add attachments
-                //invoice.InvoiceAttachments = dto.Attachments.Select(attachment => new InvoiceAttachment
-                //{
-                //    FileName = attachment.FileName,
-                //    FileUrl = attachment.FileUrl,
-                //    CreatedBy = operationContext.UserId,
-                //    CreatedDate = DateTime.UtcNow
-                //}).ToList();
+                // Calculate AmountDue
+                invoice.AmountDue = invoice.TotalAmount - invoice.AmountPaid;
 
-                // Handle attachments
-                invoice.InvoiceAttachments = new List<InvoiceAttachment>();
-                foreach (var attachment in dto.Attachments)
-                {
-                    if (attachment.FileContent != null)
-                    {
-                        // Validate file
-                        var allowedTypes = new[] { "image/jpeg", "image/png", "application/pdf" };
-                        if (!allowedTypes.Contains(attachment.FileContent.ContentType))
-                        {
-                            return OperationResult<InvoiceResponseDto>.FailureResult($"Invalid file type for {attachment.FileName}. Only JPEG, PNG, and PDF are allowed.");
-                        }
-                        if (attachment.FileContent.Length > 5 * 1024 * 1024) // 5MB
-                        {
-                            return OperationResult<InvoiceResponseDto>.FailureResult($"File {attachment.FileName} exceeds 5MB limit.");
-                        }
-
-                        // Generate unique file name and path
-                        var uniqueFileName = $"{Guid.NewGuid()}_{attachment.FileName}";
-                        var folderPath = Path.Combine("wwwroot", "Attachments", "Invoices", companyId.ToString(), invoice.Id.ToString());
-                        Directory.CreateDirectory(folderPath);
-                        var filePath = Path.Combine(folderPath, uniqueFileName);
-
-                        // Save file
-                        using (var stream = new FileStream(filePath, FileMode.Create))
-                        {
-                            await attachment.FileContent.CopyToAsync(stream);
-                        }
-
-                        // Generate FileUrl
-                        var fileUrl = $"/Attachments/Invoices/{companyId}/{invoice.Id}/{uniqueFileName}";
-
-                        invoice.InvoiceAttachments.Add(new InvoiceAttachment
-                        {
-                            FileName = attachment.FileName,
-                            FileUrl = fileUrl,
-                            CreatedBy = operationContext.UserId,
-                            CreatedDate = DateTime.UtcNow
-                        });
-                    }
-                    else if (attachment.Id > 0 && !string.IsNullOrEmpty(attachment.FileUrl))
-                    {
-                        // Preserve existing attachment
-                        invoice.InvoiceAttachments.Add(new InvoiceAttachment
-                        {
-                            Id = attachment.Id,
-                            FileName = attachment.FileName,
-                            FileUrl = attachment.FileUrl,
-                            CreatedBy = operationContext.UserId,
-                            CreatedDate = DateTime.UtcNow
-                        });
-                    }
-                }
-
+                // Add invoice first to get Id
                 await _unitOfWork.Invoices.AddAsync(invoice);
                 await _unitOfWork.SaveChangesAsync();
 
-                var response = await MapToInvoiceResponseDto(invoice);
+                // AFTER the invoice is saved and has an ID, handle attachments
+                // This is important because attachments need the invoice ID
+                if (dto.Attachments?.Any() == true)
+                {
+                    invoice.InvoiceAttachments = await HandleAttachmentsAsync(dto.Attachments, companyId, invoice.Id, operationContext.UserId);
+                    // Update the invoice with attachments
+                    _unitOfWork.Invoices.Update(invoice);
+                    await _unitOfWork.SaveChangesAsync();
+                }
+
+                // Create audit log
+                var auditLog = CreateAuditLog(invoice.Id, dto, invoice, operationContext);
+                await _unitOfWork.InvoiceAuditLogs.AddAsync(auditLog);
+                await _unitOfWork.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+
+                // Map to response DTO
+                var response = MapToInvoiceResponseDto(invoice);
+
+                // Send notification
+                await _hubContext.Clients.Group($"company-{companyId}").SendAsync(
+                    "InvoiceCreated",
+                    new { InvoiceId = invoice.Id, InvoiceNumber = invoice.InvoiceNumber });
+
+                _logger.LogInformation("Invoice {InvoiceNumber} created successfully with ID {InvoiceId}",
+                    invoice.InvoiceNumber, invoice.Id);
+
                 return OperationResult<InvoiceResponseDto>.SuccessResult(response);
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error creating invoice for company {CompanyId}", operationContext.CompanyId);
-                return OperationResult<InvoiceResponseDto>.FailureResult("Failed to create invoice.");
+                return OperationResult<InvoiceResponseDto>.FailureResult("Failed to create invoice: " + ex.Message);
             }
         }
         public async Task<OperationResult<InvoiceResponseDto>> UpdateAsync(InvoiceUpdateDto dto, OperationContext operationContext)
         {
+            using var transaction = await _unitOfWork.BeginTransactionAsync();
             try
             {
                 // Validate CompanyId
@@ -215,7 +166,11 @@ namespace Core_API.Infrastructure.Services
                 }
                 int companyId = operationContext.CompanyId.Value;
 
-                var invoice = await _unitOfWork.Invoices.GetAsync(i => i.Id == dto.Id && i.CompanyId == companyId && !i.IsDeleted, "InvoiceItems,TaxDetails,Customer");
+                // Get existing invoice with all related data
+                var invoice = await _unitOfWork.Invoices.GetAsync(
+                    i => i.Id == dto.Id && i.CompanyId == companyId && !i.IsDeleted, 
+                    "InvoiceItems,TaxDetails,Discounts,InvoiceAttachments,Customer");
+
                 if (invoice == null)
                 {
                     return OperationResult<InvoiceResponseDto>.FailureResult("Invoice not found or does not belong to your company.");
@@ -228,28 +183,11 @@ namespace Core_API.Infrastructure.Services
                     return OperationResult<InvoiceResponseDto>.FailureResult("Customer not found or does not belong to your company.");
                 }
 
-                // Validate invoice number
-                if (!dto.IsAutomated && await _unitOfWork.Invoices.InvoiceNumberExistsAsync(companyId, dto.InvoiceNumber, dto.Id))
+                // Validate invoice number uniqueness
+                if (!dto.IsAutomated && !string.IsNullOrEmpty(dto.InvoiceNumber) &&
+                    await _unitOfWork.Invoices.InvoiceNumberExistsAsync(companyId, dto.InvoiceNumber, dto.Id))
                 {
                     return OperationResult<InvoiceResponseDto>.FailureResult("Invoice number already exists.");
-                }
-
-                // Validate invoice type
-                if (!Enum.TryParse<InvoiceType>(dto.Type, true, out var invoiceType))
-                {
-                    return OperationResult<InvoiceResponseDto>.FailureResult("Invalid invoice type.");
-                }
-
-                // Validate invoice status
-                if (!Enum.TryParse<InvoiceStatus>(dto.InvoiceStatus, true, out var invoiceStatus))
-                {
-                    return OperationResult<InvoiceResponseDto>.FailureResult("Invalid invoice status.");
-                }
-
-                // Validate payment status
-                if (!Enum.TryParse<PaymentStatus>(dto.PaymentStatus, true, out var paymentStatus))
-                {
-                    return OperationResult<InvoiceResponseDto>.FailureResult("Invalid payment status.");
                 }
 
                 if (!_supportedCurrencies.Contains(dto.Currency))
@@ -257,39 +195,66 @@ namespace Core_API.Infrastructure.Services
                     return OperationResult<InvoiceResponseDto>.FailureResult($"Invalid currency. Supported currencies: {string.Join(", ", _supportedCurrencies)}.");
                 }
 
-                var taxTypes = await _unitOfWork.TaxTypes.Query().Where(t => t.CompanyId == companyId && !t.IsDeleted).ToListAsync();
-                foreach (var item in dto.Items)
+                // Validate tax types
+                var taxTypes = await _unitOfWork.TaxTypes.Query()
+                    .Where(t => t.CompanyId == companyId && !t.IsDeleted)
+                    .ToListAsync();
+
+                foreach (var item in dto.Items.Where(i => !string.IsNullOrEmpty(i.TaxType)))
                 {
                     if (!string.IsNullOrEmpty(item.TaxType) && !taxTypes.Any(t => t.Name == item.TaxType))
                     {
                         return OperationResult<InvoiceResponseDto>.FailureResult($"Invalid tax type: {item.TaxType}.");
                     }
                 }
+                foreach (var tax in dto.TaxDetails.Where(t => !string.IsNullOrEmpty(t.TaxName)))
+                {
+                    if (!taxTypes.Any(t => t.Name == tax.TaxName))
+                    {
+                        return OperationResult<InvoiceResponseDto>.FailureResult($"Invalid tax type: {tax.TaxName}.");
+                    }
+                }
 
+                // Validate discounts
                 if (dto.Discounts.Any(d => d.Amount < 0))
                 {
                     return OperationResult<InvoiceResponseDto>.FailureResult("Discount amount cannot be negative.");
                 }
 
+                // Store old values for audit
+                var oldInvoice = JsonSerializer.Serialize(new
+                {
+                    invoice.InvoiceNumber,
+                    invoice.InvoiceStatus,
+                    invoice.PaymentStatus,
+                    invoice.TotalAmount,
+                    invoice.AmountPaid
+                });
+
                 // Map DTO to entity
                 _mapper.Map(dto, invoice);
-                invoice.InvoiceNumber = dto.IsAutomated ? (await _unitOfWork.InvoiceSettings.GetNextInvoiceNumberAsync(companyId)) : dto.InvoiceNumber;
+
+                invoice.InvoiceNumber = dto.IsAutomated
+                     ? await _unitOfWork.InvoiceSettings.GetNextInvoiceNumberAsync(companyId)
+                     : dto.InvoiceNumber ?? invoice.InvoiceNumber;
+
                 invoice.UpdatedBy = operationContext.UserId;
                 invoice.UpdatedDate = DateTime.UtcNow;
 
-                // Update invoice items
+                // Update collections
                 invoice.InvoiceItems.Clear();
                 invoice.InvoiceItems = _mapper.Map<List<InvoiceItem>>(dto.Items);
-                foreach (var item in invoice.InvoiceItems)
+
+                foreach (var items in invoice.InvoiceItems)
                 {
-                    item.Amount = item.Quantity * item.UnitPrice;
-                    item.CreatedBy = operationContext.UserId;
-                    item.CreatedDate = DateTime.UtcNow;
+                    items.CreatedBy = operationContext.UserId;
+                    items.CreatedDate = DateTime.UtcNow;
                 }
 
                 // Update tax details
                 invoice.TaxDetails.Clear();
-                invoice.TaxDetails = _mapper.Map<List<TaxDetail>>(dto.TaxDetails);
+                invoice.TaxDetails = _mapper.Map<List<InvoiceTaxDetail>>(dto.TaxDetails);
+
                 foreach (var tax in invoice.TaxDetails)
                 {
                     tax.CreatedBy = operationContext.UserId;
@@ -298,98 +263,75 @@ namespace Core_API.Infrastructure.Services
 
                 // Update discount details
                 invoice.Discounts.Clear();
-                invoice.Discounts = _mapper.Map<List<Discount>>(dto.Discounts);
+                invoice.Discounts = _mapper.Map<List<InvoiceDiscount>>(dto.Discounts);
                 foreach (var discount in invoice.Discounts)
                 {
                     discount.CreatedBy = operationContext.UserId;
                     discount.CreatedDate = DateTime.UtcNow;
                 }
 
-                //// Update attachments
-                //invoice.InvoiceAttachments.Clear();
-                //invoice.InvoiceAttachments = dto.Attachments.Select(attachment => new InvoiceAttachment
-                //{
-                //    FileName = attachment.FileName,
-                //    FileUrl = attachment.FileUrl,
-                //    CreatedBy = operationContext.UserId,
-                //    CreatedDate = DateTime.UtcNow
-                //}).ToList();
-
                 // Recalculate totals
-                invoice.Subtotal = invoice.InvoiceItems.Sum(i => i.Amount);
-                invoice.Tax = invoice.TaxDetails.Sum(t => t.Amount);
-                var discountAmount = invoice.Discounts.Sum(d => d.IsPercentage ? (invoice.Subtotal * d.Amount / 100) : d.Amount);
-                invoice.TotalAmount = invoice.Subtotal + invoice.Tax - discountAmount;
+                CalculateInvoiceTotals(invoice);
+                invoice.AmountDue = invoice.TotalAmount - invoice.AmountPaid;
 
                 // Handle attachments
                 invoice.InvoiceAttachments.Clear();
-                foreach (var attachment in dto.Attachments)
+
+                if (dto.Attachments?.Any() == true)
                 {
-                    if (attachment.FileContent != null)
+                    var existingAttachmentIds = invoice.InvoiceAttachments.Select(a => a.Id).ToHashSet();
+
+                    var newAttachments = dto.Attachments.Where(a => a.FileContent != null).ToList();
+
+                    if (newAttachments.Any())
                     {
-                        // Validate file
-                        var allowedTypes = new[] { "image/jpeg", "image/png", "application/pdf" };
-                        if (!allowedTypes.Contains(attachment.FileContent.ContentType))
-                        {
-                            return OperationResult<InvoiceResponseDto>.FailureResult($"Invalid file type for {attachment.FileName}. Only JPEG, PNG, and PDF are allowed.");
-                        }
-                        if (attachment.FileContent.Length > 5 * 1024 * 1024) // 5MB
-                        {
-                            return OperationResult<InvoiceResponseDto>.FailureResult($"File {attachment.FileName} exceeds 5MB limit.");
-                        }
-
-                        // Generate unique file name and path
-                        var uniqueFileName = $"{Guid.NewGuid()}_{attachment.FileName}";
-                        var folderPath = Path.Combine("wwwroot", "Attachments", "Invoices", companyId.ToString(), invoice.Id.ToString());
-                        Directory.CreateDirectory(folderPath);
-                        var filePath = Path.Combine(folderPath, uniqueFileName);
-
-                        // Save file
-                        using (var stream = new FileStream(filePath, FileMode.Create))
-                        {
-                            await attachment.FileContent.CopyToAsync(stream);
-                        }
-
-                        // Generate FileUrl
-                        var fileUrl = $"/Attachments/Invoices/{companyId}/{invoice.Id}/{uniqueFileName}";
-
-                        invoice.InvoiceAttachments.Add(new InvoiceAttachment
-                        {
-                            FileName = attachment.FileName,
-                            FileUrl = fileUrl,
-                            CreatedBy = operationContext.UserId,
-                            CreatedDate = DateTime.UtcNow
-                        });
-                    }
-                    else if (attachment.Id > 0 && !string.IsNullOrEmpty(attachment.FileUrl))
-                    {
-                        // Preserve existing attachment
-                        invoice.InvoiceAttachments.Add(new InvoiceAttachment
-                        {
-                            Id = attachment.Id,
-                            FileName = attachment.FileName,
-                            FileUrl = attachment.FileUrl,
-                            CreatedBy = operationContext.UserId,
-                            CreatedDate = DateTime.UtcNow
-                        });
+                        var addedAttachments = await HandleAttachmentsAsync(
+                            newAttachments, companyId, invoice.Id, operationContext.UserId);
+                        invoice.InvoiceAttachments.AddRange(addedAttachments);
                     }
                 }
-
                 _unitOfWork.Invoices.Update(invoice);
                 await _unitOfWork.SaveChangesAsync();
 
+                // Create audit log
+                var auditLog = new InvoiceAuditLog
+                {
+                    InvoiceId = invoice.Id,
+                    Action = "Updated",
+                    Description = $"Invoice updated by {operationContext.UserId}",
+                    Changes = JsonSerializer.Serialize(new { Old = oldInvoice, New = dto }),
+                    IpAddress = "system",
+                    UserAgent = "system",
+                    CreatedBy = operationContext.UserId,
+                    CreatedDate = DateTime.UtcNow
+                };
+                await _unitOfWork.InvoiceAuditLogs.AddAsync(auditLog);
+                await _unitOfWork.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+
                 var response = _mapper.Map<InvoiceResponseDto>(invoice);
                 response.Customer = _mapper.Map<CustomerResponseDto>(customer);
+
+                // Send notification
+                await _hubContext.Clients.Group($"company-{companyId}").SendAsync(
+                    "InvoiceUpdated",
+                    new { InvoiceId = invoice.Id, InvoiceNumber = invoice.InvoiceNumber });
+
+                _logger.LogInformation("Invoice {InvoiceId} updated successfully", invoice.Id);
+
                 return OperationResult<InvoiceResponseDto>.SuccessResult(response);
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error updating invoice {InvoiceId} for company {CompanyId}", dto.Id, operationContext.CompanyId);
                 return OperationResult<InvoiceResponseDto>.FailureResult("Failed to update invoice.");
             }
         }
         public async Task<OperationResult<bool>> DeleteAsync(int id, OperationContext operationContext)
         {
+            using var transaction = await _unitOfWork.BeginTransactionAsync();
             try
             {
                 // Validate CompanyId
@@ -405,17 +347,50 @@ namespace Core_API.Infrastructure.Services
                     return OperationResult<bool>.FailureResult("Invoice not found or does not belong to your company.");
                 }
 
+                // Soft delete invoice
                 invoice.IsDeleted = true;
                 invoice.UpdatedBy = operationContext.UserId;
                 invoice.UpdatedDate = DateTime.UtcNow;
 
+                // Soft delete attachments
+                foreach (var attachment in invoice.InvoiceAttachments)
+                {
+                    attachment.IsDeleted = true;
+                    attachment.UpdatedBy = operationContext.UserId;
+                    attachment.UpdatedDate = DateTime.UtcNow;
+                }
+               
                 _unitOfWork.Invoices.Update(invoice);
                 await _unitOfWork.SaveChangesAsync();
 
+                // Create audit log
+                var auditLog = new InvoiceAuditLog
+                {
+                    InvoiceId = invoice.Id,
+                    Action = "Deleted",
+                    Description = $"Invoice deleted by {operationContext.UserId}",
+                    Changes = JsonSerializer.Serialize(new { DeletedDate = DateTime.UtcNow }),
+                    IpAddress = "system",
+                    UserAgent = "system",
+                    CreatedBy = operationContext.UserId,
+                    CreatedDate = DateTime.UtcNow
+                };
+                await _unitOfWork.InvoiceAuditLogs.AddAsync(auditLog);
+                await _unitOfWork.SaveChangesAsync();
+
+                await transaction.CommitAsync();
+
+                // Send notification
+                await _hubContext.Clients.Group($"company-{companyId}").SendAsync(
+                    "InvoiceDeleted",
+                    new { InvoiceId = invoice.Id, InvoiceNumber = invoice.InvoiceNumber });
+
+                _logger.LogInformation("Invoice {InvoiceId} deleted successfully", id);
                 return OperationResult<bool>.SuccessResult(true);
             }
             catch (Exception ex)
             {
+                await transaction.RollbackAsync();
                 _logger.LogError(ex, "Error deleting invoice {InvoiceId} for company {CompanyId}", id, operationContext.CompanyId);
                 return OperationResult<bool>.FailureResult("Failed to delete invoice.");
             }
@@ -433,14 +408,21 @@ namespace Core_API.Infrastructure.Services
 
                 int companyId = operationContext.CompanyId.Value;
 
-                var invoice = await _unitOfWork.Invoices.GetAsync(i => i.Id == id && i.CompanyId == companyId && !i.IsDeleted, "Customer,InvoiceItems,TaxDetails,Discounts,InvoiceAttachments");
+                var invoice = await _unitOfWork.Invoices.GetAsync(
+                  i => i.Id == id && i.CompanyId == companyId && !i.IsDeleted,
+                  includeProperties: "Customer,InvoiceItems,TaxDetails,Discounts,InvoiceAttachments,Payments,AuditLogs");
+
                 if (invoice == null)
                 {
                     return OperationResult<InvoiceResponseDto>.FailureResult("Invoice not found or does not belong to your company.");
                 }
 
+                // Check customer access if user is a customer
+                if (operationContext.CustomerId.HasValue && invoice.CustomerId != operationContext.CustomerId.Value)
+                {
+                    return OperationResult<InvoiceResponseDto>.FailureResult("Access denied to this invoice.");
+                }
                 var response = _mapper.Map<InvoiceResponseDto>(invoice);
-                response.Customer = _mapper.Map<CustomerResponseDto>(invoice.Customer);
                 return OperationResult<InvoiceResponseDto>.SuccessResult(response);
             }
             catch (Exception ex)
@@ -459,13 +441,18 @@ namespace Core_API.Infrastructure.Services
                     return OperationResult<PaginatedResult<InvoiceResponseDto>>.FailureResult("Company ID is required.");
                 }
                 int companyId = operationContext.CompanyId.Value;
+                // Apply customer filter if user is a customer
+                if (operationContext.CustomerId.HasValue)
+                {
+                    filter.CustomerId = operationContext.CustomerId.Value;
+                }
 
                 var result = await _unitOfWork.Invoices.GetPagedAsync(companyId, filter);
 
                 var mappedItems = new List<InvoiceResponseDto>();
                 foreach (var invoice in result.Items)
                 {
-                    var dto = await MapToInvoiceResponseDto(invoice);
+                    var dto = MapToInvoiceResponseDto(invoice);
                     mappedItems.Add(dto);
                 }
 
@@ -499,9 +486,19 @@ namespace Core_API.Infrastructure.Services
                 var settings = await _unitOfWork.InvoiceSettings.GetByCompanyIdAsync(companyId);
                 if (settings == null)
                 {
-                    return OperationResult<InvoiceSettingsDto>.FailureResult("Invoice settings not found for this company.");
+                    // Create default settings if not exist
+                    settings = new InvoiceSettings
+                    {
+                        CompanyId = companyId,
+                        IsAutomated = true,
+                        InvoicePrefix = "INV",
+                        InvoiceStartingNumber = 1000,
+                        CreatedBy = operationContext.UserId,
+                        CreatedDate = DateTime.UtcNow
+                    };
+                    await _unitOfWork.InvoiceSettings.AddAsync(settings);
+                    await _unitOfWork.SaveChangesAsync();
                 }
-
                 var settingsDto = _mapper.Map<InvoiceSettingsDto>(settings);
                 return OperationResult<InvoiceSettingsDto>.SuccessResult(settingsDto);
             }
@@ -522,12 +519,26 @@ namespace Core_API.Infrastructure.Services
                     return OperationResult<bool>.FailureResult("Company ID is required.");
                 }
                 int companyId = operationContext.CompanyId.Value;
-                var settings = _mapper.Map<InvoiceSettings>(dto);
-                settings.CompanyId = companyId;
-                settings.CreatedBy = operationContext.UserId;
-                settings.CreatedDate = DateTime.UtcNow;
+                var settings = await _unitOfWork.InvoiceSettings.GetByCompanyIdAsync(companyId);
+                if (settings == null)
+                {
+                    settings = _mapper.Map<InvoiceSettings>(dto);
+                    settings.CompanyId = companyId;
+                    settings.CreatedBy = operationContext.UserId;
+                    settings.CreatedDate = DateTime.UtcNow;
+                    await _unitOfWork.InvoiceSettings.AddAsync(settings);
+                }
+                else
+                {
+                    _mapper.Map(dto, settings);
+                    settings.UpdatedBy = operationContext.UserId;
+                    settings.UpdatedDate = DateTime.UtcNow;
+                    _unitOfWork.InvoiceSettings.Update(settings);
+                }
 
-                await _unitOfWork.InvoiceSettings.SaveAsync(settings);
+                await _unitOfWork.SaveChangesAsync();
+
+                _logger.LogInformation("Invoice settings saved successfully for company {CompanyId}", companyId);
                 return OperationResult<bool>.SuccessResult(true);
             }
             catch (Exception ex)
@@ -612,9 +623,10 @@ namespace Core_API.Infrastructure.Services
                 var invoiceEmailRequest = new InvoiceEmailRequest
                 {
                     To = emailData.To.Where(e => !string.IsNullOrWhiteSpace(e)).ToList(),
-                    Cc = emailData.Cc.Where(e => !string.IsNullOrWhiteSpace(e)).ToList(),
-                    Subject = emailData.Subject,
-                    HtmlMessage = emailData.Message,
+                    Cc = emailData.Cc?.Where(e => !string.IsNullOrWhiteSpace(e)).ToList() ?? new List<string>(),
+                    Bcc = emailData.Bcc?.Where(e => !string.IsNullOrWhiteSpace(e)).ToList() ?? new List<string>(),
+                    Subject = emailData.Subject ?? $"Invoice {invoice.InvoiceNumber}",
+                    HtmlMessage = emailData.Message ?? GenerateDefaultEmailMessage(invoice),
                     InvoiceNumber = invoice.InvoiceNumber,
                     AmountDue = invoice.TotalAmount,
                     DueDate = invoice.DueDate
@@ -623,14 +635,30 @@ namespace Core_API.Infrastructure.Services
                 // Send email
                 await _emailSendingService.SendInvoiceEmailAsync(invoiceEmailRequest, operationContext, pdfStream, $"Invoice_{invoice.InvoiceNumber}.pdf");
 
-                // Update invoice status
+                // Update invoice
+                invoice.SentDate = DateTime.UtcNow;
                 invoice.InvoiceStatus = InvoiceStatus.Sent;
-                invoice.PaymentStatus = invoice.PaymentStatus == PaymentStatus.Completed || invoice.PaymentStatus == PaymentStatus.Refunded ? invoice.PaymentStatus : PaymentStatus.Pending;
                 invoice.UpdatedBy = operationContext.UserId;
                 invoice.UpdatedDate = DateTime.UtcNow;
 
                 _unitOfWork.Invoices.Update(invoice);
                 await _unitOfWork.SaveChangesAsync();
+
+                // Create audit log
+                var auditLog = new InvoiceAuditLog
+                {
+                    InvoiceId = invoice.Id,
+                    Action = "Sent",
+                    Description = $"Invoice sent to {string.Join(", ", invoiceEmailRequest.To)}",
+                    Changes = JsonSerializer.Serialize(new { SentDate = DateTime.UtcNow, Recipients = invoiceEmailRequest.To }),
+                    IpAddress = "system",
+                    UserAgent = "system",
+                    CreatedBy = operationContext.UserId,
+                    CreatedDate = DateTime.UtcNow
+                };
+                await _unitOfWork.InvoiceAuditLogs.AddAsync(auditLog);
+                await _unitOfWork.SaveChangesAsync();
+
 
                 // Send SignalR notification to the customer
                 try
@@ -679,10 +707,15 @@ namespace Core_API.Infrastructure.Services
                 if (operationContext.CustomerId.HasValue)
                     query = query.Where(i => i.CustomerId == operationContext.CustomerId.Value);
 
-                if (!string.IsNullOrEmpty(operationContext.UserId) && operationContext.CustomerId == null) 
+                if (!string.IsNullOrEmpty(operationContext.UserId) && operationContext.CustomerId == null)
                     query = query.Where(i => i.CreatedBy == operationContext.UserId);
 
                 var invoices = await query.ToListAsync();
+
+                // Get previous period for change calculation
+                var previousPeriodStart = DateTime.UtcNow.AddMonths(-1);
+                var previousPeriodInvoices = invoices.Where(i => i.IssueDate < previousPeriodStart).ToList();
+                var currentPeriodInvoices = invoices.Where(i => i.IssueDate >= previousPeriodStart).ToList();
 
                 var stats = new InvoiceStatsDto
                 {
@@ -690,67 +723,67 @@ namespace Core_API.Infrastructure.Services
                     {
                         Count = invoices.Count,
                         Amount = invoices.Sum(i => i.TotalAmount),
-                        Change = CalculateChange(invoices)
+                        Change = CalculateChange(previousPeriodInvoices.Sum(i => i.TotalAmount), currentPeriodInvoices.Sum(i => i.TotalAmount))
                     },
                     Draft = new StatsItem
                     {
                         Count = invoices.Count(i => i.InvoiceStatus == InvoiceStatus.Draft),
                         Amount = invoices.Where(i => i.InvoiceStatus == InvoiceStatus.Draft).Sum(i => i.TotalAmount),
-                        Change = CalculateChange(invoices.Where(i => i.InvoiceStatus == InvoiceStatus.Draft).ToList())
+                        Change = 0
                     },
                     Sent = new StatsItem // Same as Open
                     {
                         Count = invoices.Count(i => i.InvoiceStatus == InvoiceStatus.Sent),
                         Amount = invoices.Where(i => i.InvoiceStatus == InvoiceStatus.Sent).Sum(i => i.TotalAmount),
-                        Change = CalculateChange(invoices.Where(i => i.InvoiceStatus == InvoiceStatus.Sent).ToList())
+                        Change = 0
                     },
-                    Approved = new StatsItem
+                    Viewed = new StatsItem
                     {
-                        Count = invoices.Count(i => i.InvoiceStatus == InvoiceStatus.Approved),
-                        Amount = invoices.Where(i => i.InvoiceStatus == InvoiceStatus.Approved).Sum(i => i.TotalAmount),
-                        Change = CalculateChange(invoices.Where(i => i.InvoiceStatus == InvoiceStatus.Approved).ToList())
-                    },
-                    Cancelled = new StatsItem
-                    {
-                        Count = invoices.Count(i => i.InvoiceStatus == InvoiceStatus.Cancelled),
-                        Amount = invoices.Where(i => i.InvoiceStatus == InvoiceStatus.Cancelled).Sum(i => i.TotalAmount),
-                        Change = CalculateChange(invoices.Where(i => i.InvoiceStatus == InvoiceStatus.Cancelled).ToList())
-                    },
-                    Pending = new StatsItem
-                    {
-                        Count = invoices.Count(i => i.PaymentStatus == PaymentStatus.Pending),
-                        Amount = invoices.Where(i => i.PaymentStatus == PaymentStatus.Pending).Sum(i => i.TotalAmount),
-                        Change = CalculateChange(invoices.Where(i => i.PaymentStatus == PaymentStatus.Pending).ToList())
-                    },
-                    Processing = new StatsItem
-                    {
-                        Count = invoices.Count(i => i.PaymentStatus == PaymentStatus.Processing),
-                        Amount = invoices.Where(i => i.PaymentStatus == PaymentStatus.Processing).Sum(i => i.TotalAmount),
-                        Change = CalculateChange(invoices.Where(i => i.PaymentStatus == PaymentStatus.Processing).ToList())
-                    },
-                    Completed = new StatsItem
-                    {
-                        Count = invoices.Count(i => i.PaymentStatus == PaymentStatus.Completed),
-                        Amount = invoices.Where(i => i.PaymentStatus == PaymentStatus.Completed).Sum(i => i.TotalAmount),
-                        Change = CalculateChange(invoices.Where(i => i.PaymentStatus == PaymentStatus.Completed).ToList())
+                        Count = invoices.Count(i => i.InvoiceStatus == InvoiceStatus.Viewed),
+                        Amount = invoices.Where(i => i.InvoiceStatus == InvoiceStatus.Viewed).Sum(i => i.TotalAmount),
+                        Change = 0
                     },
                     PartiallyPaid = new StatsItem
                     {
                         Count = invoices.Count(i => i.PaymentStatus == PaymentStatus.PartiallyPaid),
                         Amount = invoices.Where(i => i.PaymentStatus == PaymentStatus.PartiallyPaid).Sum(i => i.TotalAmount),
-                        Change = CalculateChange(invoices.Where(i => i.PaymentStatus == PaymentStatus.PartiallyPaid).ToList())
+                        Change = 0
+                    },
+                    Paid = new StatsItem
+                    {
+                        Count = invoices.Count(i => i.PaymentStatus == PaymentStatus.Paid),
+                        Amount = invoices.Where(i => i.PaymentStatus == PaymentStatus.Paid).Sum(i => i.TotalAmount),
+                        Change = 0
                     },
                     Overdue = new StatsItem
                     {
                         Count = invoices.Count(i => i.PaymentStatus == PaymentStatus.Overdue),
                         Amount = invoices.Where(i => i.PaymentStatus == PaymentStatus.Overdue).Sum(i => i.TotalAmount),
-                        Change = CalculateChange(invoices.Where(i => i.PaymentStatus == PaymentStatus.Overdue).ToList())
+                        Change = 0
+                    },
+                    Void = new StatsItem
+                    {
+                        Count = invoices.Count(i => i.InvoiceStatus == InvoiceStatus.Void),
+                        Amount = invoices.Where(i => i.InvoiceStatus == InvoiceStatus.Void).Sum(i => i.TotalAmount),
+                        Change = 0
+                    },
+                    Cancelled = new StatsItem
+                    {
+                        Count = invoices.Count(i => i.InvoiceStatus == InvoiceStatus.Void),
+                        Amount = invoices.Where(i => i.InvoiceStatus == InvoiceStatus.Void).Sum(i => i.TotalAmount),
+                        Change = 0
                     },
                     Refunded = new StatsItem
                     {
                         Count = invoices.Count(i => i.PaymentStatus == PaymentStatus.Refunded),
                         Amount = invoices.Where(i => i.PaymentStatus == PaymentStatus.Refunded).Sum(i => i.TotalAmount),
-                        Change = CalculateChange(invoices.Where(i => i.PaymentStatus == PaymentStatus.Refunded).ToList())
+                        Change = 0
+                    },
+                    Pending = new StatsItem
+                    {
+                        Count = invoices.Count(i => i.PaymentStatus == PaymentStatus.Pending),
+                        Amount = invoices.Where(i => i.PaymentStatus == PaymentStatus.Pending).Sum(i => i.TotalAmount),
+                        Change = 0
                     }
                 };
 
@@ -774,15 +807,6 @@ namespace Core_API.Infrastructure.Services
                 }
                 int customerId = context.CustomerId.Value;
 
-                // customers need to access company-wide invoices
-                //var query = _unitOfWork.Invoices.Query()
-                //    .Where(i => !i.IsDeleted && (i.CustomerId == context.CustomerId || (i.CompanyId == context.CompanyId && context.CompanyId != 0)))
-                //    .Include(i => i.Customer)
-                //    .Include(i => i.Company)
-                //    .Include(i => i.InvoiceItems)
-                //    .Include(i => i.TaxDetails)
-                //    .Include(i => i.Discounts);
-
                 var query = _unitOfWork.Invoices.Query()
                     .Where(i => !i.IsDeleted && i.CustomerId == customerId)
                     .Include(i => i.Customer)
@@ -793,7 +817,7 @@ namespace Core_API.Infrastructure.Services
 
                 if (!string.IsNullOrEmpty(status) && Enum.TryParse<InvoiceStatus>(status, true, out var invoiceStatus))
                 {
-                    query = (Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<Invoice, List<Discount>>)query.Where(i => i.InvoiceStatus == invoiceStatus);
+                    query = (Microsoft.EntityFrameworkCore.Query.IIncludableQueryable<Invoice, List<InvoiceDiscount>>)query.Where(i => i.InvoiceStatus == invoiceStatus);
                 }
 
                 var totalCount = await query.CountAsync();
@@ -806,7 +830,7 @@ namespace Core_API.Infrastructure.Services
                 var invoiceDtos = new List<InvoiceResponseDto>();
                 foreach (var invoice in invoices)
                 {
-                    var dto = await MapToInvoiceResponseDto(invoice);
+                    var dto = MapToInvoiceResponseDto(invoice);
                     invoiceDtos.Add(dto);
                 }
 
@@ -855,7 +879,7 @@ namespace Core_API.Infrastructure.Services
                     return OperationResult<InvoiceResponseDto>.FailureResult("Invoice not found or access denied.");
                 }
 
-                var invoiceDto = await MapToInvoiceResponseDto(invoice);
+                var invoiceDto = MapToInvoiceResponseDto(invoice);
                 _logger.LogInformation("Retrieved invoice {InvoiceId} for customer {CustomerId}.", id, customerId);
                 return OperationResult<InvoiceResponseDto>.SuccessResult(invoiceDto);
             }
@@ -908,6 +932,21 @@ namespace Core_API.Infrastructure.Services
                 _unitOfWork.InvoiceAttachments.Update(attachment);
                 await _unitOfWork.SaveChangesAsync();
 
+                // Create audit log
+                var auditLog = new InvoiceAuditLog
+                {
+                    InvoiceId = invoiceId,
+                    Action = "AttachmentDeleted",
+                    Description = $"Attachment {attachment.FileName} deleted",
+                    Changes = JsonSerializer.Serialize(new { attachmentId, attachment.FileName }),
+                    IpAddress = "system",
+                    UserAgent = "system",
+                    CreatedBy = operationContext.UserId,
+                    CreatedDate = DateTime.UtcNow
+                };
+                await _unitOfWork.InvoiceAuditLogs.AddAsync(auditLog);
+                await _unitOfWork.SaveChangesAsync();
+
                 _logger.LogInformation("Attachment {AttachmentId} deleted successfully for invoice {InvoiceId} for company {CompanyId}.",
                     attachmentId, invoiceId, companyId);
                 return OperationResult<bool>.SuccessResult(true);
@@ -919,18 +958,258 @@ namespace Core_API.Infrastructure.Services
                 return OperationResult<bool>.FailureResult("Failed to delete attachment.");
             }
         }
-        private static decimal CalculateChange(List<Invoice> invoices)
+
+        #region Private Helper Methods
+
+        private void CalculateInvoiceTotals(Invoice invoice)
         {
-            // Placeholder: Calculate percentage change (e.g., compared to previous period)
-            // This is a simplified example; replace with actual business logic
-            return invoices.Count != 0 ? 0 : 0;
+            // Calculate Subtotal
+            invoice.Subtotal = invoice.InvoiceItems?.Sum(i => i.Amount) ?? 0;
+
+            // Calculate DiscountTotal 
+            invoice.DiscountTotal = invoice.Discounts?.Sum(d =>
+            {
+                if (d.DiscountType == DiscountType.Percentage)
+                {
+                    // For percentage discount, Amount is the percentage value
+                    return invoice.Subtotal * d.Amount / 100;
+                }
+                else
+                {
+                    // For fixed discount, Amount is the fixed amount
+                    return d.Amount;
+                }
+            }) ?? 0;
+
+            // Calculate TaxTotal
+            invoice.TaxTotal = invoice.TaxDetails?.Sum(t => t.TaxAmount) ?? 0;
+
+            // Calculate TotalAmount
+            invoice.TotalAmount = invoice.Subtotal - invoice.DiscountTotal + invoice.TaxTotal + invoice.ShippingAmount + invoice.AdjustmentAmount;
         }
-        private async Task<InvoiceResponseDto> MapToInvoiceResponseDto(Invoice invoice)
+        private List<InvoiceItem> MapInvoiceItems(List<InvoiceItemDto> itemDtos, string userId)
+        {
+            var items = new List<InvoiceItem>();
+            int lineNumber = 1;
+
+            foreach (var itemDto in itemDtos)
+            {
+                var amount = itemDto.Quantity * itemDto.UnitPrice;
+                var taxAmount = itemDto.TaxAmount > 0 ? itemDto.TaxAmount : 0;
+
+                var item = new InvoiceItem
+                {
+                    Description = itemDto.Description,
+                    Quantity = itemDto.Quantity,
+                    UnitPrice = itemDto.UnitPrice,
+                    Amount = amount,
+                    TaxType = itemDto.TaxType,
+                    TaxPercentage = itemDto.TaxAmount > 0 && amount > 0 ? (itemDto.TaxAmount / amount) * 100 : 0,
+                    TaxAmount = taxAmount,
+                    TotalAmount = amount + taxAmount,
+                    IsTaxable = !string.IsNullOrEmpty(itemDto.TaxType),
+                    CreatedBy = userId,
+                    CreatedDate = DateTime.UtcNow
+                };
+
+                items.Add(item);
+            }
+
+            return items;
+        }
+        private List<InvoiceTaxDetail> MapTaxDetails(List<InvoiceTaxDetailDto> taxDtos, string userId, decimal taxableAmount)
+        {
+            var taxDetails = new List<InvoiceTaxDetail>();
+
+            foreach (var taxDto in taxDtos)
+            {
+                var taxDetail = new InvoiceTaxDetail
+                {
+                    TaxName = taxDto.TaxName,
+                    Rate = taxDto.Rate,
+                    TaxAmount = taxDto.TaxAmount,
+                    CreatedBy = userId,
+                    CreatedDate = DateTime.UtcNow
+                };
+
+                taxDetails.Add(taxDetail);
+            }
+
+            return taxDetails;
+        }
+        private List<InvoiceDiscount> MapDiscounts(List<InvoiceDiscountDto> discountDtos, string userId)
+        {
+            var discounts = new List<InvoiceDiscount>();
+
+            foreach (var discountDto in discountDtos)
+            {
+                var discount = new InvoiceDiscount
+                {
+                    Description = discountDto.Description,
+                    DiscountType = discountDto.DiscountType,
+                    Amount = discountDto.Amount,            
+                    CreatedBy = userId,
+                    CreatedDate = DateTime.UtcNow
+                };
+
+                discounts.Add(discount);
+            }
+
+            return discounts;
+        }
+        private async Task<List<InvoiceAttachment>> HandleAttachmentsAsync(
+            List<InvoiceAttachmentDto> attachmentDtos,
+            int companyId,
+            int invoiceId,
+            string userId)
+        {
+            var attachments = new List<InvoiceAttachment>();
+
+            var basePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Attachments", "Invoices",
+                companyId.ToString(), invoiceId.ToString());
+
+            // Create directory if it doesn't exist
+            if (!Directory.Exists(basePath))
+            {
+                Directory.CreateDirectory(basePath);
+            }
+
+            foreach (var attachmentDto in attachmentDtos.Where(a => a.FileContent != null))
+            {
+                var file = attachmentDto.FileContent;
+
+                // Generate unique filename to avoid collisions
+                var uniqueFileName = $"{Guid.NewGuid()}_{attachmentDto.FileName}";
+                var filePath = Path.Combine(basePath, uniqueFileName);
+                var relativePath = $"/Attachments/Invoices/{companyId}/{invoiceId}/{uniqueFileName}";
+
+                // Save the file to disk
+                await using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await file.CopyToAsync(stream);
+                }
+
+                var attachment = new InvoiceAttachment
+                {
+                    InvoiceId = invoiceId,
+                    FileName = attachmentDto.FileName,
+                    FilePath = relativePath,
+                    FileUrl = relativePath,
+                    ContentType = file.ContentType, // Required - get from uploaded file
+                    FileSize = file.Length, // Required - get from uploaded file
+                    Description = attachmentDto.FileName, // Optional, but good to have
+                    IsPublic = true,
+                    CreatedBy = userId,
+                    CreatedDate = DateTime.UtcNow
+                };
+
+                attachments.Add(attachment);
+            }
+
+            return attachments;
+        }
+        private InvoiceResponseDto MapToInvoiceResponseDto(Invoice invoice)
         {
             var response = _mapper.Map<InvoiceResponseDto>(invoice);
-            var customer = await _unitOfWork.Customers.GetAsync(c => c.Id == invoice.CustomerId && c.CompanyId == invoice.CompanyId && !c.IsDeleted);
-            response.Customer = _mapper.Map<CustomerResponseDto>(customer);
+
+            if (invoice.Customer != null)
+            {
+                response.Customer = _mapper.Map<CustomerResponseDto>(invoice.Customer);
+            }
+
+            // Map additional collections
+            if (invoice.Payments != null)
+            {
+                response.Payments = _mapper.Map<List<InvoicePaymentDto>>(invoice.Payments);
+            }
+
+            if (invoice.AuditLogs != null)
+            {
+                response.AuditLogs = _mapper.Map<List<InvoiceAuditLogDto>>(invoice.AuditLogs);
+            }
+
+            // Set calculated fields
+            response.IsRecurring = invoice.IsRecurring;
+
             return response;
         }
+        private string GenerateDefaultEmailMessage(Invoice invoice)
+        {
+            return $@"
+                <html>
+                <body>
+                    <h3>Invoice {invoice.InvoiceNumber}</h3>
+                    <p>Dear {invoice.Customer?.Name},</p>
+                    <p>Please find attached invoice {invoice.InvoiceNumber} for your reference.</p>
+                    <p><strong>Invoice Details:</strong></p>
+                    <ul>
+                        <li>Invoice Number: {invoice.InvoiceNumber}</li>
+                        <li>Issue Date: {invoice.IssueDate:dd MMM yyyy}</li>
+                        <li>Due Date: {invoice.DueDate:dd MMM yyyy}</li>
+                        <li>Total Amount: {invoice.TotalAmount:C} {invoice.Currency}</li>
+                    </ul>
+                    <p>Thank you for your business!</p>
+                </body>
+                </html>";
+        }
+        private decimal CalculateChange(decimal previous, decimal current)
+        {
+            if (previous == 0) return 0;
+            return ((current - previous) / previous) * 100;
+        }
+        private InvoiceAuditLog CreateAuditLog(
+    int invoiceId,
+    InvoiceCreateDto dto,
+    Invoice invoice,
+    OperationContext operationContext)
+        {
+            // Create a summary of the invoice for audit log (reduced size)
+            var auditSummary = new
+            {
+                InvoiceNumber = invoice.InvoiceNumber,
+                CustomerId = dto.CustomerId,
+                IssueDate = dto.IssueDate,
+                DueDate = dto.DueDate,
+                Currency = dto.Currency,
+                CurrencyRate = dto.CurrencyRate,
+                Subtotal = invoice.Subtotal,
+                DiscountTotal = invoice.DiscountTotal,
+                TaxTotal = invoice.TaxTotal,
+                ShippingAmount = dto.ShippingAmount,
+                AdjustmentAmount = dto.AdjustmentAmount,
+                TotalAmount = invoice.TotalAmount,
+                ItemsCount = dto.Items?.Count ?? 0,
+                DiscountsCount = dto.Discounts?.Count ?? 0,
+                TaxDetailsCount = dto.TaxDetails?.Count ?? 0,
+                IsAutomated = dto.IsAutomated,
+                PaymentMethod = dto.PaymentMethod,
+                PaymentTerms = dto.PaymentTerms,
+                SourceSystem = dto.SourceSystem
+            };
+
+            var changesJson = JsonSerializer.Serialize(auditSummary);
+
+            // Ensure we don't exceed the maximum length (2000 characters)
+            const int maxLength = 2000;
+            if (changesJson.Length > maxLength)
+            {
+                // Truncate with ellipsis
+                changesJson = changesJson.Substring(0, maxLength - 3) + "...";
+            }
+
+            return new InvoiceAuditLog
+            {
+                InvoiceId = invoiceId,
+                Action = "Created",
+                Description = $"Invoice created by {operationContext.UserId}",
+                Changes = changesJson,
+                IpAddress = "system",
+                UserAgent = "system",
+                CreatedBy = operationContext.UserId,
+                CreatedDate = DateTime.UtcNow
+            };
+        }
+
+        #endregion
     }
 }

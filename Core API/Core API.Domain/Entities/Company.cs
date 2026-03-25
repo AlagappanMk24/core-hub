@@ -22,10 +22,13 @@ namespace Core_API.Domain.Entities
         public string? PhoneNumber { get; set; }
 
         [JsonIgnore]
-        public List<Customer> Customers { get; set; } = new List<Customer>();
+        public List<Customer> Customers { get; set; } = [];
 
         [JsonIgnore]
-        public List<Invoice> Invoices { get; set; } = new List<Invoice>();
+        public List<Invoice> Invoices { get; set; } = [];
+
+        [JsonIgnore]
+        public List<RecurringInvoice> RecurringInvoices { get; set; } = [];
         public string CreatedByUserId { get; set; } = string.Empty;
     }
 }

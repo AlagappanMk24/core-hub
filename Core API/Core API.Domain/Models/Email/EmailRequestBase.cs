@@ -72,6 +72,7 @@
     {
         public List<string> To { get; set; } = new List<string>();
         public List<string> Cc { get; set; } = new List<string>();
+        public List<string> Bcc { get; set; } = new List<string>();
         public string HtmlMessage { get; set; }
         public string InvoiceNumber { get; set; }
         public decimal? AmountDue { get; set; }

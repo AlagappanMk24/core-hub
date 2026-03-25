@@ -337,52 +337,6 @@ namespace Core_API.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Invoices",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    InvoiceNumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    PONumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    IssueDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    DueDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    InvoiceStatus = table.Column<int>(type: "int", nullable: false),
-                    InvoiceType = table.Column<int>(type: "int", nullable: false),
-                    PaymentStatus = table.Column<int>(type: "int", nullable: false),
-                    Currency = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    CustomerId = table.Column<int>(type: "int", nullable: false),
-                    CompanyId = table.Column<int>(type: "int", nullable: false),
-                    Subtotal = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    Tax = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    TotalAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    Notes = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
-                    PaymentMethod = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
-                    ProjectDetail = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    IsAutomated = table.Column<bool>(type: "bit", nullable: false),
-                    CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UpdatedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
-                    CreatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    UpdatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Invoices", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Invoices_Companies_CompanyId",
-                        column: x => x.CompanyId,
-                        principalTable: "Companies",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_Invoices_Customers_CustomerId",
-                        column: x => x.CustomerId,
-                        principalTable: "Customers",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "AspNetUserClaims",
                 columns: table => new
                 {
@@ -493,41 +447,19 @@ namespace Core_API.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Discounts",
-                columns: table => new
-                {
-                    Id = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    InvoiceId = table.Column<int>(type: "int", nullable: false),
-                    Description = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    Amount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    IsPercentage = table.Column<bool>(type: "bit", nullable: false),
-                    CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    UpdatedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
-                    CreatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
-                    UpdatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Discounts", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Discounts_Invoices_InvoiceId",
-                        column: x => x.InvoiceId,
-                        principalTable: "Invoices",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "InvoiceAttachments",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    FileName = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    FileUrl = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     InvoiceId = table.Column<int>(type: "int", nullable: false),
+                    FileName = table.Column<string>(type: "nvarchar(255)", maxLength: 255, nullable: false),
+                    FilePath = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
+                    FileUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    ContentType = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    FileSize = table.Column<long>(type: "bigint", nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    IsPublic = table.Column<bool>(type: "bit", nullable: false),
                     CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
                     UpdatedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
                     IsDeleted = table.Column<bool>(type: "bit", nullable: false),
@@ -537,12 +469,50 @@ namespace Core_API.Infrastructure.Migrations
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_InvoiceAttachments", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_InvoiceAttachments_Invoices_InvoiceId",
-                        column: x => x.InvoiceId,
-                        principalTable: "Invoices",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "InvoiceAuditLogs",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    InvoiceId = table.Column<int>(type: "int", nullable: false),
+                    Action = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    Changes = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: false),
+                    IpAddress = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    UserAgent = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UpdatedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
+                    CreatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_InvoiceAuditLogs", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "InvoiceDiscounts",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    InvoiceId = table.Column<int>(type: "int", nullable: false),
+                    CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UpdatedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
+                    CreatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Description = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    DiscountType = table.Column<int>(type: "int", nullable: false),
+                    Amount = table.Column<decimal>(type: "decimal(18,2)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_InvoiceDiscounts", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -551,13 +521,41 @@ namespace Core_API.Infrastructure.Migrations
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    Description = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
-                    Quantity = table.Column<int>(type: "int", nullable: false),
-                    UnitPrice = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    Amount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
-                    TaxType = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
-                    TaxAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
                     InvoiceId = table.Column<int>(type: "int", nullable: false),
+                    TaxAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    TotalAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UpdatedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
+                    CreatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Description = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    Quantity = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    UnitPrice = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    TaxType = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    TaxPercentage = table.Column<decimal>(type: "decimal(5,2)", nullable: false),
+                    Amount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    IsTaxable = table.Column<bool>(type: "bit", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_InvoiceItems", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "InvoicePayments",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    InvoiceId = table.Column<int>(type: "int", nullable: false),
+                    PaymentDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    Amount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    PaymentMethod = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    PaymentReference = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    PaymentStatus = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    BankAccountId = table.Column<int>(type: "int", nullable: true),
+                    IsRefund = table.Column<bool>(type: "bit", nullable: false),
                     CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
                     UpdatedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
                     IsDeleted = table.Column<bool>(type: "bit", nullable: false),
@@ -566,9 +564,96 @@ namespace Core_API.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_InvoiceItems", x => x.Id);
+                    table.PrimaryKey("PK_InvoicePayments", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Invoices",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    InvoiceNumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    IssueDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    DueDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    SentDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    PaidDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    InvoiceStatus = table.Column<int>(type: "int", nullable: false),
+                    InvoiceType = table.Column<int>(type: "int", nullable: false),
+                    PaymentStatus = table.Column<int>(type: "int", nullable: false),
+                    AdjustmentAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    AdjustmentDescription = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    AmountPaid = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    AmountDue = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    AmountRefunded = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    PaymentGateway = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    PaymentTransactionId = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    IsAutomated = table.Column<bool>(type: "bit", nullable: false),
+                    RecurringInvoiceId = table.Column<int>(type: "int", nullable: true),
+                    SourceSystem = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UpdatedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
+                    CreatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CustomerId = table.Column<int>(type: "int", nullable: false),
+                    CompanyId = table.Column<int>(type: "int", nullable: false),
+                    BillingAddressId = table.Column<int>(type: "int", nullable: true),
+                    ShippingAddressId = table.Column<int>(type: "int", nullable: true),
+                    Currency = table.Column<string>(type: "nvarchar(3)", maxLength: 3, nullable: false),
+                    CurrencyRate = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    PONumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    Subtotal = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    DiscountTotal = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    TaxTotal = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    ShippingAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    TotalAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    CustomerNotes = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
+                    InternalNotes = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
+                    TermsAndConditions = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    FooterNote = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    ProjectDetail = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    PaymentMethod = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    PaymentTerms = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Invoices", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_InvoiceItems_Invoices_InvoiceId",
+                        name: "FK_Invoices_Companies_CompanyId",
+                        column: x => x.CompanyId,
+                        principalTable: "Companies",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_Invoices_Customers_CustomerId",
+                        column: x => x.CustomerId,
+                        principalTable: "Customers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "InvoiceTaxDetails",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    InvoiceId = table.Column<int>(type: "int", nullable: false),
+                    CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UpdatedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
+                    CreatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    TaxName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    TaxAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    Rate = table.Column<decimal>(type: "decimal(5,2)", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_InvoiceTaxDetails", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_InvoiceTaxDetails_Invoices_InvoiceId",
                         column: x => x.InvoiceId,
                         principalTable: "Invoices",
                         principalColumn: "Id",
@@ -576,15 +661,139 @@ namespace Core_API.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "TaxDetails",
+                name: "RecurringInvoices",
                 columns: table => new
                 {
                     Id = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    TaxType = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
-                    Rate = table.Column<decimal>(type: "decimal(5,2)", nullable: false),
-                    Amount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
+                    Frequency = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                    FrequencyInterval = table.Column<int>(type: "int", nullable: false),
+                    DayOfMonth = table.Column<int>(type: "int", nullable: true),
+                    DayOfWeek = table.Column<int>(type: "int", nullable: true),
+                    WeekOfMonth = table.Column<int>(type: "int", nullable: true),
+                    MonthOfYear = table.Column<int>(type: "int", nullable: true),
+                    StartDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    EndDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    PausedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    CancelledDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    MaxOccurrences = table.Column<int>(type: "int", nullable: true),
+                    OccurrencesGenerated = table.Column<int>(type: "int", nullable: false),
+                    NextInvoiceDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    LastInvoiceDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Status = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                    GenerateInAdvanceDays = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
+                    AutoSend = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
+                    AutoEmail = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
+                    AutoCharge = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
+                    ReminderBeforeDue = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
+                    ReminderDaysBefore = table.Column<int>(type: "int", nullable: false, defaultValue: 3),
+                    SourceInvoiceId = table.Column<int>(type: "int", nullable: true),
+                    OverridePONumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: true),
+                    OverrideCustomerNotes = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
+                    OverrideTermsAndConditions = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    OverrideFooterNote = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    OverrideProjectDetail = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    OverridePaymentMethod = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: true),
+                    OverridePaymentTerms = table.Column<int>(type: "int", nullable: true),
+                    OverrideShippingAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    OverrideAdjustmentAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: true),
+                    OverrideAdjustmentDescription = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: true),
+                    CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UpdatedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
+                    CreatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    CustomerId = table.Column<int>(type: "int", nullable: false),
+                    CompanyId = table.Column<int>(type: "int", nullable: false),
+                    BillingAddressId = table.Column<int>(type: "int", nullable: true),
+                    ShippingAddressId = table.Column<int>(type: "int", nullable: true),
+                    Currency = table.Column<string>(type: "nvarchar(3)", maxLength: 3, nullable: false),
+                    CurrencyRate = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    PONumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    Subtotal = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    DiscountTotal = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    TaxTotal = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    ShippingAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    TotalAmount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    CustomerNotes = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
+                    InternalNotes = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
+                    TermsAndConditions = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    FooterNote = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    ProjectDetail = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    PaymentMethod = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    PaymentTerms = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_RecurringInvoices", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_RecurringInvoices_Companies_CompanyId",
+                        column: x => x.CompanyId,
+                        principalTable: "Companies",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_RecurringInvoices_Customers_CustomerId",
+                        column: x => x.CustomerId,
+                        principalTable: "Customers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_RecurringInvoices_Invoices_SourceInvoiceId",
+                        column: x => x.SourceInvoiceId,
+                        principalTable: "Invoices",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.SetNull);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "RecurringInvoiceAuditLogs",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    RecurringInvoiceId = table.Column<int>(type: "int", nullable: false),
+                    CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    UpdatedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "bit", nullable: false),
+                    CreatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    Action = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    Changes = table.Column<string>(type: "nvarchar(4000)", maxLength: 4000, nullable: false),
+                    IpAddress = table.Column<string>(type: "nvarchar(45)", maxLength: 45, nullable: false),
+                    UserAgent = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_RecurringInvoiceAuditLogs", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_RecurringInvoiceAuditLogs_RecurringInvoices_RecurringInvoiceId",
+                        column: x => x.RecurringInvoiceId,
+                        principalTable: "RecurringInvoices",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "RecurringInvoiceInstances",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    RecurringInvoiceId = table.Column<int>(type: "int", nullable: false),
                     InvoiceId = table.Column<int>(type: "int", nullable: false),
+                    GeneratedDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ScheduledGenerationDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    SequenceNumber = table.Column<int>(type: "int", nullable: false),
+                    GeneratedInvoiceNumber = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    Amount = table.Column<decimal>(type: "decimal(18,2)", nullable: false),
+                    Notes = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    GenerationStatus = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
+                    ErrorMessage = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
+                    RetryCount = table.Column<int>(type: "int", nullable: false, defaultValue: 0),
                     CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
                     UpdatedDate = table.Column<DateTime>(type: "datetime2", nullable: true),
                     IsDeleted = table.Column<bool>(type: "bit", nullable: false),
@@ -593,11 +802,17 @@ namespace Core_API.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_TaxDetails", x => x.Id);
+                    table.PrimaryKey("PK_RecurringInvoiceInstances", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_TaxDetails_Invoices_InvoiceId",
+                        name: "FK_RecurringInvoiceInstances_Invoices_InvoiceId",
                         column: x => x.InvoiceId,
                         principalTable: "Invoices",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_RecurringInvoiceInstances_RecurringInvoices_RecurringInvoiceId",
+                        column: x => x.RecurringInvoiceId,
+                        principalTable: "RecurringInvoices",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -691,18 +906,28 @@ namespace Core_API.Infrastructure.Migrations
                 column: "CompanyId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_Discounts_InvoiceId",
-                table: "Discounts",
-                column: "InvoiceId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_InvoiceAttachments_InvoiceId",
                 table: "InvoiceAttachments",
                 column: "InvoiceId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_InvoiceAuditLogs_InvoiceId",
+                table: "InvoiceAuditLogs",
+                column: "InvoiceId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_InvoiceDiscounts_InvoiceId",
+                table: "InvoiceDiscounts",
+                column: "InvoiceId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_InvoiceItems_InvoiceId",
                 table: "InvoiceItems",
+                column: "InvoiceId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_InvoicePayments_InvoiceId",
+                table: "InvoicePayments",
                 column: "InvoiceId");
 
             migrationBuilder.CreateIndex(
@@ -722,9 +947,73 @@ namespace Core_API.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_Invoices_RecurringInvoiceId",
+                table: "Invoices",
+                column: "RecurringInvoiceId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_InvoiceSettings_CompanyId",
                 table: "InvoiceSettings",
                 column: "CompanyId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_InvoiceTaxDetails_InvoiceId",
+                table: "InvoiceTaxDetails",
+                column: "InvoiceId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_RecurringAuditLogs_RecurringId_Action",
+                table: "RecurringInvoiceAuditLogs",
+                columns: new[] { "RecurringInvoiceId", "Action" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_RecurringAuditLogs_RecurringId_CreatedDate",
+                table: "RecurringInvoiceAuditLogs",
+                columns: new[] { "RecurringInvoiceId", "CreatedDate" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_RecurringInstances_InvoiceId",
+                table: "RecurringInvoiceInstances",
+                column: "InvoiceId",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_RecurringInstances_RecurringId_Sequence",
+                table: "RecurringInvoiceInstances",
+                columns: new[] { "RecurringInvoiceId", "SequenceNumber" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_RecurringInstances_Status_ScheduledDate",
+                table: "RecurringInvoiceInstances",
+                columns: new[] { "GenerationStatus", "ScheduledGenerationDate" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_RecurringInvoices_CompanyId_Name",
+                table: "RecurringInvoices",
+                columns: new[] { "CompanyId", "Name" },
+                unique: true,
+                filter: "[IsDeleted] = 0");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_RecurringInvoices_CustomerId_Status",
+                table: "RecurringInvoices",
+                columns: new[] { "CustomerId", "Status", "IsDeleted" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_RecurringInvoices_Frequency_Status",
+                table: "RecurringInvoices",
+                columns: new[] { "Frequency", "Status", "CompanyId" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_RecurringInvoices_SourceInvoiceId",
+                table: "RecurringInvoices",
+                column: "SourceInvoiceId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_RecurringInvoices_Status_NextDate",
+                table: "RecurringInvoices",
+                columns: new[] { "Status", "NextInvoiceDate", "IsDeleted" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_RefreshTokens_ApplicationUserId",
@@ -743,19 +1032,85 @@ namespace Core_API.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_TaxDetails_InvoiceId",
-                table: "TaxDetails",
-                column: "InvoiceId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_TaxTypes_CompanyId",
                 table: "TaxTypes",
                 column: "CompanyId");
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_InvoiceAttachments_Invoices_InvoiceId",
+                table: "InvoiceAttachments",
+                column: "InvoiceId",
+                principalTable: "Invoices",
+                principalColumn: "Id",
+                onDelete: ReferentialAction.Cascade);
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_InvoiceAuditLogs_Invoices_InvoiceId",
+                table: "InvoiceAuditLogs",
+                column: "InvoiceId",
+                principalTable: "Invoices",
+                principalColumn: "Id",
+                onDelete: ReferentialAction.Cascade);
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_InvoiceDiscounts_Invoices_InvoiceId",
+                table: "InvoiceDiscounts",
+                column: "InvoiceId",
+                principalTable: "Invoices",
+                principalColumn: "Id",
+                onDelete: ReferentialAction.Cascade);
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_InvoiceItems_Invoices_InvoiceId",
+                table: "InvoiceItems",
+                column: "InvoiceId",
+                principalTable: "Invoices",
+                principalColumn: "Id",
+                onDelete: ReferentialAction.Cascade);
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_InvoicePayments_Invoices_InvoiceId",
+                table: "InvoicePayments",
+                column: "InvoiceId",
+                principalTable: "Invoices",
+                principalColumn: "Id",
+                onDelete: ReferentialAction.Cascade);
+
+            migrationBuilder.AddForeignKey(
+                name: "FK_Invoices_RecurringInvoices_RecurringInvoiceId",
+                table: "Invoices",
+                column: "RecurringInvoiceId",
+                principalTable: "RecurringInvoices",
+                principalColumn: "Id");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.DropForeignKey(
+                name: "FK_Customers_Companies_CompanyId",
+                table: "Customers");
+
+            migrationBuilder.DropForeignKey(
+                name: "FK_Invoices_Companies_CompanyId",
+                table: "Invoices");
+
+            migrationBuilder.DropForeignKey(
+                name: "FK_RecurringInvoices_Companies_CompanyId",
+                table: "RecurringInvoices");
+
+            migrationBuilder.DropForeignKey(
+                name: "FK_Invoices_Customers_CustomerId",
+                table: "Invoices");
+
+            migrationBuilder.DropForeignKey(
+                name: "FK_RecurringInvoices_Customers_CustomerId",
+                table: "RecurringInvoices");
+
+            migrationBuilder.DropForeignKey(
+                name: "FK_RecurringInvoices_Invoices_SourceInvoiceId",
+                table: "RecurringInvoices");
+
             migrationBuilder.DropTable(
                 name: "AspNetRoleClaims");
 
@@ -781,28 +1136,40 @@ namespace Core_API.Infrastructure.Migrations
                 name: "CompanyRequests");
 
             migrationBuilder.DropTable(
-                name: "Discounts");
-
-            migrationBuilder.DropTable(
                 name: "EmailSettings");
 
             migrationBuilder.DropTable(
                 name: "InvoiceAttachments");
 
             migrationBuilder.DropTable(
+                name: "InvoiceAuditLogs");
+
+            migrationBuilder.DropTable(
+                name: "InvoiceDiscounts");
+
+            migrationBuilder.DropTable(
                 name: "InvoiceItems");
 
             migrationBuilder.DropTable(
+                name: "InvoicePayments");
+
+            migrationBuilder.DropTable(
                 name: "InvoiceSettings");
+
+            migrationBuilder.DropTable(
+                name: "InvoiceTaxDetails");
+
+            migrationBuilder.DropTable(
+                name: "RecurringInvoiceAuditLogs");
+
+            migrationBuilder.DropTable(
+                name: "RecurringInvoiceInstances");
 
             migrationBuilder.DropTable(
                 name: "RefreshTokens");
 
             migrationBuilder.DropTable(
                 name: "RoleMenuPermissions");
-
-            migrationBuilder.DropTable(
-                name: "TaxDetails");
 
             migrationBuilder.DropTable(
                 name: "TaxTypes");
@@ -817,13 +1184,16 @@ namespace Core_API.Infrastructure.Migrations
                 name: "Permissions");
 
             migrationBuilder.DropTable(
-                name: "Invoices");
+                name: "Companies");
 
             migrationBuilder.DropTable(
                 name: "Customers");
 
             migrationBuilder.DropTable(
-                name: "Companies");
+                name: "Invoices");
+
+            migrationBuilder.DropTable(
+                name: "RecurringInvoices");
         }
     }
 }

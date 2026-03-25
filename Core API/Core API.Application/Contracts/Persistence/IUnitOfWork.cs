@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore.Storage;
+﻿using Core_API.Application.Contracts.Persistence.Invoice;
+using Core_API.Application.Contracts.Persistence.RecurringInvoice;
+using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Core_API.Application.Contracts.Persistence
 {
@@ -9,12 +11,21 @@ namespace Core_API.Application.Contracts.Persistence
         ICustomerRepository Customers { get; }
         IInvoiceRepository Invoices { get; }
         IInvoiceAttachmentRepository InvoiceAttachments { get; }
+        IInvoiceTaxDetailRepository InvoiceTaxDetails { get; }
+        IInvoiceDiscountRepository InvoiceDiscounts { get; }
+        IInvoicePaymentRepository InvoicePayments { get; }
+        IInvoiceAuditLogRepository InvoiceAuditLogs { get; }
+        IInvoiceItemRepository InvoiceItems { get; }
         ITaxTypeRepository TaxTypes { get; }
+        IRecurringInvoiceRepository RecurringInvoices { get; }
+        IRecurringInvoiceInstanceRepository RecurringInvoiceInstances { get; }
+        IRecurringInvoiceAuditLogRepository RecurringInvoiceAuditLogs { get; }
         IInvoiceSettingsRepository InvoiceSettings { get; }
         IEmailSettingsRepository EmailSettings { get; }
         ICompanyRepository Companies { get; }
         ICompanyRequestRepository CompanyRequests { get; }
         Task SaveChangesAsync();
+        Task SaveChangesAsync(CancellationToken cancellationToken);
         Task<IDbContextTransaction> BeginTransactionAsync(); 
         Task CommitTransactionAsync(); 
         Task RollbackTransactionAsync(); 

@@ -1,7 +1,7 @@
 ﻿using Core_API.Domain.Entities;
 using System.Linq.Expressions;
 
-namespace Core_API.Application.Contracts.Persistence
+namespace Core_API.Application.Contracts.Persistence.Invoice
 {
     public interface IInvoiceAttachmentRepository
     {

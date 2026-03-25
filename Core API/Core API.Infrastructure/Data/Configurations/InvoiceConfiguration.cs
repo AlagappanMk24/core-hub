@@ -38,18 +38,30 @@ public class InvoiceConfiguration : IEntityTypeConfiguration<Invoice>
               .HasForeignKey(d => d.InvoiceId)
               .OnDelete(DeleteBehavior.Cascade);
 
-        // Ensure InvoiceNumber is unique
-        builder.HasIndex(i => i.InvoiceNumber)
-               .IsUnique();
+        // Unique Index
+        builder.HasIndex(i => i.InvoiceNumber).IsUnique();
 
+        // String Constraints
         builder.Property(i => i.InvoiceNumber).IsRequired().HasMaxLength(50);
         builder.Property(i => i.PONumber).HasMaxLength(50);
-        builder.Property(i => i.IssueDate).IsRequired();
-        builder.Property(i => i.DueDate).IsRequired();
-        builder.Property(i => i.Notes).HasMaxLength(500);
+        builder.Property(i => i.Currency).IsRequired().HasMaxLength(3);
         builder.Property(i => i.PaymentMethod).HasMaxLength(100);
-        builder.Property(i => i.Subtotal).HasColumnType("decimal(18,2)");
-        builder.Property(i => i.Tax).HasColumnType("decimal(18,2)");
-        builder.Property(i => i.TotalAmount).HasColumnType("decimal(18,2)");
+        builder.Property(i => i.PaymentTerms).HasMaxLength(100);
+        builder.Property(i => i.PaymentGateway).HasMaxLength(50);
+        builder.Property(i => i.PaymentTransactionId).HasMaxLength(500);
+        builder.Property(i => i.AdjustmentDescription).HasMaxLength(200);
+        builder.Property(i => i.SourceSystem).HasMaxLength(200);
+        builder.Property(i => i.CustomerNotes).HasMaxLength(1000);
+        builder.Property(i => i.InternalNotes).HasMaxLength(1000);
+        builder.Property(i => i.TermsAndConditions).HasMaxLength(500);
+        builder.Property(i => i.FooterNote).HasMaxLength(500);
+
+        // Decimals (Base fields included)
+        var decimalProps = new[] {
+            "Subtotal", "DiscountTotal", "TaxTotal", "ShippingAmount", "TotalAmount",
+            "CurrencyRate", "AdjustmentAmount", "AmountPaid", "AmountDue", "AmountRefunded"
+        };
+        foreach (var prop in decimalProps)
+            builder.Property(prop).HasColumnType("decimal(18,2)");
     }
 }

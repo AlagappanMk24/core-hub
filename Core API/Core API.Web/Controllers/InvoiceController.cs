@@ -20,7 +20,7 @@ namespace Core_API.Web.Controllers
     /// </remarks>
     /// <param name="invoiceService">The invoice service for business logic.</param>
     /// <param name="logger">The logger for logging controller actions.</param>
-    [Route("api/[controller]")] 
+    [Route("api/[controller]")]
     [ApiController]
     [Authorize(Roles = "Admin, User, Customer")]
     public class InvoiceController(IInvoiceService invoiceService, IExcelService excelService, IPdfService pdfService, ITaxService taxService, ILogger<InvoiceController> logger) : ControllerBase
@@ -30,15 +30,6 @@ namespace Core_API.Web.Controllers
         private readonly IPdfService _pdfService = pdfService ?? throw new ArgumentNullException(nameof(pdfService));
         private readonly ITaxService _taxService = taxService ?? throw new ArgumentNullException(nameof(taxService));
         private readonly ILogger<InvoiceController> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-
-        //private OperationContext GetOperationContext()
-        //{
-        //    var companyIdClaim = User.FindFirst("companyId")?.Value;
-        //    var customerIdClaim = User.FindFirst("customerId")?.Value;
-        //    var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-        //    return new OperationContext(int.Parse(companyIdClaim), userId, int.Parse(customerIdClaim));
-        //}
-
         private OperationContext GetOperationContext()
         {
             var companyIdClaim = User.FindFirst("companyId")?.Value; // Case-sensitive, matches JWT
@@ -1063,7 +1054,7 @@ namespace Core_API.Web.Controllers
                 }
 
                 var fileBytes = System.IO.File.ReadAllBytes(filePath);
-                var contentType = "application/pdf"; // Adjust based on file type
+                var contentType = GetContentType(decodedFileName);
                 return File(fileBytes, contentType, decodedFileName);
             }
             catch (Exception ex)
@@ -1135,6 +1126,21 @@ namespace Core_API.Web.Controllers
                     Detail = "An unexpected error occurred while deleting the attachment."
                 });
             }
+        }
+        private string GetContentType(string fileName)
+        {
+            var extension = Path.GetExtension(fileName).ToLowerInvariant();
+            return extension switch
+            {
+                ".pdf" => "application/pdf",
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".png" => "image/png",
+                ".doc" => "application/msword",
+                ".docx" => "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                ".xls" => "application/vnd.ms-excel",
+                ".xlsx" => "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+                _ => "application/octet-stream"
+            };
         }
     }
 }

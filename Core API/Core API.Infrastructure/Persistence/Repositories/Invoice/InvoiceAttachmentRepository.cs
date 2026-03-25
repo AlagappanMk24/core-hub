@@ -1,10 +1,10 @@
-﻿using Core_API.Application.Contracts.Persistence;
+﻿using Core_API.Application.Contracts.Persistence.Invoice;
 using Core_API.Domain.Entities;
 using Core_API.Infrastructure.Data.Context;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
-namespace Core_API.Infrastructure.Persistence.Repositories
+namespace Core_API.Infrastructure.Persistence.Repositories.Invoice
 {
     public class InvoiceAttachmentRepository(CoreAPIDbContext dbContext) : IInvoiceAttachmentRepository
     {

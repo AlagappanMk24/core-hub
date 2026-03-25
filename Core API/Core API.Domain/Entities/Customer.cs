@@ -15,7 +15,10 @@ public class Customer : BaseEntity
     public Company Company { get; set; }
 
     [JsonIgnore]
-    public List<Invoice> Invoices { get; set; } = new List<Invoice>();
+    public List<Invoice> Invoices { get; set; } = [];
+
+    [JsonIgnore]
+    public List<RecurringInvoice> RecurringInvoices { get; set; } = [];
 }
 public class Address
 {

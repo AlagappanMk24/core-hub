@@ -1,57 +1,20 @@
 ﻿using Core_API.Application.Common.Results;
-using Core_API.Application.Contracts.Persistence;
+using Core_API.Application.Contracts.Persistence.Invoice;
 using Core_API.Application.DTOs.Invoice.Request;
-using Core_API.Domain.Entities;
 using Core_API.Domain.Enums;
 using Core_API.Infrastructure.Data.Context;
 using Microsoft.EntityFrameworkCore;
 
-namespace Core_API.Infrastructure.Persistence.Repositories
+namespace Core_API.Infrastructure.Persistence.Repositories.Invoice
 {
-    public class InvoiceRepository(CoreAPIDbContext dbContext) : GenericRepository<Invoice>(dbContext), IInvoiceRepository
+    public class InvoiceRepository(CoreAPIDbContext dbContext) : GenericRepository<Core_API.Domain.Entities.Invoice>(dbContext), IInvoiceRepository
     {
-        //public async Task<PaginatedResult<Invoice>> GetPagedAsync(int companyId, int pageNumber, int pageSize, string search = null, string status = null)
-        //{
-        //    IQueryable<Invoice> query = dbset
-        //       .Where(i => i.CompanyId == companyId && !(i.IsDeleted))
-        //       .Include(i => i.Customer)
-        //       .Include(i => i.InvoiceItems)
-        //       .Include(i => i.TaxDetails)
-        //       .Include(i => i.Discounts);
-
-        //    if (!string.IsNullOrEmpty(search))
-        //    {
-        //        search = search.ToLower();
-        //        query = query.Where(i => i.InvoiceNumber.ToLower().Contains(search) || i.Customer.Name.ToLower().Contains(search));
-        //    }
-
-        //    if (!string.IsNullOrEmpty(status) && Enum.TryParse<InvoiceStatus>(status, true, out var invoiceStatus))
-        //    {
-        //        query = query.Where(i => i.Status == invoiceStatus);
-        //    }
-
-        //    var totalCount = await query.CountAsync();
-        //    var items = await query
-        //        .OrderByDescending(i => i.IssueDate)
-        //        .Skip((pageNumber - 1) * pageSize)
-        //        .Take(pageSize)
-        //        .ToListAsync();
-
-        //    return new PaginatedResult<Invoice>
-        //    {
-        //        Items = items,
-        //        TotalCount = totalCount,
-        //        PageNumber = pageNumber,
-        //        PageSize = pageSize
-        //    };
-        //}
-
-        public async Task<PaginatedResult<Invoice>> GetPagedAsync(
+        public async Task<PaginatedResult<Core_API.Domain.Entities.Invoice>> GetPagedAsync(
            int companyId,
            InvoiceFilterRequestDto filter)
         {
-            IQueryable<Invoice> query = dbset
-                .Where(i => i.CompanyId == companyId && !i.IsDeleted)
+            IQueryable<Core_API.Domain.Entities.Invoice> query = dbset
+                .Where( i=> !i.IsDeleted)
                 .Include(i => i.Customer)
                 .Include(i => i.InvoiceItems)
                 .Include(i => i.TaxDetails)
@@ -131,7 +94,7 @@ namespace Core_API.Infrastructure.Persistence.Repositories
                 .Take(filter.PageSize)
                 .ToListAsync();
 
-            return new PaginatedResult<Invoice>
+            return new PaginatedResult<Core_API.Domain.Entities.Invoice>
             {
                 Items = items,
                 TotalCount = totalCount,
