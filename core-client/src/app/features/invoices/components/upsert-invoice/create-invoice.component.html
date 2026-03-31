@@ -1,9 +1,11 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>{{ isEditMode || invoiceData.id ? 'Edit Invoice' : 'Create Invoice' }}</title>
+    <title>
+      {{ isEditMode || invoiceData.id ? "Edit Invoice" : "Create Invoice" }}
+    </title>
     <link
       href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
       rel="stylesheet"
@@ -39,7 +41,9 @@
           <h1
             class="page-title text-2xl sm:text-3xl font-semibold text-gray-800"
           >
-            {{ isEditMode || invoiceData.id ? 'Edit Invoice' : 'Create Invoice' }}
+            {{
+              isEditMode || invoiceData.id ? "Edit Invoice" : "Create Invoice"
+            }}
           </h1>
         </div>
         <div class="header-right flex flex-col sm:flex-row gap-3 mt-4 sm:mt-0">
@@ -65,12 +69,15 @@
           >
             Save to Draft
           </button>
-
           <button
             class="primary-btn px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
             (click)="saveAndContinue()"
           >
-           {{ isEditMode || invoiceData.id ? "Update and Continue" : "Save and Continue" }}
+            {{
+              isEditMode || invoiceData.id
+                ? "Update and Continue"
+                : "Save and Continue"
+            }}
           </button>
           <button
             *ngIf="isEditMode"
@@ -85,44 +92,6 @@
       <div class="invoice-content flex flex-col lg:flex-row gap-6">
         <!-- Left Panel -->
         <div class="left-panel flex-1 flex flex-col gap-6">
-          <!-- Company Info -->
-          <!-- <div
-            class="company-section bg-white p-4 sm:p-6 rounded-lg shadow-sm flex justify-between items-center"
-          >
-            <div class="company-info flex items-center gap-4">
-              <div
-                class="company-logo w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold text-lg"
-              >
-                AC
-              </div>
-              <div class="company-details">
-                <h3 class="company-name text-lg font-semibold text-gray-800">
-                  KL Infotech
-                </h3>
-                <p class="company-address text-sm text-gray-600">
-                  Besant Nagar, Chennai 45
-                </p>
-              </div>
-            </div>
-            <button
-              class="dropdown-toggle p-2 rounded-full hover:bg-gray-200 transition"
-            >
-              <svg
-                class="w-4 h-4 text-gray-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
-            </button>
-          </div> -->
-
           <!-- Company Info -->
           <div
             class="company-section bg-white p-4 sm:p-6 rounded-lg shadow-sm flex justify-between items-center"
@@ -160,11 +129,14 @@
               </svg>
             </button>
           </div>
+
           <!-- Invoice Section -->
           <div class="invoice-section bg-white p-4 sm:p-6 rounded-lg shadow-sm">
             <h2 class="section-title text-xl font-semibold text-gray-800 mb-4">
               {{ isEditMode ? "Edit Invoice Details" : "Invoice Details" }}
             </h2>
+
+            <!-- Invoice Type -->
             <div class="field-group mb-4">
               <label class="field-label text-sm font-medium text-gray-700"
                 >Invoice Type</label
@@ -177,11 +149,9 @@
                   class="dropdown-trigger p-3 border rounded-lg flex justify-between items-center cursor-pointer hover:border-blue-500 transition"
                   (click)="toggleInvoiceTypeDropdown()"
                 >
-                  <span class="selected-value text-sm">
-                    {{
-                      invoiceData.isAutomated === true ? "Automated" : "Manual"
-                    }}
-                  </span>
+                  <span class="selected-value text-sm">{{
+                    invoiceData.isAutomated === true ? "Automated" : "Manual"
+                  }}</span>
                   <svg
                     class="w-4 h-4 text-gray-600"
                     fill="none"
@@ -215,6 +185,8 @@
                 </div>
               </div>
             </div>
+
+            <!-- Invoice Fields -->
             <div
               class="invoice-fields grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4"
             >
@@ -228,26 +200,24 @@
                     class="form-input w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     [(ngModel)]="invoiceData.invoiceNumber"
                     (ngModelChange)="onInvoiceNumberChange()"
-                    placeholder="003"
+                    [placeholder]="
+                      invoiceData.isAutomated
+                        ? 'Auto-Generated'
+                        : 'Enter the invoice number'
+                    "
                     [disabled]="invoiceData.isAutomated"
                   />
-                  <svg
-                    class="w-4 h-4 text-gray-500 absolute right-3 top-1/2 transform -translate-y-1/2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
+                  <div
+                    *ngIf="errors['invoiceNumber']"
+                    class="error-text text-red-500 text-sm mt-1"
                   >
-                    <circle cx="12" cy="12" r="10" />
-                    <path d="M12 16v.01M12 12a2 2 0 0 0 2-2V8" />
-                  </svg>
-                  <div *ngIf="errors['invoiceNumber']" class="error-text text-red-500 text-sm mt-1">
-                    {{ errors['invoiceNumber'] }}
+                    {{ errors["invoiceNumber"] }}
                   </div>
                 </div>
               </div>
               <div class="field-group">
                 <label class="field-label text-sm font-medium text-gray-700"
-                  >P.O/S.O. Number</label
+                  >PO/SO Number</label
                 >
                 <input
                   type="text"
@@ -256,21 +226,23 @@
                   [(ngModel)]="invoiceData.poNumber"
                   (ngModelChange)="onPoNumberChange()"
                 />
-                <div *ngIf="errors['poNumber']" class="error-text text-red-500 text-sm mt-1">
-                  {{ errors['poNumber'] }}
+                <div
+                  *ngIf="errors['poNumber']"
+                  class="error-text text-red-500 text-sm mt-1"
+                >
+                  {{ errors["poNumber"] }}
+                </div>
+                <div class="helper-text text-xs text-gray-500 mt-1">
+                  *Optional - Purchase Order or Sales Order reference
                 </div>
               </div>
             </div>
+
+            <!-- Project Detail -->
             <div class="field-group">
               <label class="field-label text-sm font-medium text-gray-700"
                 >Project Detail</label
               >
-              <!-- <input
-                type="text"
-                class="form-input w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                [(ngModel)]="invoiceData.projectDetail"
-                placeholder="Summary (e.g. project name, description of invoice)"
-              /> -->
               <textarea
                 class="form-input w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition"
                 placeholder="Enter project details"
@@ -278,8 +250,14 @@
                 (ngModelChange)="onProjectDetailChange()"
                 rows="3"
               ></textarea>
-              <div *ngIf="errors['projectDetail']" class="error-text text-red-500 text-sm mt-1">
-                {{ errors['projectDetail'] }}
+              <div
+                *ngIf="errors['projectDetail']"
+                class="error-text text-red-500 text-sm mt-1"
+              >
+                {{ errors["projectDetail"] }}
+              </div>
+              <div class="helper-text text-xs text-gray-500 mt-1">
+                *Provide context about the work or services being billed
               </div>
             </div>
           </div>
@@ -317,10 +295,13 @@
                     placeholder="Enter item description"
                     (ngModelChange)="onItemDescriptionChange(i)"
                   />
-                  <div *ngIf="errors['items[' + i + '].description']" class="error-text text-red-500 text-sm mt-1">
-                  {{ errors['items[' + i + '].description'] }}
-                </div>
-                  <div class="tax-section flex items-center gap-2">
+                  <div
+                    *ngIf="errors['items[' + i + '].description']"
+                    class="error-text text-red-500 text-sm mt-1"
+                  >
+                    {{ errors["items[" + i + "].description"] }}
+                  </div>
+                  <!-- <div class="tax-section flex items-center gap-2">
                     <span class="tax-label text-sm text-gray-600">Tax</span>
                     <select
                       class="tax-select p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -332,6 +313,67 @@
                         {{ tax.name }}
                       </option>
                     </select>
+                    <span class="tax-amount text-sm text-gray-600"
+                      >Tax Amount: {{ invoiceData.currency }}
+                      {{ item.taxAmount.toFixed(2) }}</span
+                    >
+                  </div> -->
+                  <!-- Tax Section with Custom Dropdown -->
+                  <div class="tax-section flex items-center gap-2">
+                    <span class="tax-label text-sm text-gray-600">Tax</span>
+
+                    <!-- Custom Tax Dropdown (Same style as Currency) -->
+                    <div
+                      class="custom-dropdown relative"
+                      [class.active]="
+                        showTaxDropdown && currentTaxItemIndex === i
+                      "
+                    >
+                      <div
+                        class="dropdown-trigger p-3 border rounded-lg flex justify-between items-center cursor-pointer hover:border-blue-500 transition"
+                        (click)="toggleTaxDropdown(i)"
+                      >
+                        <span class="selected-value text-sm">
+                          {{ item.taxType || "No Tax" }}
+                        </span>
+                        <svg
+                          class="w-4 h-4 text-gray-600"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            stroke-width="2"
+                            d="M19 9l-7 7-7-7"
+                          />
+                        </svg>
+                      </div>
+
+                      <!-- Dropdown Content -->
+                      <div
+                        class="dropdown-content absolute w-full bg-white border rounded-lg shadow-lg mt-1 z-10"
+                        *ngIf="showTaxDropdown && currentTaxItemIndex === i"
+                      >
+                        <div
+                          class="option-item p-3 cursor-pointer hover:bg-gray-100 transition"
+                          (click)="selectTax(i, '')"
+                        >
+                          No Tax
+                        </div>
+
+                        <div
+                          class="option-item p-3 cursor-pointer hover:bg-gray-100 transition"
+                          *ngFor="let tax of taxTypes"
+                          (click)="selectTax(i, tax.name)"
+                        >
+                          {{ tax.name }}
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- Tax Amount Display -->
                     <span class="tax-amount text-sm text-gray-600">
                       Tax Amount: {{ invoiceData.currency }}
                       {{ item.taxAmount.toFixed(2) }}
@@ -374,6 +416,10 @@
                   <button
                     class="delete-item-btn p-2 rounded-full hover:bg-red-100 transition"
                     (click)="removeItem(i)"
+                    [disabled]="!canRemoveItem()"
+                    [class.opacity-50]="!canRemoveItem()"
+                    [class.cursor-not-allowed]="!canRemoveItem()"
+                    title="Remove item"
                   >
                     <svg
                       class="w-5 h-5 text-red-500"
@@ -411,6 +457,9 @@
               </svg>
               Add Item
             </button>
+            <div class="helper-text text-xs text-gray-500 mt-2">
+              *At least one item is required
+            </div>
           </div>
 
           <!-- Attachments Section -->
@@ -423,14 +472,14 @@
             <div class="field-group mb-6">
               <label
                 class="field-label text-sm font-medium text-gray-700 mb-2 block"
+                >Upload Attachments</label
               >
-                Upload Attachments
-              </label>
               <div
                 class="drag-drop-area relative border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-purple-600 transition"
                 (dragover)="onDragOver($event)"
                 (dragleave)="onDragLeave($event)"
                 (drop)="onFileDropped($event)"
+                [class.drag-over]="isDragging"
               >
                 <input
                   type="file"
@@ -542,16 +591,180 @@
             </div>
           </div>
 
-          <!-- Notes Section -->
+          <!-- Notes Section (Collapsible) -->
           <div class="notes-section bg-white p-4 sm:p-6 rounded-lg shadow-sm">
-            <label class="field-label text-sm font-medium text-gray-700"
-              >Notes / Terms</label
+            <div
+              class="flex justify-between items-center cursor-pointer"
+              (click)="toggleNotesSection()"
             >
-            <textarea
-              class="notes-textarea w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y"
-              [(ngModel)]="invoiceData.notes"
-              placeholder="Enter note or terms of services"
-            ></textarea>
+              <h2 class="section-title text-xl font-semibold text-gray-800">
+                Additional Notes & Terms
+              </h2>
+              <svg
+                class="w-5 h-5 text-gray-500 transition-transform"
+                [class.rotate-180]="showNotesSection"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M19 9l-7 7-7-7"
+                />
+              </svg>
+            </div>
+
+            <div *ngIf="showNotesSection" class="mt-4 space-y-4">
+              <!-- Customer Notes Toggle -->
+              <div class="border rounded-lg overflow-hidden">
+                <div
+                  class="flex justify-between items-center p-3 bg-gray-50 cursor-pointer"
+                  (click)="toggleNoteSection('customerNotes')"
+                >
+                  <label class="field-label text-sm font-medium text-gray-700"
+                    >Customer Notes</label
+                  >
+                  <svg
+                    class="w-4 h-4 text-gray-500 transition-transform"
+                    [class.rotate-180]="notesSections.customerNotes"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
+                <div *ngIf="notesSections.customerNotes" class="p-3">
+                  <textarea
+                    class="notes-textarea w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y"
+                    [(ngModel)]="invoiceData.customerNotes"
+                    placeholder="Notes visible to customer (e.g., Thank you for your business!)"
+                    rows="2"
+                  ></textarea>
+                  <div class="helper-text text-xs text-gray-500 mt-1">
+                    *These notes will appear on the customer-facing invoice
+                  </div>
+                </div>
+              </div>
+
+              <!-- Internal Notes Toggle -->
+              <div class="border rounded-lg overflow-hidden">
+                <div
+                  class="flex justify-between items-center p-3 bg-gray-50 cursor-pointer"
+                  (click)="toggleNoteSection('internalNotes')"
+                >
+                  <label class="field-label text-sm font-medium text-gray-700"
+                    >Internal Notes</label
+                  >
+                  <svg
+                    class="w-4 h-4 text-gray-500 transition-transform"
+                    [class.rotate-180]="notesSections.internalNotes"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
+                <div *ngIf="notesSections.internalNotes" class="p-3">
+                  <textarea
+                    class="notes-textarea w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y"
+                    [(ngModel)]="invoiceData.internalNotes"
+                    placeholder="Internal notes (not visible to customer) - e.g., payment follow-up notes, approvals"
+                    rows="2"
+                  ></textarea>
+                  <div class="helper-text text-xs text-gray-500 mt-1">
+                    *For internal reference only - not shown to customers
+                  </div>
+                </div>
+              </div>
+
+              <!-- Terms & Conditions Toggle -->
+              <div class="border rounded-lg overflow-hidden">
+                <div
+                  class="flex justify-between items-center p-3 bg-gray-50 cursor-pointer"
+                  (click)="toggleNoteSection('termsAndConditions')"
+                >
+                  <label class="field-label text-sm font-medium text-gray-700"
+                    >Terms & Conditions</label
+                  >
+                  <svg
+                    class="w-4 h-4 text-gray-500 transition-transform"
+                    [class.rotate-180]="notesSections.termsAndConditions"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
+                <div *ngIf="notesSections.termsAndConditions" class="p-3">
+                  <textarea
+                    class="notes-textarea w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y"
+                    [(ngModel)]="invoiceData.termsAndConditions"
+                    placeholder="Payment terms and conditions (e.g., Late payment fee of 1.5% per month)"
+                    rows="2"
+                  ></textarea>
+                  <div class="helper-text text-xs text-gray-500 mt-1">
+                    *Legal terms that apply to this invoice
+                  </div>
+                </div>
+              </div>
+
+              <!-- Footer Note Toggle -->
+              <div class="border rounded-lg overflow-hidden">
+                <div
+                  class="flex justify-between items-center p-3 bg-gray-50 cursor-pointer"
+                  (click)="toggleNoteSection('footerNote')"
+                >
+                  <label class="field-label text-sm font-medium text-gray-700"
+                    >Footer Note</label
+                  >
+                  <svg
+                    class="w-4 h-4 text-gray-500 transition-transform"
+                    [class.rotate-180]="notesSections.footerNote"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
+                <div *ngIf="notesSections.footerNote" class="p-3">
+                  <textarea
+                    class="notes-textarea w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y"
+                    [(ngModel)]="invoiceData.footerNote"
+                    placeholder="Footer message (e.g., Thank you for your business! Please include invoice number with payment.)"
+                    rows="2"
+                  ></textarea>
+                  <div class="helper-text text-xs text-gray-500 mt-1">
+                    *Appears at the bottom of the invoice
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -561,8 +774,9 @@
             <h2 class="section-title text-xl font-semibold text-gray-800 mb-4">
               Invoice Information & Payment
             </h2>
+
             <!-- Send To -->
-            <div class="field-group mb-4">
+            <div class="field-group mb-5">
               <label class="field-label text-sm font-medium text-gray-700"
                 >Send To</label
               >
@@ -579,11 +793,11 @@
                     *ngIf="selectedCustomer; else placeholderText"
                     >{{ selectedCustomer.name }}</span
                   >
-                  <ng-template #placeholderText>
-                    <span class="placeholder text-sm text-gray-500"
+                  <ng-template #placeholderText
+                    ><span class="placeholder text-sm text-gray-500"
                       >Select a customer</span
-                    >
-                  </ng-template>
+                    ></ng-template
+                  >
                   <svg
                     class="w-4 h-4 text-gray-600"
                     fill="none"
@@ -671,14 +885,78 @@
                     </div>
                   </div>
                 </div>
-                <div *ngIf="errors['customerId']" class="error-text text-red-500 text-sm mt-1">
-                {{ errors['customerId'] }}
+                <div
+                  *ngIf="errors['customerId']"
+                  class="error-text text-red-500 text-sm mt-1"
+                >
+                  {{ errors["customerId"] }}
+                </div>
               </div>
-              </div>
-              <div class="helper-text text-xs text-gray-600 mt-1">
-                *Select one customer
+              <div class="helper-text text-xs text-gray-500 mt-1">
+                *Select the customer who will receive this invoice
               </div>
             </div>
+
+            <!-- Payment Terms - Dropdown with Custom Option -->
+            <div class="field-group mb-5">
+              <label class="field-label text-sm font-medium text-gray-700"
+                >Payment Terms</label
+              >
+
+              <div
+                class="custom-dropdown relative"
+                [class.active]="showPaymentTermsDropdown"
+              >
+                <div
+                  class="dropdown-trigger p-3 border rounded-lg flex justify-between items-center cursor-pointer hover:border-blue-500 transition"
+                  (click)="togglePaymentTermsDropdown()"
+                >
+                  <span class="selected-value text-sm">
+                    {{ getSelectedPaymentTermLabel() }}
+                  </span>
+                  <svg
+                    class="w-4 h-4 text-gray-600"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      stroke-width="2"
+                      d="M19 9l-7 7-7-7"
+                    />
+                  </svg>
+                </div>
+
+                <div
+                  class="dropdown-content absolute w-full bg-white border rounded-lg shadow-lg mt-1 z-10 max-h-60 overflow-y-auto"
+                  *ngIf="showPaymentTermsDropdown"
+                >
+                  <div
+                    *ngFor="let term of paymentTermOptions"
+                    class="option-item p-3 cursor-pointer hover:bg-gray-100 transition text-sm"
+                    (click)="selectPaymentTerm(term.value)"
+                  >
+                    {{ term.label }}
+                  </div>
+                </div>
+              </div>
+
+              <div *ngIf="showCustomPaymentTerms" class="mt-2">
+                <input
+                  type="text"
+                  class="form-input w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  [(ngModel)]="invoiceData.paymentTerms"
+                  placeholder="Enter custom payment terms (e.g., Net 15)"
+                />
+              </div>
+
+              <div class="helper-text text-xs text-gray-500 mt-1">
+                *When payment is expected (e.g., Net 30 means due in 30 days)
+              </div>
+            </div>
+
             <!-- Currency -->
             <div class="field-group mb-4">
               <label class="field-label text-sm font-medium text-gray-700"
@@ -731,11 +1009,44 @@
                   >
                     INR (₹)
                   </div>
+                  <div
+                    class="option-item p-3 cursor-pointer hover:bg-gray-100 transition"
+                    (click)="selectCurrency('GBP')"
+                  >
+                    GBP (£)
+                  </div>
                 </div>
               </div>
+              <div class="helper-text text-xs text-gray-500 mt-1">
+                *Currency in which the invoice will be issued
+              </div>
             </div>
+
+            <!-- Currency Rate
+            <div class="field-group mb-5">
+              <label class="field-label text-sm font-medium text-gray-700"
+                >Exchange Rate</label
+              >
+              <input
+                type="number"
+                class="form-input w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                [(ngModel)]="invoiceData.currencyRate"
+                step="0.0001"
+                min="0"
+              />
+              <div class="helper-text text-xs text-gray-500 mt-1">
+                *Exchange rate relative to base currency (1 USD =
+                {{ invoiceData.currencyRate }} {{ invoiceData.currency }})
+              </div>
+              <div class="helper-text text-xs text-blue-600 mt-1">
+                💡 Tip: Leave as 1 if using a single currency. For
+                multi-currency invoices, enter the conversion rate from your
+                base currency.
+              </div>
+            </div> -->
+
             <!-- Payment Method -->
-            <div class="field-group mb-4">
+            <div class="field-group mb-5">
               <label class="field-label text-sm font-medium text-gray-700"
                 >Payment Method</label
               >
@@ -757,11 +1068,11 @@
                       getPaymentMethodDisplayName(invoiceData.paymentMethod)
                     }}</span
                   >
-                  <ng-template #selectPaymentPlaceholder>
-                    <span class="placeholder text-sm text-gray-500"
+                  <ng-template #selectPaymentPlaceholder
+                    ><span class="placeholder text-sm text-gray-500"
                       >Select</span
-                    >
-                  </ng-template>
+                    ></ng-template
+                  >
                   <svg
                     class="w-4 h-4 text-gray-600"
                     fill="none"
@@ -782,52 +1093,109 @@
                 >
                   <div
                     class="option-item p-3 cursor-pointer hover:bg-gray-100 transition"
-                    (click)="selectPaymentMethod('paypal')"
-                  >
-                    💳 PayPal
-                  </div>
-                  <div
-                    class="option-item p-3 cursor-pointer hover:bg-gray-100 transition"
-                    (click)="selectPaymentMethod('bank')"
+                    (click)="selectPaymentMethod('Bank Transfer')"
                   >
                     🏦 Bank Transfer
                   </div>
                   <div
                     class="option-item p-3 cursor-pointer hover:bg-gray-100 transition"
-                    (click)="selectPaymentMethod('cash')"
-                  >
-                    💵 Cash
-                  </div>
-                  <div
-                    class="option-item p-3 cursor-pointer hover:bg-gray-100 transition"
-                    (click)="selectPaymentMethod('credit_card')"
+                    (click)="selectPaymentMethod('Credit Card')"
                   >
                     💳 Credit Card
                   </div>
                   <div
                     class="option-item p-3 cursor-pointer hover:bg-gray-100 transition"
-                    (click)="selectPaymentMethod('upi')"
+                    (click)="selectPaymentMethod('PayPal')"
+                  >
+                    💰 PayPal
+                  </div>
+                  <div
+                    class="option-item p-3 cursor-pointer hover:bg-gray-100 transition"
+                    (click)="selectPaymentMethod('Cash')"
+                  >
+                    💵 Cash
+                  </div>
+                  <div
+                    class="option-item p-3 cursor-pointer hover:bg-gray-100 transition"
+                    (click)="selectPaymentMethod('UPI')"
                   >
                     📱 UPI
                   </div>
                 </div>
               </div>
-              <div class="helper-text text-xs text-gray-600 mt-1">
-                *You can add more than one method
+              <div class="helper-text text-xs text-gray-500 mt-1">
+                *Preferred payment method for this invoice
               </div>
             </div>
+
+            <!-- Shipping Amount -->
+            <div class="field-group mb-5">
+              <label class="field-label text-sm font-medium text-gray-700"
+                >Shipping Amount</label
+              >
+              <div
+                class="cost-input-group flex border rounded-lg overflow-hidden"
+              >
+                <span class="currency p-2 bg-gray-100 text-gray-600">{{
+                  invoiceData.currency
+                }}</span>
+                <input
+                  type="number"
+                  class="cost-input w-full p-2 border-l focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  [(ngModel)]="invoiceData.shippingAmount"
+                  (ngModelChange)="updateTotals()"
+                  min="0"
+                  step="0.01"
+                  placeholder="0.00"
+                />
+              </div>
+              <div class="helper-text text-xs text-gray-500 mt-1">
+                *Shipping or delivery charges (if applicable)
+              </div>
+            </div>
+
+            <!-- Adjustment Amount -->
+            <div class="field-group mb-4">
+              <label class="field-label text-sm font-medium text-gray-700"
+                >Adjustment Amount</label
+              >
+              <div
+                class="cost-input-group flex border rounded-lg overflow-hidden"
+              >
+                <span class="currency p-2 bg-gray-100 text-gray-600">{{
+                  invoiceData.currency
+                }}</span>
+                <input
+                  type="number"
+                  class="cost-input w-full p-2 border-l focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  [(ngModel)]="invoiceData.adjustmentAmount"
+                  (ngModelChange)="updateTotals()"
+                  step="0.01"
+                  placeholder="0.00"
+                />
+              </div>
+              <input
+                type="text"
+                class="form-input w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 mt-2"
+                [(ngModel)]="invoiceData.adjustmentDescription"
+                placeholder="Adjustment reason (e.g., Rounding difference)"
+              />
+              <div class="helper-text text-xs text-gray-500 mt-1">
+                *Manual adjustments to the total amount (positive or negative)
+              </div>
+            </div>
+
             <!-- Dates -->
-            <div class="date-fields grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+            <div class="date-fields grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
               <div class="field-group">
                 <label class="field-label text-sm font-medium text-gray-700"
-                  >Issued Date</label
+                  >Issue Date</label
                 >
                 <div class="date-input-wrapper relative">
                   <input
                     type="text"
                     class="date-input w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
                     [(ngModel)]="invoiceData.issuedDate"
-                    (ngModelChange)="onIssueDateChange()"
                     placeholder="dd/mm/yyyy"
                     (click)="toggleCalendar('issued')"
                   />
@@ -843,6 +1211,9 @@
                     <line x1="3" y1="10" x2="21" y2="10" />
                   </svg>
                 </div>
+                <div class="helper-text text-xs text-gray-500 mt-1">
+                  *Date when the invoice is created
+                </div>
               </div>
               <div class="field-group">
                 <label class="field-label text-sm font-medium text-gray-700"
@@ -853,10 +1224,7 @@
                     type="text"
                     class="date-input w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
                     [(ngModel)]="invoiceData.dueDate"
-                    (ngModelChange)="onDueDateChange()"
                     placeholder="dd/mm/yyyy"
-                    pattern="\d{2}/\d{2}/\d{4}"
-                    title="Enter date in dd/mm/yyyy format (e.g., 31/12/2024)"
                     (click)="toggleCalendar('due')"
                   />
                   <svg
@@ -871,8 +1239,12 @@
                     <line x1="3" y1="10" x2="21" y2="10" />
                   </svg>
                 </div>
+                <div class="helper-text text-xs text-gray-500 mt-1">
+                  *Date by which payment is expected
+                </div>
               </div>
             </div>
+
             <!-- Calendar -->
             <div class="calendar-wrapper" *ngIf="showCalendar">
               <div class="calendar bg-white border rounded-lg p-4 shadow-lg">
@@ -932,42 +1304,48 @@
                 </div>
               </div>
             </div>
+
             <!-- Tax Type Creation -->
-            <div class="field-group mb-4">
+            <div class="field-group mb-5">
               <label class="field-label text-sm font-medium text-gray-700"
                 >Add New Tax Type</label
               >
-              <div class="tax-type-form grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <input
-                  type="text"
-                  class="form-input p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  [(ngModel)]="newTaxType.name"
-                  placeholder="Tax Name (e.g., GST 10%)"
-                />
-                <input
-                  type="number"
-                  class="form-input p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  [(ngModel)]="newTaxType.rate"
-                  placeholder="Rate (%)"
-                  min="0"
-                  max="100"
-                  step="0.01"
-                />
-                <button
-                  class="add-tax-btn px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
-                  (click)="addTaxType()"
-                >
-                  Add Tax
-                </button>
+              <div class="tax-type-form flex flex-col gap-4">
+                <div class="grid grid-cols-12 gap-4 items-center">
+                  <input
+                    type="text"
+                    class="form-input col-span-4 p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    [(ngModel)]="newTaxType.name"
+                    placeholder="Tax Name (e.g., GST 10%)"
+                  />
+                  <input
+                    type="number"
+                    class="form-input col-span-4 p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    [(ngModel)]="newTaxType.rate"
+                    placeholder="Rate (%)"
+                    min="0"
+                    max="100"
+                    step="0.01"
+                  />
+                  <button
+                    class="add-tax-btn col-span-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+                    (click)="addTaxType()"
+                  >
+                    Add Tax
+                  </button>
+                </div>
+              </div>
+              <div class="helper-text text-xs text-gray-500 mt-1">
+                *Create custom tax types for your invoices (e.g., VAT, GST,
+                Sales Tax)
               </div>
             </div>
+
             <!-- Discount Section -->
-            <div class="discount-section mb-4">
-              <h3
-                class="section-title text-base font-semibold text-gray-800 mb-3"
+            <div class="discount-section mb-5">
+              <label class="field-label text-sm font-medium text-gray-700"
+                >Discount</label
               >
-                Discounts
-              </h3>
               <div class="discount-list flex flex-col gap-4">
                 <div
                   class="discount-row grid grid-cols-12 gap-4 items-center"
@@ -986,15 +1364,19 @@
                     placeholder="Amount"
                     min="0"
                     step="0.01"
-                    (ngModelChange)="updateDiscounts()"
+                    (ngModelChange)="updateTotals()"
                   />
                   <select
                     class="form-select col-span-3 p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    [(ngModel)]="discount.isPercentage"
-                    (ngModelChange)="updateDiscounts()"
+                    [(ngModel)]="discount.discountType"
+                    (ngModelChange)="onDiscountTypeChange(i, $event)"
                   >
-                    <option [ngValue]="false">Fixed</option>
-                    <option [ngValue]="true">Percentage</option>
+                    <option
+                      *ngFor="let type of discountTypes"
+                      [value]="type.displayValue"
+                    >
+                      {{ type.label }}
+                    </option>
                   </select>
                   <button
                     class="delete-discount-btn col-span-2 p-2 rounded-full hover:bg-red-100 transition"
@@ -1035,8 +1417,12 @@
                   Add Discount
                 </button>
               </div>
+              <div class="helper-text text-xs text-gray-500 mt-2">
+                *Apply discounts to the invoice (fixed amount or percentage)
+              </div>
             </div>
-            <!-- Summary -->
+
+            <!-- Summary Section -->
             <div class="summary-section border-t pt-4">
               <div
                 class="summary-row flex justify-between text-sm text-gray-600 mb-2"
@@ -1049,17 +1435,36 @@
               <div
                 class="summary-row flex justify-between text-sm text-gray-600 mb-2"
               >
-                <span class="summary-label">Tax</span>
+                <span class="summary-label">Discount Total</span>
                 <span class="summary-value font-medium text-gray-800"
-                  >{{ invoiceData.currency }} {{ getTaxAmount() }}</span
+                  >{{ invoiceData.currency }} {{ getDiscountTotal() }}</span
                 >
               </div>
               <div
                 class="summary-row flex justify-between text-sm text-gray-600 mb-2"
               >
-                <span class="summary-label">Discount</span>
+                <span class="summary-label">Tax Total</span>
                 <span class="summary-value font-medium text-gray-800"
-                  >{{ invoiceData.currency }} {{ getDiscountAmount() }}</span
+                  >{{ invoiceData.currency }} {{ getTaxTotal() }}</span
+                >
+              </div>
+              <div
+                class="summary-row flex justify-between text-sm text-gray-600 mb-2"
+              >
+                <span class="summary-label">Shipping</span>
+                <span class="summary-value font-medium text-gray-800"
+                  >{{ invoiceData.currency }}
+                  {{ (invoiceData.shippingAmount || 0).toFixed(2) }}</span
+                >
+              </div>
+              <div
+                class="summary-row flex justify-between text-sm text-gray-600 mb-2"
+                *ngIf="invoiceData.adjustmentAmount !== 0"
+              >
+                <span class="summary-label">Adjustment</span>
+                <span class="summary-value font-medium text-gray-800"
+                  >{{ invoiceData.currency }}
+                  {{ (invoiceData.adjustmentAmount || 0).toFixed(2) }}</span
                 >
               </div>
               <div
@@ -1069,6 +1474,9 @@
                 <span class="total-value text-purple-600"
                   >{{ invoiceData.currency }} {{ getTotal() }}</span
                 >
+              </div>
+              <div class="helper-text text-xs text-gray-500 mt-2">
+                *Amount due from customer
               </div>
             </div>
           </div>

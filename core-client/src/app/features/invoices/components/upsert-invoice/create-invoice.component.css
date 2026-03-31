@@ -12,6 +12,8 @@
 .tax-select:focus,
 .form-select:focus {
   outline: none;
+   ring: 2px solid #3b82f6;
+  border-color: #3b82f6;
 }
 
 .recipient-list::-webkit-scrollbar {
@@ -64,4 +66,68 @@
 .attachment-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+/* Error text styles */
+.error-text {
+  font-size: 0.95rem;
+  margin-top: 0.25rem;
+}
+
+/* Helper text */
+.helper-text {
+  font-size: 0.85rem;
+  margin-top: 0.25rem;
+  color: #6b7280;
+  line-height: 1.25;
+}
+
+.helper-text.text-blue-600 {
+  color: #2563eb;
+}
+/* Calendar day hover effect */
+.calendar-day:not(.selected):hover {
+  background-color: #e5e7eb;
+}
+
+/* Summary section styles */
+.summary-section {
+  transition: all 0.2s ease;
+}
+
+.total-row {
+  border-top-width: 2px;
+  border-top-color: #e5e7eb;
+  padding-top: 1rem;
+  margin-top: 0.5rem;
+}
+
+/* Full screen modal */
+.full-screen-modal .mat-dialog-container {
+  padding: 0;
+  margin: 0;
+  max-width: 100vw;
+  max-height: 100vh;
+  border-radius: 0;
+}
+
+/* Disabled button styles */
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Rotate animation for chevron */
+.rotate-180 {
+  transform: rotate(180deg);
+  transition: transform 0.2s ease;
+}
+
+/* Notes section collapsible */
+.notes-section .border {
+  transition: all 0.2s ease;
+}
+
+.notes-section .border:hover {
+  border-color: #c4b5fd;
 }

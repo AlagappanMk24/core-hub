@@ -86,13 +86,19 @@ export class InvoiceComponent implements OnInit {
     all: { count: 0, amount: 0, change: 0 },
     draft: { count: 0, amount: 0, change: 0 },
     sent: { count: 0, amount: 0, change: 0 },
-    approved: { count: 0, amount: 0, change: 0 },
-    cancelled: { count: 0, amount: 0, change: 0 },
-    pending: { count: 0, amount: 0, change: 0 },
-    completed: { count: 0, amount: 0, change: 0 },
+    viewed: { count: 0, amount: 0, change: 0 },
     partiallyPaid: { count: 0, amount: 0, change: 0 },
+    paid: { count: 0, amount: 0, change: 0 },
     overdue: { count: 0, amount: 0, change: 0 },
+    void: { count: 0, amount: 0, change: 0 },
+    cancelled: { count: 0, amount: 0, change: 0 },
+    writeOff: { count: 0, amount: 0, change: 0 },
+    creditNote: { count: 0, amount: 0, change: 0 },
     refunded: { count: 0, amount: 0, change: 0 },
+    pending: { count: 0, amount: 0, change: 0 },
+    // For backward compatibility
+    approved: { count: 0, amount: 0, change: 0 },
+    completed: { count: 0, amount: 0, change: 0 },
   };
   searchTerm = '';
   // downloadingInvoiceId: string | null = null;
@@ -264,8 +270,9 @@ export class InvoiceComponent implements OnInit {
     });
   }
 
-  getInitials(name: string): string {
-    return name
+  getInitials(name: string | undefined): string {
+     const displayName = name || 'Unknown';
+    return displayName
       .split(' ')
       .map((n) => n.charAt(0).toUpperCase())
       .join('')
@@ -290,14 +297,19 @@ export class InvoiceComponent implements OnInit {
     return colors[index];
   }
 
-  loadStats(): void {
+ loadStats(): void {
     this.isLoading = true;
     this.invoiceService.getInvoiceStats().subscribe({
       next: (stats: InvoiceStats) => {
-        this.stats = stats;
+        this.stats = {
+          ...stats,
+          // Map for backward compatibility
+          approved: stats.sent,
+          completed: stats.paid,
+        };
         this.isLoading = false;
       },
-      error: (error) => {
+      error: (error: any) => {
         console.error('Error fetching stats:', error);
         this.isLoading = false;
       },

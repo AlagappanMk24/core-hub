@@ -52,6 +52,7 @@ export class NotificationService implements OnDestroy {
         invoiceNumber: string;
         message: string;
       }) => {
+              console.log('Received notification:', notification); 
         const newNotification: InvoiceNotification = {
           invoiceId: notification.invoiceId,
           invoiceNumber: notification.invoiceNumber,

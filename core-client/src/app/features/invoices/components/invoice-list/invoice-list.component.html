@@ -134,19 +134,18 @@
       >
         <div class="stat-header">
           <mat-icon class="stat-icon">check_circle</mat-icon>
-          <span class="stat-label">Approved ({{ stats.approved.count }})</span>
+          <span class="stat-label">Approved ({{ stats.approved?.count }})</span>
         </div>
         <div class="stat-amount">
-          {{ stats.approved.amount | currency : "USD" }}
+          {{ stats.approved?.amount | currency : "USD" }}
         </div>
         <div
           class="stat-change"
-          [ngClass]="stats.approved.change >= 0 ? 'positive' : 'negative'"
+         [ngClass]="(stats.approved?.change || 0) >= 0 ? 'positive' : 'negative'"
         >
-          {{ stats.approved.change >= 0 ? "+" : ""
-          }}{{ stats.approved.change | number : "1.1-1" }}%
+         {{ (stats.approved?.change || 0) >= 0 ? "+" : "" }}{{ stats.approved?.change || 0 | number : "1.1-1" }}%
           <mat-icon class="change-icon">{{
-            stats.approved.change >= 0 ? "trending_up" : "trending_down"
+   (stats.approved?.change || 0) >= 0 ? "trending_up" : "trending_down"
           }}</mat-icon>
         </div>
       </div>
@@ -214,20 +213,17 @@
         <div class="stat-header">
           <mat-icon class="stat-icon">check_circle</mat-icon>
           <span class="stat-label"
-            >Completed Payment ({{ stats.completed.count }})</span
+            >Completed Payment ({{ stats.completed?.count }})</span
           >
         </div>
-        <div class="stat-amount">
-          {{ stats.completed.amount | currency : "USD" }}
-        </div>
+           <div class="stat-amount">{{ stats.completed?.amount || 0 | currency : "USD" }}</div>
         <div
           class="stat-change"
-          [ngClass]="stats.completed.change >= 0 ? 'positive' : 'negative'"
+    [ngClass]="(stats.completed?.change || 0) >= 0 ? 'positive' : 'negative'"
         >
-          {{ stats.completed.change >= 0 ? "+" : ""
-          }}{{ stats.completed.change | number : "1.1-1" }}%
+        {{ (stats.completed?.change || 0) >= 0 ? "+" : "" }}{{ stats.completed?.change || 0 | number : "1.1-1" }}%
           <mat-icon class="change-icon">{{
-            stats.completed.change >= 0 ? "trending_up" : "trending_down"
+            stats.completed?.change || 0 >= 0 ? "trending_up" : "trending_down"
           }}</mat-icon>
         </div>
       </div>

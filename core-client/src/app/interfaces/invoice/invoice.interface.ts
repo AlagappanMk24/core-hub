@@ -1,5 +1,3 @@
-import { Company } from '../company/company.interface';
-
 export interface InvoiceUpsert {
   id?: number;
   invoiceNumber: string;
@@ -9,61 +7,210 @@ export interface InvoiceUpsert {
   dueDate: Date;
   type: string;
   currency: string;
+  currencyRate?: number;
   customerId: number;
   notes: string;
+  customerNotes?: string;
+  internalNotes?: string;
+  termsAndConditions?: string;
+  footerNote?: string;
   paymentMethod: string;
-  items: {
-    description: string;
-    quantity: number;
-    unitPrice: number;
-    taxType: string;
-    taxAmount: number;
-    amount: number;
-  }[];
-  taxDetails: { taxType: string; rate: number; amount: number }[];
-  discounts: { description: string; amount: number; isPercentage: boolean }[];
+  paymentTerms?: string;
+  shippingAmount?: number;
+  adjustmentAmount?: number;
+  adjustmentDescription?: string;
+  isAutomated: boolean;
+  items: InvoiceItem[];
+  taxDetails: TaxDetail[];
+  discounts: Discount[];
+  attachments: Attachment[];
   invoiceStatus?: string;
   paymentStatus?: string;
-  attachments: Attachment[]; 
 }
 
 export interface Invoice {
   id: number;
-  customerName: string;
   invoiceNumber: string;
-  invoiceStatus: 'Draft' | 'Sent' | 'Approved' | 'Cancelled';
-  paymentStatus:
-    | 'Pending'
-    | 'Processing'
-    | 'Completed'
-    | 'PartiallyPaid'
-    | 'Overdue'
-    | 'Failed'
-    | 'Refunded';
-  totalAmount: number;
+  poNumber?: string;
   issueDate: Date;
   dueDate: Date;
-  poNumber: string;
-  projectDetail: string;
-  items: {
-    description: string;
-    quantity: number;
-    unitPrice: number;
-    taxType: string;
-    taxAmount: number;
-    amount: number;
-  }[];
-  taxDetails: { taxType: string; rate: number; amount: number }[];
-  discounts: { description: string; amount: number; isPercentage: boolean }[];
-  paymentMethod: string;
-  notes: string;
+  sentDate?: Date;
+  paidDate?: Date;
+  invoiceStatus: InvoiceStatusType;
+  paymentStatus: PaymentStatusType;
+  type: InvoiceTypeType;
   customerId: number;
+  companyId: number;
   currency: string;
-  isAutomated: boolean;
-  customer: Customer;
-  company?: Company; // Added for company info
+  currencyRate: number;
   subtotal: number;
+  discountTotal: number;
+  taxTotal: number;
+  shippingAmount: number;
+  adjustmentAmount: number;
+  adjustmentDescription?: string;
+  totalAmount: number;
+  amountPaid: number;
+  amountDue: number;
+  amountRefunded: number;
+  paymentMethod?: string;
+  paymentGateway?: string;
+  paymentTerms?: string;
+  paymentTransactionId?: string;
+  notes: string;
+  customerNotes?: string;
+  internalNotes?: string;
+  termsAndConditions?: string;
+  footerNote?: string;
+  projectDetail?: string;
+  isAutomated: boolean;
+  isRecurring: boolean;
+  recurringInvoiceId?: number;
+  sourceSystem?: string;
+  customer: Customer;
+  customerName?: string;
+  items: InvoiceItem[];
+  taxDetails: TaxDetail[];
+  discounts: Discount[];
   invoiceAttachments: Attachment[];
+  payments?: InvoicePayment[];
+  auditLogs?: InvoiceAuditLog[];
+  createdDate: Date;
+  createdBy: string;
+  updatedDate?: Date;
+  updatedBy?: string;
+}
+
+export type InvoiceStatusType =
+  | 'Draft'
+  | 'Sent'
+  | 'Viewed'
+  | 'PartiallyPaid'
+  | 'Paid'
+  | 'Overdue'
+  | 'Void'
+  | 'WriteOff'
+  | 'CreditNote'
+  | 'Refunded';
+
+export type PaymentStatusType =
+  | 'Pending'
+  | 'PartiallyPaid'
+  | 'Paid'
+  | 'Overdue'
+  | 'Refunded'
+  | 'PartiallyRefunded'
+  | 'Failed'
+  | 'Cancelled';
+
+export type InvoiceTypeType =
+  | 'Standard'
+  | 'Recurring'
+  | 'Proforma'
+  | 'CreditNote'
+  | 'DebitNote'
+  | 'Commercial'
+  | 'Timesheet'
+  | 'Expense';
+
+export interface InvoiceItem {
+  id?: number;
+  lineNumber?: number;
+  description: string;
+  itemCode?: string;
+  productId?: number;
+  quantity: number;
+  unitPrice: number;
+  amount: number;
+  discountAmount?: number;
+  discountPercentage?: number;
+  taxCode?: string;
+  taxType?: string;
+  taxPercentage?: number;
+  taxAmount: number;
+  totalAmount?: number;
+  unitOfMeasure?: string;
+  notes?: string;
+  isTaxable?: boolean;
+}
+
+export interface TaxDetail {
+  id?: number;
+  taxName: string;
+  taxCode?: string;
+  rate: number;
+  taxableAmount?: number;
+  taxAmount: number;
+  isCompound?: boolean;
+  parentTaxId?: number;
+  jurisdiction?: string;
+  region?: string;
+  taxCalculationMethod?: string;
+  // Add amount for backward compatibility
+  amount?: number;
+}
+
+export interface Discount {
+  id?: number;
+  description: string;
+  discountType: number;
+  amount: number;
+  percentage?: number;
+  couponCode?: string;
+  itemId?: number;
+  applyBeforeTax?: boolean;
+  validFrom?: Date;
+  validTo?: Date;
+  // Add isPercentage for backward compatibility
+  isPercentage?: boolean;
+  // Add calculatedAmount for display
+  calculatedAmount?: number;
+}
+
+export type DiscountTypeType = number;
+
+export interface InvoicePayment {
+  id: number;
+  paymentDate: Date;
+  amount: number;
+  paymentMethod: string;
+  paymentReference?: string;
+  notes?: string;
+  paymentStatus?: string;
+  bankAccountId?: number;
+  isRefund: boolean;
+}
+
+export interface InvoiceAuditLog {
+  id: number;
+  action: string;
+  description: string;
+  changes?: string;
+  ipAddress?: string;
+  userAgent?: string;
+  createdDate: Date;
+  createdBy: string;
+}
+
+export interface Attachment {
+  id?: number;
+  fileName: string;
+  filePath?: string;
+  fileUrl?: string;
+  contentType?: string;
+  fileSize?: number;
+  description?: string;
+  isPublic?: boolean;
+  file?: File;
+}
+
+export interface Customer {
+  id: number;
+  name: string;
+  email: string;
+  phoneNumber: string;
+  address: Address;
+  companyId?: number;
 }
 
 export interface Address {
@@ -75,21 +222,85 @@ export interface Address {
   zipCode: string;
 }
 
-// Define the Customer interface, based on CustomerResponseDto
-export interface Customer {
+export interface Company {
   id: number;
   name: string;
   email: string;
-  phoneNumber: string;
-  address: Address; // Use the Address interface here
-  companyId: number;
+  address: Address;
+  taxId?: string;
+  phoneNumber?: string;
 }
-// export interface Company {
-//   id : number;
-//   name: string;
-//   email: string;
-//   address: Address;
-// }
+
+export interface TaxType {
+  id: number;
+  name: string;
+  rate: number;
+}
+
+export interface TaxTypeCreate {
+  name: string;
+  rate: number;
+}
+
+export interface PaginatedResult<T> {
+  items: T[];
+  totalCount: number;
+  pageNumber: number;
+  pageSize: number;
+  totalPages: number;
+}
+
+export interface InvoiceStats {
+  all: StatsItem;
+  draft: StatsItem;
+  sent: StatsItem;
+  viewed: StatsItem; // Add viewed (matches backend)
+  partiallyPaid: StatsItem;
+  paid: StatsItem; // Change from 'completed' to 'paid' to match backend
+  overdue: StatsItem;
+  void: StatsItem; // Add void (matches backend)
+  cancelled: StatsItem;
+  writeOff?: StatsItem; // Optional (backend has WriteOff)
+  creditNote?: StatsItem; // Optional (backend has CreditNote)
+  refunded: StatsItem;
+  pending: StatsItem;
+  // Remove 'approved' and 'completed' if they don't exist in backend
+  // Keep for backward compatibility but map from paid
+  approved?: StatsItem;
+  completed?: StatsItem;
+}
+
+export interface StatsItem {
+  count: number;
+  amount: number;
+  change: number;
+}
+
+export interface InvoiceSettings {
+  isAutomated: boolean;
+  invoicePrefix: string;
+  invoiceStartingNumber: number;
+  // companyId: number;
+}
+
+export interface InvoiceFilter {
+  pageNumber: number;
+  pageSize: number;
+  search?: string;
+  invoiceStatus?: string;
+  paymentStatus?: string;
+  customerId?: number;
+  taxType?: number;
+  minAmount?: number;
+  maxAmount?: number;
+  invoiceNumberFrom?: string;
+  invoiceNumberTo?: string;
+  issueDateFrom?: string;
+  issueDateTo?: string;
+  dueDateFrom?: string;
+  dueDateTo?: string;
+}
+
 export interface InvoiceApiResponse {
   id: number;
   invoiceNumber: string;
@@ -126,45 +337,6 @@ export interface InvoiceApiResponse {
   subtotal: number;
   invoiceAttachments: Attachment[];
 }
-
-export interface TaxType {
-  id: number;
-  name: string;
-  rate: number;
-}
-
-export interface TaxTypeCreate {
-  name: string;
-  rate: number;
-}
-
-export interface PaginatedResult<T> {
-  items: T[];
-  totalCount: number;
-  pageNumber: number;
-  pageSize: number;
-  totalPages: number;
-}
-
-export interface InvoiceStats {
-  all: { count: number; amount: number; change: number };
-  draft: { count: number; amount: number; change: number };
-  sent: { count: number; amount: number; change: number };
-  approved: { count: number; amount: number; change: number };
-  cancelled: { count: number; amount: number; change: number };
-  pending: { count: number; amount: number; change: number };
-  completed: { count: number; amount: number; change: number };
-  partiallyPaid: { count: number; amount: number; change: number };
-  overdue: { count: number; amount: number; change: number };
-  refunded: { count: number; amount: number; change: number };
-}
-
-export interface InvoiceSettings {
-  isAutomated: boolean;
-  invoicePrefix: string;
-  invoiceStartingNumber: number;
-}
-
 export interface MoreFiltersDialogData {
   customers: { id: number; name: string }[];
   formData: {
@@ -180,28 +352,4 @@ export interface MoreFiltersDialogData {
     dueDateFrom: Date | null;
     dueDateTo: Date | null;
   };
-}
-
-export interface InvoiceFilter {
-  pageNumber: number;
-  pageSize: number;
-  search?: string;
-  invoiceStatus?: string;
-  paymentStatus?: string;
-  customerId?: number;
-  taxType?: number;
-  minAmount?: number;
-  maxAmount?: number;
-  invoiceNumberFrom?: string;
-  invoiceNumberTo?: string;
-  issueDateFrom?: string;
-  issueDateTo?: string;
-  dueDateFrom?: string;
-  dueDateTo?: string;
-}
-export interface Attachment {
-  id?: number; // Optional, as new attachments may not have an ID yet
-  fileName: string;
-  fileUrl: string;
-  file?: File; // Optional, used for client-side file handling
 }

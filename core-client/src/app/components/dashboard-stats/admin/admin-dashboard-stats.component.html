@@ -23,10 +23,24 @@
           <h3 class="text-white text-opacity-90 text-sm font-medium">
             Total Invoice Amount
           </h3>
-          <p class="text-3xl font-bold mt-2">${{ stats.totalInvoiceAmount | number }}</p>
+          <p class="text-3xl font-bold mt-2">
+            ${{ stats.totalInvoiceAmount | number: "1.0-0" }}
+          </p>
           <div class="flex items-center mt-3">
-            <i class="mdi mdi-chart-line mdi-24px float-end"></i>
-            <span class="text-sm">Increased by 8%</span>
+            <i
+              class="fas"
+              [ngClass]="
+                stats.percentageChangeTotal >= 0
+                  ? 'fa-arrow-up'
+                  : 'fa-arrow-down'
+              "
+              class="text-sm mr-1"
+            ></i>
+            <!-- ✅ Dynamic percentage change from backend -->
+            <span class="text-sm">
+              {{ stats.percentageChangeTotal >= 0 ? "Increased" : "Decreased" }}
+              by {{ stats.percentageChangeTotal | number: "1.0-1" }}%
+            </span>
           </div>
         </div>
         <div class="text-white text-opacity-70">
@@ -51,10 +65,26 @@
           <h3 class="text-white text-opacity-90 text-sm font-medium">
             Pending Invoices
           </h3>
-          <p class="text-3xl font-bold mt-2">{{ stats.pendingInvoices | number }}</p>
+          <p class="text-3xl font-bold mt-2">
+            {{ stats.pendingInvoices | number }}
+          </p>
           <div class="flex items-center mt-3">
-            <i class="fas fa-arrow-down text-sm mr-1"></i>
-            <span class="text-sm">Decreased by 5%</span>
+            <i
+              class="fas"
+              [ngClass]="
+                stats.percentageChangePending >= 0
+                  ? 'fa-arrow-up'
+                  : 'fa-arrow-down'
+              "
+              class="text-sm mr-1"
+            ></i>
+            <!-- ✅ Dynamic percentage change from backend -->
+            <span class="text-sm">
+              {{
+                stats.percentageChangePending >= 0 ? "Increased" : "Decreased"
+              }}
+              by {{ stats.percentageChangePending | number: "1.0-1" }}%
+            </span>
           </div>
         </div>
         <div class="text-white text-opacity-70">
@@ -79,10 +109,24 @@
           <h3 class="text-white text-opacity-90 text-sm font-medium">
             Paid Invoices
           </h3>
-          <p class="text-3xl font-bold mt-2">{{ stats.paidInvoices | number }}</p>
+          <p class="text-3xl font-bold mt-2">
+            {{ stats.paidInvoices | number }}
+          </p>
           <div class="flex items-center mt-3">
-            <i class="fas fa-arrow-up text-sm mr-1"></i>
-            <span class="text-sm">Increased by 10%</span>
+            <i
+              class="fas"
+              [ngClass]="
+                stats.percentageChangePaid >= 0
+                  ? 'fa-arrow-up'
+                  : 'fa-arrow-down'
+              "
+              class="text-sm mr-1"
+            ></i>
+            <!-- ✅ Dynamic percentage change from backend -->
+            <span class="text-sm">
+              {{ stats.percentageChangePaid >= 0 ? "Increased" : "Decreased" }}
+              by {{ stats.percentageChangePaid | number: "1.0-1" }}%
+            </span>
           </div>
         </div>
         <div class="text-white text-opacity-70">
@@ -126,7 +170,9 @@
     <!-- Invoice Status Distribution -->
     <div class="bg-white p-6 rounded-lg shadow-lg">
       <div class="flex justify-between items-center mb-6">
-        <h3 class="text-lg font-semibold text-gray-800">Invoice Status Distribution</h3>
+        <h3 class="text-lg font-semibold text-gray-800">
+          Invoice Status Distribution
+        </h3>
       </div>
       <div class="h-48 flex items-center justify-center mb-4">
         <div class="relative w-40 h-40">
@@ -134,19 +180,33 @@
         </div>
       </div>
       <div class="space-y-3">
-        <div class="flex justify-between items-center">
+        <div class="flex justify-between">
           <div class="flex items-center">
             <div class="w-3 h-3 bg-blue-400 rounded-full mr-3"></div>
-            <span class="text-gray-700 text-sm">Paid</span>
+            Paid
           </div>
-          <span class="text-gray-500 font-medium text-sm">{{ (stats.paidInvoices / (stats.paidInvoices + stats.pendingInvoices + 30) * 100) | number:'1.0-0' }}%</span>
+          <span class="text-gray-500 font-medium text-sm">
+            {{
+              totalForPercentage > 0
+                ? ((stats.paidInvoices / totalForPercentage) * 100
+                  | number: "1.0-0")
+                : 0
+            }}%
+          </span>
         </div>
-        <div class="flex justify-between items-center">
+        <div class="flex justify-between">
           <div class="flex items-center">
             <div class="w-3 h-3 bg-teal-400 rounded-full mr-3"></div>
-            <span class="text-gray-700 text-sm">Pending</span>
+            Pending
           </div>
-          <span class="text-gray-500 font-medium text-sm">{{ (stats.pendingInvoices / (stats.paidInvoices + stats.pendingInvoices + 30) * 100) | number:'1.0-0' }}%</span>
+          <span class="text-gray-500 font-medium text-sm">
+            {{
+              totalForPercentage > 0
+                ? ((stats.pendingInvoices / totalForPercentage) * 100
+                  | number: "1.0-0")
+                : 0
+            }}%
+          </span>
         </div>
       </div>
     </div>
@@ -159,43 +219,59 @@
       <table class="w-full">
         <thead>
           <tr class="border-b border-gray-200">
-            <th class="text-left py-3 px-4 font-medium text-gray-600">Customer</th>
-            <th class="text-left py-3 px-4 font-medium text-gray-600">Invoice ID</th>
-            <th class="text-left py-3 px-4 font-medium text-gray-600">Amount</th>
-            <th class="text-left py-3 px-4 font-medium text-gray-600">Status</th>
-            <th class="text-left py-3 px-4 font-medium text-gray-600">Last Update</th>
+            <th class="text-left py-3 px-4 font-medium text-gray-600">
+              Invoice
+            </th>
+            <th class="text-left py-3 px-4 font-medium text-gray-600">
+              Customer
+            </th>
+            <th class="text-left py-3 px-4 font-medium text-gray-600">
+              Amount
+            </th>
+            <th class="text-left py-3 px-4 font-medium text-gray-600">
+              Payment Status
+            </th>
+            <th class="text-left py-3 px-4 font-medium text-gray-600">
+              Issue Date
+            </th>
           </tr>
         </thead>
         <tbody>
           <tr
-            *ngFor="let invoice of invoices"
-            class="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+            *ngFor="let invoice of recentInvoices"
+            class="border-b hover:bg-gray-50"
           >
+            <td class="py-3 px-4 text-gray-800">{{ invoice.invoiceNumber }}</td>
             <td class="py-3 px-4">
               <div class="flex items-center">
                 <img
-                  [src]="invoice.avatar"
-                  [alt]="invoice.customer"
+                  [src]="
+                    invoice.customerAvatar || 'https://via.placeholder.com/32'
+                  "
+                  [alt]="invoice.customerName"
                   class="w-8 h-8 rounded-full mr-3"
                 />
-                <span class="text-gray-800">{{ invoice.customer }}</span>
+                <span class="text-gray-800">{{ invoice.customerName }}</span>
               </div>
             </td>
-            <td class="py-3 px-4 text-gray-800">{{ invoice.id }}</td>
-            <td class="py-3 px-4 text-gray-800">${{ invoice.amount | number }}</td>
+            <td class="py-3 px-4 text-gray-800">
+              ${{ invoice.amount | number: "1.0-2" }}
+            </td>
             <td class="py-3 px-4">
               <span
                 class="px-2 py-1 text-xs font-medium rounded-full text-white"
                 [ngClass]="{
-                  'bg-green-500': invoice.status === 'PAID',
-                  'bg-yellow-500': invoice.status === 'PENDING',
-                  'bg-red-500': invoice.status === 'OVERDUE'
+                  'bg-green-500': invoice.status === 'Paid',
+                  'bg-yellow-500': invoice.status === 'Pending',
+                  'bg-red-500': invoice.status === 'Overdue',
                 }"
               >
                 {{ invoice.status }}
               </span>
             </td>
-            <td class="py-3 px-4 text-gray-600">{{ invoice.lastUpdate }}</td>
+            <td class="py-3 px-4 text-gray-600">
+              {{ invoice.issueDate | date: "MMM d, y" }}
+            </td>
           </tr>
         </tbody>
       </table>
@@ -217,13 +293,27 @@
       </div>
       <div class="p-4">
         <div class="grid grid-cols-7 gap-1 mb-2">
-          <div class="text-center text-sm font-medium text-gray-500 py-2">Su</div>
-          <div class="text-center text-sm font-medium text-gray-500 py-2">Mo</div>
-          <div class="text-center text-sm font-medium text-gray-500 py-2">Tu</div>
-          <div class="text-center text-sm font-medium text-gray-500 py-2">We</div>
-          <div class="text-center text-sm font-medium text-gray-500 py-2">Th</div>
-          <div class="text-center text-sm font-medium text-gray-500 py-2">Fr</div>
-          <div class="text-center text-sm font-medium text-gray-500 py-2">Sa</div>
+          <div class="text-center text-sm font-medium text-gray-500 py-2">
+            Su
+          </div>
+          <div class="text-center text-sm font-medium text-gray-500 py-2">
+            Mo
+          </div>
+          <div class="text-center text-sm font-medium text-gray-500 py-2">
+            Tu
+          </div>
+          <div class="text-center text-sm font-medium text-gray-500 py-2">
+            We
+          </div>
+          <div class="text-center text-sm font-medium text-gray-500 py-2">
+            Th
+          </div>
+          <div class="text-center text-sm font-medium text-gray-500 py-2">
+            Fr
+          </div>
+          <div class="text-center text-sm font-medium text-gray-500 py-2">
+            Sa
+          </div>
         </div>
         <div class="grid grid-cols-7 gap-1">
           <div
@@ -232,7 +322,7 @@
             [ngClass]="{
               'bg-teal-400 text-white rounded-full': day === 4,
               'text-gray-400': day === 0,
-              'text-gray-800': day > 0 && day !== 4
+              'text-gray-800': day > 0 && day !== 4,
             }"
           >
             {{ day || "" }}
@@ -285,9 +375,7 @@
             class="w-8 h-8 rounded-full mr-3"
           />
           <div>
-            <h4 class="font-medium text-gray-800">
-              Invoice INV-001 Paid
-            </h4>
+            <h4 class="font-medium text-gray-800">Invoice INV-001 Paid</h4>
             <p class="text-sm text-gray-600">
               Payment of $1500 received for invoice INV-001 on Dec 5, 2025.
             </p>
@@ -299,42 +387,194 @@
 
   <!-- Invoice Payment Progress and Todo List Section -->
   <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-    <!-- Invoice Payment Progress -->
+    <!-- Payment Progress - Partially Paid Invoices -->
     <div class="bg-white p-6 rounded-lg shadow-lg">
-      <h3 class="text-lg font-semibold text-gray-800 mb-6">Invoice Payment Progress</h3>
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-gray-800">Payment Progress</h3>
+        <span class="text-xs text-gray-500">Partially Paid</span>
+      </div>
+      <div class="space-y-4">
+        <div
+          *ngIf="paymentProgress.length === 0"
+          class="text-center text-gray-500 py-8"
+        >
+          No partially paid invoices
+        </div>
+        <div *ngFor="let progress of paymentProgress" class="border-b pb-3">
+          <div class="flex justify-between items-start mb-2">
+            <div>
+              <p class="font-medium text-gray-800">
+                {{ progress.invoiceNumber }}
+              </p>
+              <p class="text-sm text-gray-600">{{ progress.customerName }}</p>
+            </div>
+            <span class="text-sm font-medium"
+              >{{ progress.paidPercentage | number: "1.0-0" }}%</span
+            >
+          </div>
+          <div class="w-full bg-gray-200 rounded-full h-2">
+            <div
+              class="h-2 rounded-full transition-all duration-500"
+              [style.width]="progress.paidPercentage + '%'"
+              [style.backgroundColor]="getPaymentProgressColor(progress)"
+            ></div>
+          </div>
+          <div class="flex justify-between text-xs text-gray-500 mt-1">
+            <span>Paid: {{ progress.amountPaid | currency }}</span>
+            <span>Due: {{ progress.remainingAmount | currency }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pending Payments - Unpaid Invoices -->
+    <div class="bg-white p-6 rounded-lg shadow-lg">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-gray-800">Pending Payments</h3>
+        <span class="text-xs text-yellow-500 bg-yellow-50 px-2 py-1 rounded"
+          >Awaiting Payment</span
+        >
+      </div>
+      <div class="space-y-3">
+        <div
+          *ngIf="pendingPayments.length === 0"
+          class="text-center text-gray-500 py-8"
+        >
+          No pending invoices
+        </div>
+        <div *ngFor="let pending of pendingPayments" class="border-b pb-3">
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="font-medium text-gray-800">
+                {{ pending.invoiceNumber }}
+              </p>
+              <p class="text-sm text-gray-600">{{ pending.customerName }}</p>
+            </div>
+            <span class="text-sm font-semibold text-yellow-600">{{
+              pending.totalAmount | currency
+            }}</span>
+          </div>
+          <div class="flex justify-between text-xs text-gray-500 mt-1">
+            <span>Due: {{ pending.dueDate | date: "MMM d, y" }}</span>
+            <span [class.text-red-500]="getDaysUntilDue(pending.dueDate) < 0">
+              {{
+                getDaysUntilDue(pending.dueDate) > 0
+                  ? getDaysUntilDue(pending.dueDate) + " days left"
+                  : getDaysUntilDue(pending.dueDate) === 0
+                    ? "Due today"
+                    : "Overdue"
+              }}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Overdue Payments - Needs Action -->
+    <div class="bg-white p-6 rounded-lg shadow-lg">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-gray-800">Overdue Payments</h3>
+        <span class="text-xs text-red-500 bg-red-50 px-2 py-1 rounded"
+          >Action Required</span
+        >
+      </div>
+      <div class="space-y-3">
+        <div
+          *ngIf="overduePayments.length === 0"
+          class="text-center text-gray-500 py-8"
+        >
+          No overdue invoices
+        </div>
+        <div
+          *ngFor="let overdue of overduePayments"
+          class="border-b pb-3 pt-3 bg-red-50 -mx-6 px-6"
+        >
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="font-medium text-gray-800">
+                {{ overdue.invoiceNumber }}
+              </p>
+              <p class="text-sm text-gray-600">{{ overdue.customerName }}</p>
+            </div>
+            <span class="text-sm font-semibold text-red-600">{{
+              overdue.totalAmount | currency
+            }}</span>
+          </div>
+          <div class="flex justify-between text-xs text-red-600 mt-1">
+            <span
+              >Overdue by:
+              {{ Math.abs(getDaysUntilDue(overdue.dueDate)) }} days</span
+            >
+            <span class="font-medium">URGENT</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Payments Section -->
+    <div class="bg-white p-6 rounded-lg shadow-lg">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-gray-800">Recent Payments</h3>
+        <span class="text-xs text-green-500 bg-green-50 px-2 py-1 rounded"
+          >Completed</span
+        >
+      </div>
       <div class="overflow-x-auto">
         <table class="w-full">
           <thead>
             <tr class="border-b border-gray-200">
-              <th class="text-left py-3 font-medium text-gray-600">Invoice ID</th>
-              <th class="text-left py-3 font-medium text-gray-600">Customer</th>
-              <th class="text-left py-3 font-medium text-gray-600">Due Date</th>
-              <th class="text-left py-3 font-medium text-gray-600">Paid</th>
+              <th class="text-left py-3 px-4 font-medium text-gray-600">
+                Invoice
+              </th>
+              <th class="text-left py-3 px-4 font-medium text-gray-600">
+                Customer
+              </th>
+              <th class="text-left py-3 px-4 font-medium text-gray-600">
+                Amount
+              </th>
+              <th class="text-left py-3 px-4 font-medium text-gray-600">
+                Payment Date
+              </th>
+              <th class="text-left py-3 px-4 font-medium text-gray-600">
+                Status
+              </th>
             </tr>
-        </thead>
-        <tbody>
-          <tr
-            *ngFor="let progress of invoiceProgress"
-            class="border-b border-gray-100"
-          >
-            <td class="py-3 text-gray-800">{{ progress.id }}</td>
-            <td class="py-3 text-gray-800">{{ progress.customer }}</td>
-            <td class="py-3 text-gray-600">{{ progress.dueDate }}</td>
-            <td class="py-3">
-              <div class="w-full bg-gray-200 rounded-full h-2">
-                <div
-                  class="h-2 rounded-full"
-                  [style.width.%]="progress.paidPercentage"
-                  [style.background-color]="progress.color"
-                ></div>
-              </div>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            <tr *ngIf="recentPayments.length === 0">
+              <td colspan="5" class="text-center py-8 text-gray-500">
+                No recent payments
+              </td>
+            </tr>
+            <tr
+              *ngFor="let payment of recentPayments"
+              class="border-b border-gray-100 hover:bg-gray-50"
+            >
+              <td class="py-3 px-4 text-gray-800">
+                {{ payment.invoiceNumber }}
+              </td>
+              <td class="py-3 px-4 text-gray-800">
+                {{ payment.customerName }}
+              </td>
+              <td class="py-3 px-4 text-gray-800 font-medium">
+                {{ payment.amount | currency }}
+              </td>
+              <td class="py-3 px-4 text-gray-600">
+                {{ payment.paymentDate | date: "MMM d, y" }}
+              </td>
+              <td class="py-3 px-4">
+                <span
+                  class="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800"
+                >
+                  {{ payment.status }}
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
-  </div>
-
+    
     <!-- Todo List -->
     <div class="bg-white p-6 rounded-lg shadow-lg">
       <h3 class="text-lg font-semibold text-gray-800 mb-6">Todo List</h3>
@@ -367,7 +607,7 @@
             class="ml-3 flex-1"
             [ngClass]="{
               'line-through text-gray-500': todo.completed,
-              'text-gray-800': !todo.completed
+              'text-gray-800': !todo.completed,
             }"
           >
             {{ todo.text }}

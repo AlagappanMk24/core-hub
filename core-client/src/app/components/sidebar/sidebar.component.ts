@@ -47,11 +47,33 @@ export class SidebarComponent implements OnInit {
       route: '/dashboard', // Will be overridden for customers
       active: true,
     },
+    // {
+    //   label: 'Invoices',
+    //   icon: 'fas fa-file-invoice',
+    //   route: '/invoices',
+    //   active: false,
+    // },
     {
-      label: 'Invoices',
+      label: 'Invoices', // Concise and clear
       icon: 'fas fa-file-invoice',
       route: '/invoices',
       active: false,
+      hasSubmenu: true,
+      submenuOpen: false,
+      subItems: [
+        {
+          label: 'All Invoices', // Instead of repeating "Invoices"
+          icon: 'fas fa-list',
+          route: '/invoices',
+          active: false,
+        },
+        {
+          label: 'Recurring', // Short and sweet
+          icon: 'fas fa-history',
+          route: '/invoices/recurring',
+          active: false,
+        },
+      ],
     },
     {
       label: 'Customers',
