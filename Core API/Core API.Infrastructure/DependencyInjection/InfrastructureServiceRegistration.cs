@@ -12,6 +12,7 @@ using Core_API.Infrastructure.Services;
 using Core_API.Infrastructure.Services.Admin;
 using Core_API.Infrastructure.Services.Authentication;
 using Core_API.Infrastructure.Services.Authorization;
+using Core_API.Infrastructure.Services.Dashboard;
 using Core_API.Infrastructure.Services.File.Excel;
 using Core_API.Infrastructure.Services.File.Pdf;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,6 +23,9 @@ namespace Core_API.Infrastructure.DI
     {
         public static IServiceCollection AddInfrastructureDependencies(this IServiceCollection services)
         {
+            // Register memory cache 
+            services.AddMemoryCache();
+
             // Register foundational services
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<IDbInitializer, DbInitializer>();
@@ -32,6 +36,8 @@ namespace Core_API.Infrastructure.DI
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IRolesService, RolesService>();
             services.AddScoped<IPermissionService, PermissionService>();
+
+            services.AddScoped<IDashboardService, DashboardService>();
 
             // Register core business services
             services.AddScoped<ICompanyService, CompanyService>();
@@ -52,10 +58,16 @@ namespace Core_API.Infrastructure.DI
             // Register state management services
             services.AddScoped<IAuthStateService, AuthStateService>();
 
+            services.AddScoped<IExchangeRateService, ExchangeRateService>();
+
+            // Cache Service
+            services.AddScoped<ICacheService, MemoryCacheService>();
+
             //services.AddScoped<IProductService, ProductService>();
             //services.AddScoped<ICartService, CartService>();
             //services.AddScoped<ISmsSender, TwilioService>();
             services.AddHostedService<RecurringInvoiceBackgroundService>();
+
             return services;
         }
     }

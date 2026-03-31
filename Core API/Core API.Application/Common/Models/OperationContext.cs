@@ -11,10 +11,11 @@
         {
             if (string.IsNullOrEmpty(userId))
                 throw new ArgumentNullException(nameof(userId));
-            if (companyId.HasValue && companyId <= 0)
-                throw new ArgumentException("CompanyId must be greater than 0.", nameof(companyId));
-            if (customerId.HasValue && customerId <= 0)
-                throw new ArgumentException("CustomerId must be greater than 0.", nameof(customerId));
+            if (companyId.HasValue && companyId < 0)
+                throw new ArgumentException("CompanyId cannot be negative.", nameof(companyId));
+
+            if (customerId.HasValue && customerId < 0)
+                throw new ArgumentException("CustomerId cannot be negative.", nameof(customerId));
 
             UserId = userId;
             CompanyId = companyId;

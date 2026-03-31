@@ -437,6 +437,7 @@ namespace Core_API.Web.Controllers
                 });
             }
         }
+
         [HttpGet("export/excel")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]

@@ -102,7 +102,6 @@ namespace Core_API.Infrastructure.Persistence.Repositories.Invoice
                 PageSize = filter.PageSize,
             };
         }
-
         public async Task<bool> InvoiceNumberExistsAsync(int companyId, string invoiceNumber, int? excludeInvoiceId = null)
         {
             var query = dbset.Where(i => i.CompanyId == companyId && i.InvoiceNumber == invoiceNumber && !i.IsDeleted);

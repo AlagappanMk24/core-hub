@@ -54,7 +54,7 @@ namespace Core_API.Domain.Entities.Abstract
         /// </summary>
         [Required]
         [StringLength(3)]
-        public string Currency { get; set; } = "INR";
+        public string Currency { get; set; } = "USD";
 
         /// <summary>
         /// Exchange rate relative to the system's base currency at the time of issue.
@@ -73,7 +73,7 @@ namespace Core_API.Domain.Entities.Abstract
 
 
         // ── Financial Summary ─────────────────────────────────────────────────
-
+        //- what customer sees
         /// <summary>
         /// Sum of all line item amounts before discounts, taxes, and shipping.
         /// </summary>
@@ -104,6 +104,12 @@ namespace Core_API.Domain.Entities.Abstract
         /// </summary>
         [Column(TypeName = "decimal(18,2)")]
         public decimal TotalAmount { get; set; }
+
+        // Amounts in base currency (for reporting)
+        public decimal BaseCurrencySubtotal { get; set; }
+        public decimal BaseCurrencyTotalAmount { get; set; }
+        public decimal BaseCurrencyAmountPaid { get; set; }
+        public decimal BaseCurrencyAmountDue { get; set; }
 
         // ── Notes & Terms ─────────────────────────────────────────────────────
 

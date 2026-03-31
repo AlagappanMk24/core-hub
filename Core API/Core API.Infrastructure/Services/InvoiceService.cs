@@ -18,11 +18,12 @@ using System.Text.Json;
 
 namespace Core_API.Infrastructure.Services
 {
-    public class InvoiceService(IUnitOfWork unitOfWork, IPdfService pdfService, IEmailSendingService emailSendingService, ILogger<InvoiceService> logger, IMapper mapper, IHubContext<NotificationHub> hubContext) : IInvoiceService
+    public class InvoiceService(IUnitOfWork unitOfWork, IPdfService pdfService, IEmailSendingService emailSendingService, IExchangeRateService exchangeRateService, ILogger<InvoiceService> logger, IMapper mapper, IHubContext<NotificationHub> hubContext) : IInvoiceService
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
         private readonly IPdfService _pdfService = pdfService ?? throw new ArgumentNullException(nameof(pdfService));
         private readonly IEmailSendingService _emailSendingService = emailSendingService ?? throw new ArgumentNullException(nameof(emailSendingService));
+        private readonly IExchangeRateService _exchangeRateService = exchangeRateService ?? throw new ArgumentNullException(nameof(exchangeRateService));
         private readonly ILogger<InvoiceService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         private readonly IMapper _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
         private readonly string[] _supportedCurrencies = ["USD", "EUR", "INR"];
@@ -40,6 +41,13 @@ namespace Core_API.Infrastructure.Services
                     return OperationResult<InvoiceResponseDto>.FailureResult("Company ID is required.");
                 }
                 int companyId = operationContext.CompanyId.Value;
+
+                // Get company to get base currency
+                var company = await _unitOfWork.Companies.GetAsync(c => c.Id == companyId);
+                if (company == null)
+                {
+                    return OperationResult<InvoiceResponseDto>.FailureResult("Company not found.");
+                }
 
                 // Validate customer
                 var customer = await _unitOfWork.Customers.GetAsync(c => c.Id == dto.CustomerId && c.CompanyId == companyId && !c.IsDeleted);
@@ -59,6 +67,11 @@ namespace Core_API.Infrastructure.Services
                 {
                     return OperationResult<InvoiceResponseDto>.FailureResult($"Invalid currency. Supported currencies: {string.Join(", ", _supportedCurrencies)}.");
                 }
+
+                // Fetch current exchange rate from API
+                decimal exchangeRate = await _exchangeRateService.GetExchangeRateAsync(company.BaseCurrency, dto.Currency);
+                _logger.LogInformation("Fetched exchange rate from {BaseCurrency} to {InvoiceCurrency}: {Rate}",
+                    company.BaseCurrency, dto.Currency, exchangeRate);
 
                 // Validate tax types
                 var taxTypes = await _unitOfWork.TaxTypes.Query()
@@ -97,27 +110,31 @@ namespace Core_API.Infrastructure.Services
                 invoice.AmountDue = 0;
                 invoice.SourceSystem = dto.SourceSystem ?? "Manual";
 
-                // Add invoice items with all fields
-                invoice.InvoiceItems = MapInvoiceItems(dto.Items, operationContext.UserId);
+                // Calculate item amounts and tax amounts
+                CalculateItemAmounts(invoice.InvoiceItems, taxTypes);
 
-                // Add tax details with all fields
-                invoice.TaxDetails = MapTaxDetails(dto.TaxDetails, operationContext.UserId, invoice.Subtotal);
+                // Calculate tax details from items
+                CalculateTaxDetails(invoice.InvoiceItems, invoice.TaxDetails, taxTypes);
 
-                // Add discounts with all fields
-                invoice.Discounts = MapDiscounts(dto.Discounts, operationContext.UserId);
+                // Calculate discounts
+                CalculateDiscount(invoice.Discounts, invoice.Subtotal);
 
-                // Calculate financial totals
+                // Calculate all totals
                 CalculateInvoiceTotals(invoice);
+
+                // Convert to base currency for reporting
+                invoice.BaseCurrencySubtotal = invoice.Subtotal / exchangeRate;
+                invoice.BaseCurrencyTotalAmount = invoice.TotalAmount / exchangeRate;
 
                 // Calculate AmountDue
                 invoice.AmountDue = invoice.TotalAmount - invoice.AmountPaid;
+                invoice.BaseCurrencyAmountDue = invoice.BaseCurrencyTotalAmount - invoice.BaseCurrencyAmountPaid;
 
-                // Add invoice first to get Id
+                // Add invoice 
                 await _unitOfWork.Invoices.AddAsync(invoice);
                 await _unitOfWork.SaveChangesAsync();
 
-                // AFTER the invoice is saved and has an ID, handle attachments
-                // This is important because attachments need the invoice ID
+                // Handle attachments after invoice has ID
                 if (dto.Attachments?.Any() == true)
                 {
                     invoice.InvoiceAttachments = await HandleAttachmentsAsync(dto.Attachments, companyId, invoice.Id, operationContext.UserId);
@@ -135,11 +152,20 @@ namespace Core_API.Infrastructure.Services
 
                 // Map to response DTO
                 var response = MapToInvoiceResponseDto(invoice);
+                response.Customer = _mapper.Map<CustomerResponseDto>(customer);
 
                 // Send notification
-                await _hubContext.Clients.Group($"company-{companyId}").SendAsync(
-                    "InvoiceCreated",
-                    new { InvoiceId = invoice.Id, InvoiceNumber = invoice.InvoiceNumber });
+                if (_hubContext != null && customer != null)
+                {
+                    await SendNotificationAsync(customer.Id.ToString(), new
+                    {
+                        InvoiceId = invoice.Id,
+                        InvoiceNumber = invoice.InvoiceNumber,
+                        Currency = invoice.Currency,
+                        TotalAmount = invoice.TotalAmount,
+                        Message = $"New invoice {invoice.InvoiceNumber} has been created"
+                    });
+                }
 
                 _logger.LogInformation("Invoice {InvoiceNumber} created successfully with ID {InvoiceId}",
                     invoice.InvoiceNumber, invoice.Id);
@@ -168,7 +194,7 @@ namespace Core_API.Infrastructure.Services
 
                 // Get existing invoice with all related data
                 var invoice = await _unitOfWork.Invoices.GetAsync(
-                    i => i.Id == dto.Id && i.CompanyId == companyId && !i.IsDeleted, 
+                    i => i.Id == dto.Id && i.CompanyId == companyId && !i.IsDeleted,
                     "InvoiceItems,TaxDetails,Discounts,InvoiceAttachments,Customer");
 
                 if (invoice == null)
@@ -228,12 +254,21 @@ namespace Core_API.Infrastructure.Services
                     invoice.InvoiceStatus,
                     invoice.PaymentStatus,
                     invoice.TotalAmount,
-                    invoice.AmountPaid
+                    invoice.AmountPaid,
                 });
 
-                // Map DTO to entity
+                // Preserve payment information
+                var existingAmountPaid = invoice.AmountPaid;
+                var existingAmountRefunded = invoice.AmountRefunded;
+
+                // Map DTO to existing entity (AutoMapper updates simple properties)
                 _mapper.Map(dto, invoice);
 
+                // Restore payment information
+                invoice.AmountPaid = existingAmountPaid;
+                invoice.AmountRefunded = existingAmountRefunded;
+
+                // Generate invoice number if automated
                 invoice.InvoiceNumber = dto.IsAutomated
                      ? await _unitOfWork.InvoiceSettings.GetNextInvoiceNumberAsync(companyId)
                      : dto.InvoiceNumber ?? invoice.InvoiceNumber;
@@ -241,33 +276,38 @@ namespace Core_API.Infrastructure.Services
                 invoice.UpdatedBy = operationContext.UserId;
                 invoice.UpdatedDate = DateTime.UtcNow;
 
-                // Update collections
+                // Update collections using AutoMapper
+                // Items
                 invoice.InvoiceItems.Clear();
-                invoice.InvoiceItems = _mapper.Map<List<InvoiceItem>>(dto.Items);
-
-                foreach (var items in invoice.InvoiceItems)
+                var mappedItems = _mapper.Map<List<InvoiceItem>>(dto.Items);
+                CalculateItemAmounts(mappedItems, taxTypes);
+                foreach (var item in mappedItems)
                 {
-                    items.CreatedBy = operationContext.UserId;
-                    items.CreatedDate = DateTime.UtcNow;
+                    item.CreatedBy = operationContext.UserId;
+                    item.CreatedDate = DateTime.UtcNow;
+                    invoice.InvoiceItems.Add(item);
                 }
 
                 // Update tax details
                 invoice.TaxDetails.Clear();
-                invoice.TaxDetails = _mapper.Map<List<InvoiceTaxDetail>>(dto.TaxDetails);
-
-                foreach (var tax in invoice.TaxDetails)
+                var mappedTaxDetails = _mapper.Map<List<InvoiceTaxDetail>>(dto.TaxDetails);
+                CalculateTaxDetails(invoice.InvoiceItems, mappedTaxDetails, taxTypes);
+                foreach (var tax in mappedTaxDetails)
                 {
                     tax.CreatedBy = operationContext.UserId;
                     tax.CreatedDate = DateTime.UtcNow;
+                    invoice.TaxDetails.Add(tax);
                 }
 
                 // Update discount details
                 invoice.Discounts.Clear();
-                invoice.Discounts = _mapper.Map<List<InvoiceDiscount>>(dto.Discounts);
-                foreach (var discount in invoice.Discounts)
+                var mappedDiscounts = _mapper.Map<List<InvoiceDiscount>>(dto.Discounts);
+                CalculateDiscount(mappedDiscounts, invoice.Subtotal);
+                foreach (var discount in mappedDiscounts)
                 {
                     discount.CreatedBy = operationContext.UserId;
                     discount.CreatedDate = DateTime.UtcNow;
+                    invoice.Discounts.Add(discount);
                 }
 
                 // Recalculate totals
@@ -313,10 +353,29 @@ namespace Core_API.Infrastructure.Services
                 var response = _mapper.Map<InvoiceResponseDto>(invoice);
                 response.Customer = _mapper.Map<CustomerResponseDto>(customer);
 
-                // Send notification
-                await _hubContext.Clients.Group($"company-{companyId}").SendAsync(
-                    "InvoiceUpdated",
-                    new { InvoiceId = invoice.Id, InvoiceNumber = invoice.InvoiceNumber });
+                // Send notification to the CUSTOMER
+                if (_hubContext != null && invoice.Customer != null)
+                {
+                    try
+                    {
+                        await _hubContext.Clients.Group(invoice.CustomerId.ToString()).SendAsync(
+                            "ReceiveInvoiceNotification",
+                            new
+                            {
+                                InvoiceId = invoice.Id,
+                                InvoiceNumber = invoice.InvoiceNumber,
+                                Message = $"Invoice {invoice.InvoiceNumber} has been updated."
+                            });
+
+                        _logger.LogInformation("Sent SignalR notification for invoice update {InvoiceId} to customer {CustomerId}",
+                            invoice.Id, invoice.CustomerId);
+                    }
+                    catch (Exception signalREx)
+                    {
+                        _logger.LogWarning(signalREx, "Failed to send SignalR notification for invoice update {InvoiceId} to customer {CustomerId}",
+                            invoice.Id, invoice.CustomerId);
+                    }
+                }
 
                 _logger.LogInformation("Invoice {InvoiceId} updated successfully", invoice.Id);
 
@@ -359,7 +418,7 @@ namespace Core_API.Infrastructure.Services
                     attachment.UpdatedBy = operationContext.UserId;
                     attachment.UpdatedDate = DateTime.UtcNow;
                 }
-               
+
                 _unitOfWork.Invoices.Update(invoice);
                 await _unitOfWork.SaveChangesAsync();
 
@@ -380,10 +439,29 @@ namespace Core_API.Infrastructure.Services
 
                 await transaction.CommitAsync();
 
-                // Send notification
-                await _hubContext.Clients.Group($"company-{companyId}").SendAsync(
-                    "InvoiceDeleted",
-                    new { InvoiceId = invoice.Id, InvoiceNumber = invoice.InvoiceNumber });
+                // Send notification to the CUSTOMER
+                if (_hubContext != null && invoice.Customer != null)
+                {
+                    try
+                    {
+                        await _hubContext.Clients.Group(invoice.CustomerId.ToString()).SendAsync(
+                            "ReceiveInvoiceNotification",
+                            new
+                            {
+                                InvoiceId = invoice.Id,
+                                InvoiceNumber = invoice.InvoiceNumber,
+                                Message = $"Invoice {invoice.InvoiceNumber} has been deleted."
+                            });
+
+                        _logger.LogInformation("Sent SignalR notification for invoice deletion {InvoiceId} to customer {CustomerId}",
+                            invoice.Id, invoice.CustomerId);
+                    }
+                    catch (Exception signalREx)
+                    {
+                        _logger.LogWarning(signalREx, "Failed to send SignalR notification for invoice deletion {InvoiceId} to customer {CustomerId}",
+                            invoice.Id, invoice.CustomerId);
+                    }
+                }
 
                 _logger.LogInformation("Invoice {InvoiceId} deleted successfully", id);
                 return OperationResult<bool>.SuccessResult(true);
@@ -699,23 +777,55 @@ namespace Core_API.Infrastructure.Services
         {
             try
             {
+                // Build the base query
                 var query = _unitOfWork.Invoices.Query().Where(i => !i.IsDeleted);
 
+                // Apply company filter
                 if (operationContext.CompanyId.HasValue)
+                {
                     query = query.Where(i => i.CompanyId == operationContext.CompanyId.Value);
+                }
+                else
+                {
+                    _logger.LogWarning("No CompanyId provided for stats retrieval");
+                    return OperationResult<InvoiceStatsDto>.FailureResult("Company ID is required.");
+                }
 
+                // Apply customer filter if this is a customer role
                 if (operationContext.CustomerId.HasValue)
+                {
                     query = query.Where(i => i.CustomerId == operationContext.CustomerId.Value);
+                }
 
-                if (!string.IsNullOrEmpty(operationContext.UserId) && operationContext.CustomerId == null)
-                    query = query.Where(i => i.CreatedBy == operationContext.UserId);
+                // For Admin/User roles, DO NOT filter by CreatedBy - show ALL company invoices
+                // Only filter by CreatedBy if you specifically want user-specific invoices
+                //if (!string.IsNullOrEmpty(operationContext.UserId) && operationContext.CustomerId == null)
+                //    query = query.Where(i => i.CreatedBy == operationContext.UserId);
 
+                // Get all invoices for the company/customer
                 var invoices = await query.ToListAsync();
 
-                // Get previous period for change calculation
-                var previousPeriodStart = DateTime.UtcNow.AddMonths(-1);
-                var previousPeriodInvoices = invoices.Where(i => i.IssueDate < previousPeriodStart).ToList();
-                var currentPeriodInvoices = invoices.Where(i => i.IssueDate >= previousPeriodStart).ToList();
+                _logger.LogInformation("Retrieved {Count} invoices for stats calculation", invoices.Count);
+
+                // For debugging - log first few invoices if any
+                if (invoices.Any())
+                {
+                    _logger.LogDebug("First invoice sample: Id={Id}, Number={Number}, Status={Status}, Amount={Amount}",
+                        invoices.First().Id, invoices.First().InvoiceNumber, invoices.First().InvoiceStatus, invoices.First().TotalAmount);
+                }
+
+                // Calculate previous period for change (last 30 days vs previous 30 days)
+                var today = DateTime.UtcNow.Date;
+                var currentPeriodStart = today.AddDays(-30);
+                var previousPeriodStart = today.AddDays(-60);
+                var currentPeriodEnd = today;
+                var previousPeriodEnd = currentPeriodStart;
+
+                var currentPeriodInvoices = invoices.Where(i => i.IssueDate >= currentPeriodStart && i.IssueDate < currentPeriodEnd).ToList();
+                var previousPeriodInvoices = invoices.Where(i => i.IssueDate >= previousPeriodStart && i.IssueDate < previousPeriodEnd).ToList();
+
+                var currentPeriodAmount = currentPeriodInvoices.Sum(i => i.TotalAmount);
+                var previousPeriodAmount = previousPeriodInvoices.Sum(i => i.TotalAmount);
 
                 var stats = new InvoiceStatsDto
                 {
@@ -723,7 +833,7 @@ namespace Core_API.Infrastructure.Services
                     {
                         Count = invoices.Count,
                         Amount = invoices.Sum(i => i.TotalAmount),
-                        Change = CalculateChange(previousPeriodInvoices.Sum(i => i.TotalAmount), currentPeriodInvoices.Sum(i => i.TotalAmount))
+                        Change = CalculateChange(previousPeriodAmount, currentPeriodAmount)
                     },
                     Draft = new StatsItem
                     {
@@ -786,6 +896,7 @@ namespace Core_API.Infrastructure.Services
                         Change = 0
                     }
                 };
+                _logger.LogInformation("Stats calculated: Total Invoices={Count}, Total Amount={Amount}",stats.All.Count, stats.All.Amount);
 
                 return OperationResult<InvoiceStatsDto>.SuccessResult(stats);
             }
@@ -960,10 +1071,59 @@ namespace Core_API.Infrastructure.Services
         }
 
         #region Private Helper Methods
-
-        private void CalculateInvoiceTotals(Invoice invoice)
+        private static void CalculateItemAmounts(List<InvoiceItem> items, List<TaxType> taxTypes)
         {
-            // Calculate Subtotal
+            foreach (var item in items)
+            {
+                // Calculate base amount
+                item.Amount = item.Quantity * item.UnitPrice;
+
+                // Calculate tax amount
+                if (!string.IsNullOrEmpty(item.TaxType))
+                {
+                    var taxType = taxTypes.FirstOrDefault(t => t.Name == item.TaxType);
+                    if (taxType != null)
+                    {
+                        item.TaxAmount = (item.Amount * taxType.Rate) / 100;
+                        item.TaxPercentage = taxType.Rate;
+                    }
+                }
+
+                // Calculate total amount
+                item.TotalAmount = item.Amount + item.TaxAmount;
+                item.IsTaxable = !string.IsNullOrEmpty(item.TaxType);
+            }
+        }
+        private static void CalculateTaxDetails(List<InvoiceItem> items, List<InvoiceTaxDetail> taxDetails, List<TaxType> taxTypes)
+        {
+            foreach (var taxDetail in taxDetails)
+            {
+                var taxableAmount = items
+                    .Where(item => item.TaxType == taxDetail.TaxName)
+                    .Sum(item => item.Amount);
+
+                var taxType = taxTypes.FirstOrDefault(t => t.Name == taxDetail.TaxName);
+                if (taxType != null)
+                {
+                    taxDetail.Rate = taxType.Rate;
+                    taxDetail.TaxAmount = (taxableAmount * taxType.Rate) / 100;
+                }
+            }
+        }
+        private void CalculateDiscount(List<InvoiceDiscount> discounts, decimal subtotal)
+        {
+            foreach (var discount in discounts)
+            {
+                // No calculation needed, just validation
+                if (discount.DiscountType == DiscountType.Percentage && discount.Amount > 100)
+                {
+                    _logger.LogWarning("Percentage discount {Amount}% exceeds 100%", discount.Amount);
+                }
+            }
+        }
+        private static void CalculateInvoiceTotals(Invoice invoice)
+        {
+            // Calculate Subtotal from items
             invoice.Subtotal = invoice.InvoiceItems?.Sum(i => i.Amount) ?? 0;
 
             // Calculate DiscountTotal 
@@ -987,88 +1147,13 @@ namespace Core_API.Infrastructure.Services
             // Calculate TotalAmount
             invoice.TotalAmount = invoice.Subtotal - invoice.DiscountTotal + invoice.TaxTotal + invoice.ShippingAmount + invoice.AdjustmentAmount;
         }
-        private List<InvoiceItem> MapInvoiceItems(List<InvoiceItemDto> itemDtos, string userId)
-        {
-            var items = new List<InvoiceItem>();
-            int lineNumber = 1;
-
-            foreach (var itemDto in itemDtos)
-            {
-                var amount = itemDto.Quantity * itemDto.UnitPrice;
-                var taxAmount = itemDto.TaxAmount > 0 ? itemDto.TaxAmount : 0;
-
-                var item = new InvoiceItem
-                {
-                    Description = itemDto.Description,
-                    Quantity = itemDto.Quantity,
-                    UnitPrice = itemDto.UnitPrice,
-                    Amount = amount,
-                    TaxType = itemDto.TaxType,
-                    TaxPercentage = itemDto.TaxAmount > 0 && amount > 0 ? (itemDto.TaxAmount / amount) * 100 : 0,
-                    TaxAmount = taxAmount,
-                    TotalAmount = amount + taxAmount,
-                    IsTaxable = !string.IsNullOrEmpty(itemDto.TaxType),
-                    CreatedBy = userId,
-                    CreatedDate = DateTime.UtcNow
-                };
-
-                items.Add(item);
-            }
-
-            return items;
-        }
-        private List<InvoiceTaxDetail> MapTaxDetails(List<InvoiceTaxDetailDto> taxDtos, string userId, decimal taxableAmount)
-        {
-            var taxDetails = new List<InvoiceTaxDetail>();
-
-            foreach (var taxDto in taxDtos)
-            {
-                var taxDetail = new InvoiceTaxDetail
-                {
-                    TaxName = taxDto.TaxName,
-                    Rate = taxDto.Rate,
-                    TaxAmount = taxDto.TaxAmount,
-                    CreatedBy = userId,
-                    CreatedDate = DateTime.UtcNow
-                };
-
-                taxDetails.Add(taxDetail);
-            }
-
-            return taxDetails;
-        }
-        private List<InvoiceDiscount> MapDiscounts(List<InvoiceDiscountDto> discountDtos, string userId)
-        {
-            var discounts = new List<InvoiceDiscount>();
-
-            foreach (var discountDto in discountDtos)
-            {
-                var discount = new InvoiceDiscount
-                {
-                    Description = discountDto.Description,
-                    DiscountType = discountDto.DiscountType,
-                    Amount = discountDto.Amount,            
-                    CreatedBy = userId,
-                    CreatedDate = DateTime.UtcNow
-                };
-
-                discounts.Add(discount);
-            }
-
-            return discounts;
-        }
-        private async Task<List<InvoiceAttachment>> HandleAttachmentsAsync(
-            List<InvoiceAttachmentDto> attachmentDtos,
-            int companyId,
-            int invoiceId,
-            string userId)
+        private static async Task<List<InvoiceAttachment>> HandleAttachmentsAsync(List<InvoiceAttachmentDto> attachmentDtos, int companyId, int invoiceId, string userId)
         {
             var attachments = new List<InvoiceAttachment>();
 
             var basePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Attachments", "Invoices",
                 companyId.ToString(), invoiceId.ToString());
 
-            // Create directory if it doesn't exist
             if (!Directory.Exists(basePath))
             {
                 Directory.CreateDirectory(basePath);
@@ -1077,13 +1162,10 @@ namespace Core_API.Infrastructure.Services
             foreach (var attachmentDto in attachmentDtos.Where(a => a.FileContent != null))
             {
                 var file = attachmentDto.FileContent;
-
-                // Generate unique filename to avoid collisions
                 var uniqueFileName = $"{Guid.NewGuid()}_{attachmentDto.FileName}";
                 var filePath = Path.Combine(basePath, uniqueFileName);
                 var relativePath = $"/Attachments/Invoices/{companyId}/{invoiceId}/{uniqueFileName}";
 
-                // Save the file to disk
                 await using (var stream = new FileStream(filePath, FileMode.Create))
                 {
                     await file.CopyToAsync(stream);
@@ -1095,9 +1177,9 @@ namespace Core_API.Infrastructure.Services
                     FileName = attachmentDto.FileName,
                     FilePath = relativePath,
                     FileUrl = relativePath,
-                    ContentType = file.ContentType, // Required - get from uploaded file
-                    FileSize = file.Length, // Required - get from uploaded file
-                    Description = attachmentDto.FileName, // Optional, but good to have
+                    ContentType = file.ContentType,
+                    FileSize = file.Length,
+                    Description = attachmentDto.FileName,
                     IsPublic = true,
                     CreatedBy = userId,
                     CreatedDate = DateTime.UtcNow
@@ -1133,7 +1215,7 @@ namespace Core_API.Infrastructure.Services
 
             return response;
         }
-        private string GenerateDefaultEmailMessage(Invoice invoice)
+        private static string GenerateDefaultEmailMessage(Invoice invoice)
         {
             return $@"
                 <html>
@@ -1152,16 +1234,12 @@ namespace Core_API.Infrastructure.Services
                 </body>
                 </html>";
         }
-        private decimal CalculateChange(decimal previous, decimal current)
+        private static decimal CalculateChange(decimal previous, decimal current)
         {
             if (previous == 0) return 0;
             return ((current - previous) / previous) * 100;
         }
-        private InvoiceAuditLog CreateAuditLog(
-    int invoiceId,
-    InvoiceCreateDto dto,
-    Invoice invoice,
-    OperationContext operationContext)
+        private static InvoiceAuditLog CreateAuditLog(int invoiceId, InvoiceCreateDto dto, Invoice invoice, OperationContext operationContext)
         {
             // Create a summary of the invoice for audit log (reduced size)
             var auditSummary = new
@@ -1209,7 +1287,18 @@ namespace Core_API.Infrastructure.Services
                 CreatedDate = DateTime.UtcNow
             };
         }
-
+        private async Task SendNotificationAsync(string groupId, object data)
+        {
+            try
+            {
+                await _hubContext.Clients.Group(groupId).SendAsync("ReceiveInvoiceNotification", data);
+                _logger.LogInformation("Notification sent to group {GroupId}", groupId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to send notification to group {GroupId}", groupId);
+            }
+        }
         #endregion
     }
 }

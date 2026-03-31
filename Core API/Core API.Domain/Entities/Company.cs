@@ -21,6 +21,10 @@ namespace Core_API.Domain.Entities
         [StringLength(20)]
         public string? PhoneNumber { get; set; }
 
+        // Add base currency for the company
+        [StringLength(3)]
+        public string BaseCurrency { get; set; } = "USD"; // Default to USD
+
         [JsonIgnore]
         public List<Customer> Customers { get; set; } = [];
 

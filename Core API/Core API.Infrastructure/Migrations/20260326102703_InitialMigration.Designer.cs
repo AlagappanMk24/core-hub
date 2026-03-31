@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Core_API.Infrastructure.Migrations
 {
     [DbContext(typeof(CoreAPIDbContext))]
-    [Migration("20260325134227_InitialMigration")]
+    [Migration("20260326102703_InitialMigration")]
     partial class InitialMigration
     {
         /// <inheritdoc />
@@ -101,6 +101,11 @@ namespace Core_API.Infrastructure.Migrations
                         .HasColumnType("int");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BaseCurrency")
+                        .IsRequired()
+                        .HasMaxLength(3)
+                        .HasColumnType("nvarchar(3)");
 
                     b.Property<string>("CreatedBy")
                         .HasColumnType("nvarchar(max)");
@@ -449,6 +454,18 @@ namespace Core_API.Infrastructure.Migrations
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("AmountRefunded")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("BaseCurrencyAmountDue")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("BaseCurrencyAmountPaid")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("BaseCurrencySubtotal")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("BaseCurrencyTotalAmount")
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<int?>("BillingAddressId")
@@ -1012,6 +1029,18 @@ namespace Core_API.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bit")
                         .HasDefaultValue(false);
+
+                    b.Property<decimal>("BaseCurrencyAmountDue")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("BaseCurrencyAmountPaid")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("BaseCurrencySubtotal")
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("BaseCurrencyTotalAmount")
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<int?>("BillingAddressId")
                         .HasColumnType("int");
