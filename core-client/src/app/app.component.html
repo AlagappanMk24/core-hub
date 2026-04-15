@@ -27,3 +27,18 @@
   </div>
 </app-layout> -->
 <router-outlet></router-outlet>
+<!-- Global Loader Component -->
+<ng-container *ngIf="loaderService.loaderState$ | async as loaderState">
+  <app-loader
+    *ngIf="loaderState.visible"
+    [isVisible]="loaderState.visible"
+    [config]="loaderState.config"
+    [showActions]="loaderState.showActions || false"
+    [showCancelButton]="loaderState.showCancelButton ?? true"
+    [showRetryButton]="loaderState.showRetryButton ?? true"
+    [showConfirmButton]="loaderState.showConfirmButton ?? true"
+    [onCancel]="loaderState.onCancel"
+    [onRetry]="loaderState.onRetry"
+    [onConfirm]="loaderState.onConfirm"
+  ></app-loader>
+</ng-container>

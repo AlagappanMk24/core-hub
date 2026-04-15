@@ -10,23 +10,12 @@ import { AuthService } from '../auth/auth.service';
   providedIn: 'root',
 })
 export class CompanyService {
-  private apiBaseUrl = `${environment.apiBaseUrl}/company`;
+  private apiBaseUrl = `${environment.apiBaseUrl}/companies`;
 
   constructor(
     private http: HttpClient,
     private readonly authService: AuthService
   ) {}
-
-  private getHeaders(): HttpHeaders {
-    const token = this.authService.getAuthToken();
-    if (!token) {
-      throw new Error('No authentication token found');
-    }
-    return new HttpHeaders({
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    });
-  }
 
   getCompanies(): Observable<Company[]> {
     return this.http
@@ -41,7 +30,7 @@ export class CompanyService {
 
   getCompanyById(id: number): Observable<Company> {
     return this.http
-      .get<Company>(`${this.apiBaseUrl}/${id}`, { headers: this.getHeaders() })
+      .get<Company>(`${this.apiBaseUrl}/${id}`)
       .pipe(
         catchError((err) => {
           console.error(`Error fetching company ${id}:`, err);
@@ -54,7 +43,7 @@ export class CompanyService {
 
   createCompany(company: { name: string }): Observable<Company> {
     return this.http
-      .post<Company>(this.apiBaseUrl, company, { headers: this.getHeaders() })
+      .post<Company>(this.apiBaseUrl, company)
       .pipe(
         catchError((err) => {
           console.error('Error creating company:', err);

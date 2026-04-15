@@ -28,7 +28,7 @@ export interface RecentInvoice {
   status: string;
   issueDate: string | Date;
   dueDate: string | Date;
-  paymentDate?: string | Date; 
+  paymentDate?: string | Date;
 }
 
 export interface InvoiceProgress {
@@ -42,7 +42,7 @@ export interface InvoiceProgress {
   paidPercentage: number;
   color: string;
   status?: string;
-  statusColor?: string; 
+  statusColor?: string;
   progressColor?: string;
 }
 
@@ -88,22 +88,9 @@ export class DashboardService {
     this.startRealTimeUpdates();
   }
 
-  private getHeaders(): HttpHeaders {
-    const token = this.authService.getAuthToken();
-    if (!token) {
-      throw new Error('No authentication token found');
-    }
-    return new HttpHeaders({
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    });
-  }
-
   getAdminDashboard(): Observable<DashboardSummary> {
     return this.http
-      .get<DashboardSummary>(`${this.apiUrl}/admin/summary`, {
-        headers: this.getHeaders(),
-      })
+      .get<DashboardSummary>(`${this.apiUrl}/admin/summary`)
       .pipe(
         // ✅ The correct way to log the response data
         tap((data) => console.log('Admin Dashboard API Response:', data)),
@@ -112,9 +99,7 @@ export class DashboardService {
 
   getCustomerDashboard(): Observable<DashboardSummary> {
     return this.http
-      .get<DashboardSummary>(`${this.apiUrl}/customer/summary`, {
-        headers: this.getHeaders(),
-      })
+      .get<DashboardSummary>(`${this.apiUrl}/customer/summary`)
       .pipe(
         tap((data) => console.log('Customer Dashboard API Response:', data)),
       );
@@ -122,17 +107,14 @@ export class DashboardService {
 
   getStats(): Observable<DashboardStats> {
     return this.http
-      .get<DashboardStats>(`${this.apiUrl}/stats`, {
-        headers: this.getHeaders(),
-      })
+      .get<DashboardStats>(`${this.apiUrl}/stats`)
       .pipe(tap((data) => console.log('Stats API Response:', data)));
   }
 
   getRecentInvoices(count: number = 5): Observable<RecentInvoice[]> {
     return this.http
       .get<RecentInvoice[]>(`${this.apiUrl}/recent-invoices`, {
-        params: new HttpParams().set('count', count.toString()),
-        headers: this.getHeaders(),
+        params: new HttpParams().set('count', count.toString())
       })
       .pipe(tap((data) => console.log('Recent Invoices API Response:', data)));
   }
@@ -166,10 +148,20 @@ export class DashboardService {
   }
 
   private todosSubject = new BehaviorSubject<TodoItem[]>([
-    { id: 1, text: 'Review invoice INV-001', completed: false },
-    { id: 2, text: 'Send payment reminder for INV-002', completed: true },
+    {
+      id: 1,
+      text: 'Invoice Creation, Updation and Deletion',
+      completed: false,
+    },
+    { id: 2, text: 'Send Invoice', completed: false },
     { id: 3, text: 'Update invoice statuses', completed: false },
     { id: 4, text: 'Generate monthly invoice report', completed: false },
+    { id: 5, text: 'Download invoice', completed: false },
+    {
+      id: 6,
+      text: 'To Add the features on Update Invoice Status in the edit invoice.. When click three dots, we need to show the options as Mark as sent, Mark as paid',
+      completed: false,
+    },
   ]);
 
   getTodos(): Observable<TodoItem[]> {

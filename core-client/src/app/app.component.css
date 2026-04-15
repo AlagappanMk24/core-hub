@@ -18,3 +18,10 @@
   font-weight: 600;
   color: #1f2937;
 }
+
+
+/* Ensure the loader appears above everything */
+app-loader {
+  position: relative;
+  z-index: 9999;
+}

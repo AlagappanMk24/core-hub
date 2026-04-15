@@ -26,7 +26,10 @@ import { DeleteConfirmationDialogComponent } from '../../../common/delete-confir
 import { NotificationDialogComponent } from '../../../../components/notification/notification-dialog.component';
 import { MoreFiltersDialogComponent } from '../invoice-filters/more-filters-dialog.component';
 import { CustomerService } from '../../../../services/customer/customer.service';
-import { Customer, CustomerFilterRequest } from '../../../../services/customer/models/customer.model';
+import {
+  Customer,
+  CustomerFilterRequest,
+} from '../../../../services/customer/models/customer.model';
 @Component({
   selector: 'app-invoice',
   templateUrl: './invoice-list.component.html',
@@ -53,7 +56,7 @@ import { Customer, CustomerFilterRequest } from '../../../../services/customer/m
         style({ boxShadow: '0 0 0 0 rgba(138, 43, 226, 0.5)' }),
         animate(
           '600ms ease-in-out',
-          style({ boxShadow: '0 0 0 8px rgba(138, 43, 226, 0)' })
+          style({ boxShadow: '0 0 0 8px rgba(138, 43, 226, 0)' }),
         ),
       ]),
     ]),
@@ -73,6 +76,7 @@ import { Customer, CustomerFilterRequest } from '../../../../services/customer/m
 export class InvoiceComponent implements OnInit {
   invoices: Invoice[] = [];
   isLoading = false;
+  isFirstLoad = true;
   exportingFormat: 'excel' | 'pdf' | null = null;
   isIndividualDownload: boolean = false; // New property to track individual download
   isDeleting: boolean = false;
@@ -117,7 +121,7 @@ export class InvoiceComponent implements OnInit {
     private router: Router,
     private dialog: MatDialog,
     private authService: AuthService,
-    private fb: FormBuilder
+    private fb: FormBuilder,
   ) {
     this.moreFiltersForm = this.fb.group({
       customerId: [null],
@@ -154,15 +158,18 @@ export class InvoiceComponent implements OnInit {
     if (this.isAdmin) {
       this.loadTaxTypes();
     }
-
+    this.isLoading = true;
+    this.isFirstLoad = true;
     this.loadInvoices();
     this.loadStats();
     this.setupSearch();
   }
+
   ngOnDestroy(): void {
     this.destroy$.next();
     this.destroy$.complete();
   }
+
   private setupSearch(): void {
     this.searchSubject
       .pipe(debounceTime(300), distinctUntilChanged())
@@ -184,7 +191,7 @@ export class InvoiceComponent implements OnInit {
           'error',
           'Load Failed',
           'Failed to load tax types. Please try again.',
-          'Tax type data could not be retrieved. Please check your internet connection and refresh the page.'
+          'Tax type data could not be retrieved. Please check your internet connection and refresh the page.',
         );
       },
     });
@@ -225,21 +232,21 @@ export class InvoiceComponent implements OnInit {
       issueDateFrom: this.isAdmin
         ? this.moreFiltersForm.get('issueDateFrom')?.value
           ? new Date(
-              this.moreFiltersForm.get('issueDateFrom')?.value
+              this.moreFiltersForm.get('issueDateFrom')?.value,
             ).toISOString()
           : undefined
         : undefined,
       issueDateTo: this.isAdmin
         ? this.moreFiltersForm.get('issueDateTo')?.value
           ? new Date(
-              this.moreFiltersForm.get('issueDateTo')?.value
+              this.moreFiltersForm.get('issueDateTo')?.value,
             ).toISOString()
           : undefined
         : undefined,
       dueDateFrom: this.isAdmin
         ? this.moreFiltersForm.get('dueDateFrom')?.value
           ? new Date(
-              this.moreFiltersForm.get('dueDateFrom')?.value
+              this.moreFiltersForm.get('dueDateFrom')?.value,
             ).toISOString()
           : undefined
         : undefined,
@@ -262,16 +269,18 @@ export class InvoiceComponent implements OnInit {
         this.totalItems = result.totalCount;
         this.totalPages = Math.ceil(result.totalCount / this.itemsPerPage);
         this.isLoading = false;
+        this.isFirstLoad = false;
       },
       error: (error) => {
         console.error('Error fetching invoices:', error);
         this.isLoading = false;
+        this.isFirstLoad = false;
       },
     });
   }
 
   getInitials(name: string | undefined): string {
-     const displayName = name || 'Unknown';
+    const displayName = name || 'Unknown';
     return displayName
       .split(' ')
       .map((n) => n.charAt(0).toUpperCase())
@@ -297,7 +306,7 @@ export class InvoiceComponent implements OnInit {
     return colors[index];
   }
 
- loadStats(): void {
+  loadStats(): void {
     this.isLoading = true;
     this.invoiceService.getInvoiceStats().subscribe({
       next: (stats: InvoiceStats) => {
@@ -338,7 +347,7 @@ export class InvoiceComponent implements OnInit {
           'error',
           'Load Failed',
           'Failed to load customers. Please try again.',
-          'Customer data could not be retrieved from the server. Please check your internet connection and refresh the page.'
+          'Customer data could not be retrieved from the server. Please check your internet connection and refresh the page.',
         );
         this.isLoading = false;
       },
@@ -392,7 +401,7 @@ export class InvoiceComponent implements OnInit {
     const maxVisiblePages = 5;
     let startPage = Math.max(
       1,
-      this.currentPage - Math.floor(maxVisiblePages / 2)
+      this.currentPage - Math.floor(maxVisiblePages / 2),
     );
     let endPage = Math.min(this.totalPages, startPage + maxVisiblePages - 1);
 
@@ -486,7 +495,7 @@ export class InvoiceComponent implements OnInit {
               'success',
               'Invoice Deleted Successfully',
               `Invoice ${invoice.invoiceNumber} has been deleted successfully!`,
-              'The invoice has been moved to trash and is no longer visible in your active invoice list. It can be restored if needed through the system administrator.'
+              'The invoice has been moved to trash and is no longer visible in your active invoice list. It can be restored if needed through the system administrator.',
             );
           },
           error: (error) => {
@@ -496,7 +505,7 @@ export class InvoiceComponent implements OnInit {
               'error',
               'Delete Failed',
               'Failed to delete invoice. Please try again.',
-              'The invoice could not be deleted due to a system error. Please check your internet connection and try again. If the problem persists, contact support.'
+              'The invoice could not be deleted due to a system error. Please check your internet connection and try again. If the problem persists, contact support.',
             );
           },
         });
@@ -507,7 +516,7 @@ export class InvoiceComponent implements OnInit {
     type: 'success' | 'error',
     title: string,
     message: string,
-    submessage: string
+    submessage: string,
   ): void {
     this.dialog.open(NotificationDialogComponent, {
       width: '400px',
@@ -516,7 +525,7 @@ export class InvoiceComponent implements OnInit {
   }
 
   onSendInvoice(invoice: any): void {
-    console.log(invoice, "Invoice");
+    console.log(invoice, 'Invoice');
     this.dialog
       .open(SendInvoiceDialogComponent, {
         width: '600px',
@@ -544,7 +553,7 @@ export class InvoiceComponent implements OnInit {
           'success',
           'Invoice Duplicated Successfully',
           `Invoice ${invoice.invoiceNumber} duplicated successfully!`,
-          'A copy of the invoice has been created with a new invoice number. You can find it in your invoice list and modify it as needed.'
+          'A copy of the invoice has been created with a new invoice number. You can find it in your invoice list and modify it as needed.',
         );
         this.isLoading = false;
       },
@@ -554,7 +563,7 @@ export class InvoiceComponent implements OnInit {
           'error',
           'Duplication Failed',
           'Failed to duplicate invoice. Please try again.',
-          'The invoice could not be duplicated due to a system error. Please try again or contact support if the issue persists.'
+          'The invoice could not be duplicated due to a system error. Please try again or contact support if the issue persists.',
         );
         this.isLoading = false;
       },
@@ -576,7 +585,7 @@ export class InvoiceComponent implements OnInit {
           'success',
           'Download Successful',
           `Invoice ${invoice.invoiceNumber} downloaded successfully!`,
-          'The PDF file has been saved to your downloads folder. You can now view, print, or share the invoice as needed.'
+          'The PDF file has been saved to your downloads folder. You can now view, print, or share the invoice as needed.',
         );
         this.exportingFormat = null; // Clear to hide loader and blur
         this.isIndividualDownload = false; // Reset
@@ -587,7 +596,7 @@ export class InvoiceComponent implements OnInit {
           'error',
           'Download Failed',
           'Failed to download PDF. Please try again.',
-          'The invoice PDF could not be generated or downloaded. Please check your internet connection and try again.'
+          'The invoice PDF could not be generated or downloaded. Please check your internet connection and try again.',
         );
         this.exportingFormat = null;
         this.isIndividualDownload = false; // Reset
@@ -618,7 +627,7 @@ export class InvoiceComponent implements OnInit {
             'success',
             'Export Successful',
             'Invoices exported successfully as Excel!',
-            'The Excel file containing your invoice data has been downloaded. You can now open it in Excel or other spreadsheet applications for further analysis.'
+            'The Excel file containing your invoice data has been downloaded. You can now open it in Excel or other spreadsheet applications for further analysis.',
           );
           this.exportingFormat = null;
         },
@@ -628,7 +637,7 @@ export class InvoiceComponent implements OnInit {
             'error',
             'Export Failed',
             'Failed to export Excel. Please try again.',
-            'The Excel export could not be completed due to a system error. Please try again or contact support if the issue persists.'
+            'The Excel export could not be completed due to a system error. Please try again or contact support if the issue persists.',
           );
           this.exportingFormat = null;
         },
@@ -646,7 +655,7 @@ export class InvoiceComponent implements OnInit {
             'success',
             'Export Successful',
             'Invoices exported successfully as PDF!',
-            'The PDF file containing your invoice data has been downloaded. You can now view, print, or share the consolidated invoice report.'
+            'The PDF file containing your invoice data has been downloaded. You can now view, print, or share the consolidated invoice report.',
           );
           this.exportingFormat = null;
         },
@@ -656,7 +665,7 @@ export class InvoiceComponent implements OnInit {
             'error',
             'Export Failed',
             'Failed to export PDF. Please try again.',
-            'The PDF export could not be completed due to a system error. Please try again or contact support if the issue persists.'
+            'The PDF export could not be completed due to a system error. Please try again or contact support if the issue persists.',
           );
           this.exportingFormat = null;
         },
@@ -699,4 +708,42 @@ export class InvoiceComponent implements OnInit {
   }
 
   onSettings(): void {}
+
+  // Add these methods to your InvoiceComponent class
+
+/**
+ * Gets the change value for a stats item (handles undefined)
+ */
+getStatsChange(statsItem: { count: number; amount: number; change: number } | undefined): number {
+  return statsItem?.change ?? 0;
+}
+
+/**
+ * Checks if the change is positive (for styling)
+ */
+isStatsPositive(statsItem: { count: number; amount: number; change: number } | undefined): boolean {
+  return (statsItem?.change ?? 0) >= 0;
+}
+
+/**
+ * Gets the icon name based on change direction
+ */
+getStatsIcon(statsItem: { count: number; amount: number; change: number } | undefined): string {
+  return (statsItem?.change ?? 0) >= 0 ? "trending_up" : "trending_down";
+}
+
+/**
+ * Gets the CSS class for the change indicator
+ */
+getStatsChangeClass(statsItem: { count: number; amount: number; change: number } | undefined): string {
+  return (statsItem?.change ?? 0) >= 0 ? "positive" : "negative";
+}
+
+/**
+ * Gets the formatted change text with + or - sign
+ */
+getFormattedChange(statsItem: { count: number; amount: number; change: number } | undefined): string {
+  const change = statsItem?.change ?? 0;
+  return `${change >= 0 ? '+' : ''}${Math.abs(change).toFixed(1)}%`;
+}
 }

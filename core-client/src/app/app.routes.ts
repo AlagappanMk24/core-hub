@@ -38,6 +38,7 @@ import { AdminOrUserGuard } from './guards/admin-or-user.guard';
 import { CustomerListComponent } from './pages/customers/customer-list.component';
 import { CompanyRequestsComponent } from './pages/company-requests/company-requests.component';
 import { CompanyRequestDetailComponent } from './pages/company-requests/company-request-detail.component';
+import { TaskListComponent } from './features/tasks/task-list/task-list.component';
 
 export const routes: Routes = [
   { path: '', component: HomeComponent },
@@ -238,6 +239,16 @@ export const routes: Routes = [
       //   canActivate: [AdminGuard], // Super Admin, Admin only
       // },
 
+      {
+  path: 'tasks',
+  children: [
+    { path: 'list', component: TaskListComponent },
+    // { path: 'create', component: TaskFormComponent },
+    // { path: 'edit/:id', component: TaskFormComponent },
+    // { path: 'view/:id', component: TaskDetailComponent },
+    { path: '', redirectTo: 'list', pathMatch: 'full' }
+  ]
+},
       // Cart - Customers only
       {
         path: 'cart',

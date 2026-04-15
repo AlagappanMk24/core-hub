@@ -1,175 +1,178 @@
 <!-- login.component.html -->
 <div class="login-container">
+
+  <!-- ░░ BACKGROUND ░░ -->
+  <div class="auth-mesh"></div>
+  <div class="auth-noise"></div>
+  <div class="auth-orb-1"></div>
+  <div class="auth-orb-2"></div>
+  <div class="auth-orb-3"></div>
+
   <div class="login-card">
-    <!-- Header -->
+
+    <!-- ─── HEADER ─── -->
     <div class="header">
-      <div class="logo">
-        <span class="logo-text">
-          <span class="violet-first-letter">A</span>ngular
-          <span class="violet-first-letter">C</span>ore
-        </span>
-      </div>
+      <a class="logo" href="#">
+        <div class="logo-gem">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
+                  stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <span class="logo-text">Core<em>Invoice</em></span>
+      </a>
       <div class="new-user">
-        <span>New User? </span>
+        New User?&nbsp;
         <a [routerLink]="['/auth/register']" class="sign-up-link">Sign Up</a>
       </div>
     </div>
 
-    <!-- Main Content -->
+    <!-- ─── MAIN CONTENT ─── -->
     <div class="main-content">
-      <!-- Illustration Section -->
+
+      <!-- ░░ LEFT — Illustration ░░ -->
       <div class="illustration-section">
-        <div class="illustration">
-          <!-- Man illustration -->
-          <div class="character man">
-            <div class="man-head"></div>
-            <div class="man-body"></div>
-            <div class="man-arm-left"></div>
-            <div class="man-arm-right"></div>
-            <div class="man-leg-left"></div>
-            <div class="man-leg-right"></div>
+        <div class="illus-content">
+
+          <h2 class="illus-heading">
+            Manage invoices<br>with <em>confidence</em>
+          </h2>
+
+          <!-- Invoice mockup -->
+          <div class="illus-invoice">
+            <div class="ii-top">
+              <div class="ii-brand"><div class="ii-dot"></div><span>CoreInvoice</span></div>
+              <div class="ii-chip paid"><span class="ii-blink"></span> PAID</div>
+            </div>
+            <div class="ii-client">Meridian Studios Inc.</div>
+            <div class="ii-ref">#INV-2025-0142 · $8,400.00</div>
+            <div class="ii-lines">
+              <div class="ii-line">
+                <span class="ii-bar" style="background:#a855f7"></span>
+                <span class="ii-lname">Brand Identity</span>
+                <span class="ii-lprice">$3,200</span>
+              </div>
+              <div class="ii-line">
+                <span class="ii-bar" style="background:#ec4899"></span>
+                <span class="ii-lname">Web Development</span>
+                <span class="ii-lprice">$4,000</span>
+              </div>
+              <div class="ii-line">
+                <span class="ii-bar" style="background:#06b6d4"></span>
+                <span class="ii-lname">Consulting</span>
+                <span class="ii-lprice">$1,200</span>
+              </div>
+            </div>
           </div>
 
-          <!-- Woman illustration -->
-          <div class="character woman">
-            <div class="woman-head"></div>
-            <div class="woman-body"></div>
-            <div class="woman-arm-left"></div>
-            <div class="woman-arm-right"></div>
-            <div class="woman-leg-left"></div>
-            <div class="woman-leg-right"></div>
+          <!-- Stat chips -->
+          <div class="illus-chip-row">
+            <div class="illus-chip">
+              <span class="ic-dot" style="background:#10b981"></span>
+              <div><div class="ic-label">Paid Today</div><div class="ic-val">$18,760</div></div>
+            </div>
+            <div class="illus-chip">
+              <span class="ic-dot" style="background:#f59e0b"></span>
+              <div><div class="ic-label">Pending</div><div class="ic-val">12</div></div>
+            </div>
           </div>
 
-          <!-- Decorative elements -->
-          <div class="plant-pot"></div>
-          <div class="leaves leaf1"></div>
-          <div class="leaves leaf2"></div>
-          <div class="crown"></div>
+          <p class="illus-sub">Join 12,000+ businesses already<br>using CoreInvoice to get paid faster.</p>
+
         </div>
       </div>
 
-      <!-- Login Form Section -->
+      <!-- ░░ RIGHT — Form ░░ -->
       <div class="form-section" [class.has-errors]="loginError">
+
         <div class="welcome-text">
           <h2>Welcome Back!</h2>
-          <p>Sign in to continue</p>
+          <p>Sign in to your account to continue</p>
         </div>
+
         <div class="error-message global-error" *ngIf="loginError">
           {{ loginError }}
         </div>
+
         <form class="login-form" [formGroup]="loginForm" (ngSubmit)="onLogin()">
-          <!-- Email Input -->
+
+          <!-- Email -->
           <div class="input-group">
-            <div
-              class="input-wrapper"
-              [class.error]="
-                loginForm.get('email')?.invalid &&
-                loginForm.get('email')?.touched
-              "
-            >
+            <div class="input-wrapper"
+                 [class.error]="loginForm.get('email')?.invalid && loginForm.get('email')?.touched">
               <i class="icon email-icon"></i>
-              <input
-                type="email"
-                formControlName="email"
-                placeholder="Enter your email address"
-                class="form-input"
-                required
-                maxlength="255"
-              />
+              <input type="email" formControlName="email"
+                     placeholder="Enter your email address"
+                     class="form-input" required maxlength="255"/>
             </div>
-            <div
-              class="error-message"
-              *ngIf="
-                loginForm.get('email')?.invalid &&
-                loginForm.get('email')?.touched
-              "
-            >
-              <span *ngIf="loginForm.get('email')?.errors?.['required']"
-                >Email is required</span
-              >
-              <span *ngIf="loginForm.get('email')?.errors?.['email']"
-                >Invalid email format</span
-              >
-              <span *ngIf="loginForm.get('email')?.errors?.['maxlength']"
-                >Email must be less than 255 characters</span
-              >
+            <div class="error-message"
+                 *ngIf="loginForm.get('email')?.invalid && loginForm.get('email')?.touched">
+              <span *ngIf="loginForm.get('email')?.errors?.['required']">Email is required</span>
+              <span *ngIf="loginForm.get('email')?.errors?.['email']">Invalid email format</span>
+              <span *ngIf="loginForm.get('email')?.errors?.['maxlength']">Email must be less than 255 characters</span>
             </div>
           </div>
-          <!-- Password Input -->
+
+          <!-- Password -->
           <div class="input-group">
-            <div
-              class="input-wrapper"
-              [class.error]="
-                loginForm.get('password')?.invalid &&
-                loginForm.get('password')?.touched
-              "
-            >
+            <div class="input-wrapper"
+                 [class.error]="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">
               <i class="icon lock-icon"></i>
-              <input
-                [type]="showPassword ? 'text' : 'password'"
-                formControlName="password"
-                placeholder="Enter Password"
-                class="form-input"
-                required
-                maxlength="100"
-              />
-              <i
-                class="toggle-password"
-                [class.show]="showPassword"
-                (click)="togglePasswordVisibility()"
-                >👁</i
-              >
+              <input [type]="showPassword ? 'text' : 'password'"
+                     formControlName="password" placeholder="Enter Password"
+                     class="form-input" required maxlength="100"/>
+              <i class="toggle-password" [class.show]="showPassword"
+                 (click)="togglePasswordVisibility()">👁</i>
             </div>
-            <div
-              class="error-message"
-              *ngIf="
-                loginForm.get('password')?.invalid &&
-                loginForm.get('password')?.touched
-              "
-            >
-              <span *ngIf="loginForm.get('password')?.errors?.['required']"
-                >Password is required</span
-              >
-              <span
-                *ngIf="loginForm.get('password')?.errors?.['minlength'] || loginForm.get('password')?.errors?.['pattern']"
-              >
-                Password must be at least 8 characters with one uppercase, one
-                lowercase, one number, and one special character
+            <div class="error-message"
+                 *ngIf="loginForm.get('password')?.invalid && loginForm.get('password')?.touched">
+              <span *ngIf="loginForm.get('password')?.errors?.['required']">Password is required</span>
+              <span *ngIf="loginForm.get('password')?.errors?.['minlength'] || loginForm.get('password')?.errors?.['pattern']">
+                Password must be at least 8 characters with uppercase, lowercase, number, and special character
               </span>
-              <span *ngIf="loginForm.get('password')?.errors?.['maxlength']"
-                >Password must be less than 100 characters</span
-              >
+              <span *ngIf="loginForm.get('password')?.errors?.['maxlength']">Password must be less than 100 characters</span>
             </div>
           </div>
-          <!-- Forgot Password -->
+
+          <!-- Forgot -->
           <div class="forgot-password">
-            <a [routerLink]="['/auth/forgot-password']" class="forgot-link"
-              >FORGOT PASSWORD?</a
-            >
+            <a [routerLink]="['/auth/forgot-password']" class="forgot-link">FORGOT PASSWORD?</a>
           </div>
-          <!-- Login Button -->
-          <button type="submit" class="login-btn">LOGIN</button>
+
+          <!-- Submit -->
+          <button type="submit" class="login-btn">
+            <span class="btn-shine-layer"></span>
+            <span class="login-btn-inner">
+              LOGIN
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </span>
+          </button>
         </form>
-        <!-- Social Login -->
+
+        <!-- Social -->
+        <div class="social-divider">or continue with</div>
         <div class="social-container">
-          <div class="social-button" (click)="loginWithProvider('google')">
-            <img src="assets/google.png" alt="Google" style="width: 20px" />
+          <div class="social-button" (click)="loginWithProvider('google')" title="Google">
+            <img src="assets/google.png" alt="Google" style="width:20px"/>
           </div>
-          <div class="social-button" (click)="loginWithProvider('microsoft')">
-            <img src="assets/microsoft.png" alt="Microsoft" style="width: 20px"/>
+          <div class="social-button" (click)="loginWithProvider('microsoft')" title="Microsoft">
+            <img src="assets/microsoft.png" alt="Microsoft" style="width:20px"/>
           </div>
-          <div class="social-button" (click)="loginWithProvider('facebook')">
-            <img src="assets/facebook.png" alt="Facebook" style="width: 20px" />
+          <div class="social-button" (click)="loginWithProvider('facebook')" title="Facebook">
+            <img src="assets/facebook.png" alt="Facebook" style="width:20px"/>
           </div>
-          <div class="social-button" (click)="loginWithProvider('github')">
-            <img src="assets/github.png" alt="Github" style="width: 20px" />
+          <div class="social-button" (click)="loginWithProvider('github')" title="GitHub">
+            <img src="assets/github.png" alt="Github" style="width:20px"/>
           </div>
         </div>
-         <!-- Loading Overlay -->
+
+        <!-- Loading overlay -->
         <div class="loading-overlay" *ngIf="loading">
           <div class="violet-loader"></div>
           <p class="loading-text">{{ loadingText }}</p>
         </div>
+
       </div>
     </div>
   </div>

@@ -1,155 +1,362 @@
 <!-- home.component.html -->
-<div class="home-container">
-  <!-- Background circles -->
-  <div class="bg-circle bg-circle-pink-large"></div>
-  <div class="bg-circle bg-circle-pink-small"></div>
-  <div class="bg-circle bg-circle-blue-large"></div>
-  <div class="bg-circle bg-circle-blue-small"></div>
+<div class="home-root" [attr.data-theme]="theme">
 
-  <!-- Royalty Free Vector Badge -->
-  <div class="royalty-badge">ROYALTY-FREE VECTOR</div>
+  <!-- ░░░ LAYERED BACKGROUND ░░░ -->
+  <div class="bg-base"></div>
+  <div class="noise-layer"></div>
 
-  <!-- Main Content Layout -->
-  <div class="content-wrapper">
-    <!-- Left Text Section -->
-    <div class="text-section">
-      <h1 class="main-heading">Online<br>shopping</h1>
-      <p class="description-text">
-        Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod 
-        tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim 
-        veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea 
-        commodo consequat. Duis aute irure dolor in reprehenderit in voluptate 
-        velit esse cillum dolore eu fugiat nulla pariatur.
-      </p>
-      <button class="cta-button" (click)="onGetStarted()">GET STARTED</button>
+  <!-- Animated orbs -->
+  <div class="orb orb-a"></div>
+  <div class="orb orb-b"></div>
+  <div class="orb orb-c"></div>
+  <div class="orb orb-d"></div>
+
+  <!-- Particles -->
+  <div class="particle-field" aria-hidden="true">
+    <div class="ptcl" *ngFor="let p of particles" [ngStyle]="p"></div>
+  </div>
+
+  <!-- ═══════════════════ NAVBAR ═══════════════════ -->
+  <nav class="navbar" [class.scrolled]="scrolled">
+    <div class="nav-wrap">
+
+      <a class="nav-brand" href="#">
+        <div class="brand-gem"><svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg></div>
+        <span class="brand-text">Core<em>Invoice</em></span>
+      </a>
+
+      <ul class="nav-links">
+        <li><a href="#features" (click)="closeMenu()">Features</a></li>
+        <li><a href="#stats"    (click)="closeMenu()">Results</a></li>
+        <li><a href="#how"      (click)="closeMenu()">How it works</a></li>
+        <li><a href="#pricing"  (click)="closeMenu()">Pricing</a></li>
+      </ul>
+
+      <div class="nav-right">
+        <button class="theme-btn" (click)="toggleTheme()" [title]="theme==='dark'?'Switch to Light':'Switch to Dark'">
+          <span class="theme-icon dark-icon" [class.visible]="theme==='dark'">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+          </span>
+          <span class="theme-icon light-icon" [class.visible]="theme==='light'">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+          </span>
+        </button>
+        <button class="btn-ghost-nav" (click)="onLogin()">Sign In</button>
+        <button class="btn-primary-nav" (click)="onGetStarted()">Get Started <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button>
+      </div>
+
+      <button class="ham" (click)="toggleMenu()" [class.ham-open]="menuOpen" aria-label="Menu">
+        <span></span><span></span><span></span>
+      </button>
     </div>
 
-    <!-- Right Illustration Section -->
-    <div class="illustration-section">
-      <!-- Main smartphone base -->
-      <div class="smartphone-base">
-        <!-- Phone screen -->
-        <div class="phone-screen">
-          <!-- Shop building on phone -->
-          <div class="shop-on-phone">
-            <div class="shop-roof"></div>
-            <div class="shop-body">
-              <div class="shop-windows">
-                <div class="window-row">
-                  <div class="shop-window"></div>
-                  <div class="shop-window"></div>
-                </div>
-                <div class="window-row">
-                  <div class="shop-window"></div>
-                  <div class="shop-window"></div>
-                </div>
-              </div>
-            </div>
+    <div class="mobile-nav" [class.open]="menuOpen">
+      <a href="#features" class="mob-link" (click)="closeMenu()">Features</a>
+      <a href="#stats"    class="mob-link" (click)="closeMenu()">Results</a>
+      <a href="#how"      class="mob-link" (click)="closeMenu()">How it works</a>
+      <a href="#pricing"  class="mob-link" (click)="closeMenu()">Pricing</a>
+      <hr class="mob-hr"/>
+      <button class="btn-ghost-nav w100" (click)="onLogin(); closeMenu()">Sign In</button>
+      <button class="btn-primary-nav w100 mt8" (click)="onGetStarted(); closeMenu()">Get Started Free</button>
+    </div>
+  </nav>
+
+  <!-- ═══════════════════ HERO ═══════════════════ -->
+  <section class="hero-section">
+    <div class="hero-wrap">
+
+      <!-- LEFT -->
+      <div class="hero-copy" [class.ready]="heroReady">
+
+        <div class="hero-pill">
+          <span class="pill-pulse"></span>
+          <span>Live: $2.4B+ invoiced through our platform</span>
+          <span class="pill-new">v3.0</span>
+        </div>
+
+        <h1 class="hero-h1">
+          <span class="h1-row">Invoicing</span>
+          <span class="h1-row h1-accent">
+            reimagined
+          </span>
+          <span class="h1-row">for modern</span>
+          <span class="h1-row h1-outline">business.</span>
+        </h1>
+
+        <p class="hero-para">
+          Create stunning invoices, track payments in real time, and automate
+          follow-ups — all inside a dashboard that makes your cash flow crystal clear.
+        </p>
+
+        <div class="hero-btns">
+          <button class="btn-hero" (click)="onGetStarted()">
+            <span class="btn-glow"></span>
+            <span class="btn-label">Start for Free
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            </span>
+          </button>
+          <button class="btn-play" (click)="onDemo()">
+            <span class="play-ring"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg></span>
+            Watch Demo
+          </button>
+        </div>
+
+        <div class="social-proof">
+          <div class="av-stack">
+            <div class="av" [style.background]="c" *ngFor="let c of avColors">{{c[0]}}</div>
+          </div>
+          <div class="proof-words">
+            <div class="stars">★★★★★</div>
+            <span><strong>4.9 / 5</strong> · 3,200+ reviews</span>
           </div>
         </div>
-        
-        <!-- Phone shadow/base -->
-        <div class="phone-shadow"></div>
       </div>
 
-      <!-- SHOP label on building -->
-      <div class="shop-label">SHOP</div>
+      <!-- RIGHT — Visual stack -->
+      <div class="hero-visual" [class.ready]="heroReady">
+        <div class="visual-halo"></div>
 
-      <!-- Computer monitor -->
-      <div class="computer-monitor">
-        <div class="monitor-screen">
-          <div class="monitor-content">
-            <div class="content-header"></div>
-            <div class="content-body">
-              <div class="product-image"></div>
-              <div class="product-details">
-                <div class="detail-line"></div>
-                <div class="detail-line"></div>
-                <div class="detail-line short"></div>
-              </div>
+        <!-- Main invoice mockup -->
+        <div class="inv-mockup">
+          <div class="inv-top">
+            <div class="inv-brand-row">
+              <div class="inv-dot-gem"></div>
+              <span>CoreInvoice</span>
+            </div>
+            <div class="inv-chip paid"><span class="chip-blink"></span> PAID</div>
+          </div>
+
+          <div class="inv-meta">
+            <div>
+              <div class="inv-label-sm">INVOICE TO</div>
+              <div class="inv-client-name">Meridian Studios Inc.</div>
+              <div class="inv-ref-num">#INV-2025-0142 · Due Jun 15</div>
+            </div>
+            <div class="inv-amount-box">
+              <div class="inv-label-sm">TOTAL</div>
+              <div class="inv-big-amt">$8,400</div>
             </div>
           </div>
+
+          <div class="inv-item-list">
+            <div class="inv-item-row" *ngFor="let item of invoiceItems">
+              <span class="item-bar" [style.background]="item.color"></span>
+              <span class="item-name">{{item.name}}</span>
+              <span class="item-price">{{item.price}}</span>
+            </div>
+          </div>
+
+          <div class="inv-prog-wrap">
+            <div class="inv-prog-labels"><span>Payment received</span><span class="prog-100">100%</span></div>
+            <div class="inv-prog-bg"><div class="inv-prog-bar"></div></div>
+          </div>
         </div>
-        <div class="monitor-stand"></div>
-      </div>
 
-      <!-- SALES badge -->
-      <div class="sales-badge">SALES</div>
-
-      <!-- Shopping characters -->
-      <div class="character char-1">
-        <div class="char-head"></div>
-        <div class="char-body blue-shirt"></div>
-        <div class="char-legs"></div>
-        <div class="shopping-bag pink-bag"></div>
-      </div>
-
-      <div class="character char-2">
-        <div class="char-head"></div>
-        <div class="char-body green-shirt"></div>
-        <div class="char-legs"></div>
-        <div class="shopping-bag yellow-bag"></div>
-      </div>
-
-      <div class="character char-3">
-        <div class="char-head"></div>
-        <div class="char-body pink-shirt"></div>
-        <div class="char-legs"></div>
-        <div class="shopping-bag blue-bag"></div>
-      </div>
-
-      <!-- Delivery truck -->
-      <div class="delivery-truck">
-        <div class="truck-front">
-          <div class="truck-windshield"></div>
+        <!-- Floating chips -->
+        <div class="flt-chip chip-a">
+          <div class="chip-ico" style="background:rgba(168,85,247,.15);color:#a855f7">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+          </div>
+          <div><div class="chip-lbl">Revenue</div><div class="chip-val">+23.4%</div></div>
         </div>
-        <div class="truck-cargo"></div>
-        <div class="truck-wheels">
-          <div class="wheel front-wheel"></div>
-          <div class="wheel rear-wheel"></div>
+
+        <div class="flt-chip chip-b">
+          <div class="chip-ico" style="background:rgba(251,191,36,.15);color:#fbbf24">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <div><div class="chip-lbl">Pending</div><div class="chip-val">12 invoices</div></div>
         </div>
-      </div>
 
-      <!-- Yellow/orange packages -->
-      <div class="package yellow-package pkg-1">
-        <div class="pkg-top"></div>
-        <div class="pkg-front"></div>
-        <div class="pkg-side"></div>
-      </div>
-
-      <div class="package yellow-package pkg-2">
-        <div class="pkg-top"></div>
-        <div class="pkg-front"></div>
-        <div class="pkg-side"></div>
-      </div>
-
-      <!-- Gift box with ribbon -->
-      <div class="gift-box">
-        <div class="gift-base"></div>
-        <div class="gift-ribbon-v"></div>
-        <div class="gift-ribbon-h"></div>
-        <div class="gift-bow"></div>
-      </div>
-
-      <!-- Credit card -->
-      <div class="credit-card">
-        <div class="card-body"></div>
-        <div class="card-chip"></div>
-        <div class="card-magnetic"></div>
-      </div>
-
-      <!-- Shopping cart -->
-      <div class="shopping-cart">
-        <div class="cart-basket"></div>
-        <div class="cart-handle"></div>
-        <div class="cart-wheels">
-          <div class="cart-wheel-left"></div>
-          <div class="cart-wheel-right"></div>
+        <div class="flt-chip chip-c">
+          <div class="chip-ico" style="background:rgba(16,185,129,.15);color:#10b981">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div><div class="chip-lbl">Paid today</div><div class="chip-val">$18,760</div></div>
         </div>
-      </div>
 
-      <!-- Percentage discount circle -->
-      <div class="discount-circle">%</div>
+        <!-- Micro sparkline -->
+        <div class="spark-card">
+          <div class="spark-head"><span>This Quarter</span><span class="spark-q">Q2 2025</span></div>
+          <svg class="spark-svg" viewBox="0 0 140 44" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="spg" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#a855f7" stop-opacity="0.35"/>
+                <stop offset="100%" stop-color="#a855f7" stop-opacity="0"/>
+              </linearGradient>
+            </defs>
+            <path class="spark-line" d="M0 36 L18 31 L36 24 L54 28 L72 16 L90 19 L108 8 L126 13 L140 4" fill="none" stroke="#a855f7" stroke-width="2" stroke-linecap="round"/>
+            <path class="spark-fill" d="M0 36 L18 31 L36 24 L54 28 L72 16 L90 19 L108 8 L126 13 L140 4 L140 44 L0 44Z" fill="url(#spg)"/>
+          </svg>
+        </div>
+
+      </div>
+    </div>
+
+    <div class="hero-scroll-cue">
+      <div class="scroll-mouse"><div class="scroll-wheel-dot"></div></div>
+      <span>Scroll to explore</span>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ MARQUEE ═══════════════════ -->
+  <div class="marquee-bar">
+    <div class="marquee-inner">
+      <div class="marquee-track">
+        <span class="mq-item" *ngFor="let t of marquee">
+          <span class="mq-gem">◆</span> {{t}}
+        </span>
+        <span class="mq-item" *ngFor="let t of marquee" aria-hidden="true">
+          <span class="mq-gem">◆</span> {{t}}
+        </span>
+      </div>
     </div>
   </div>
+
+  <!-- ═══════════════════ STATS ═══════════════════ -->
+  <section class="stats-sec" id="stats">
+    <div class="sec-wrap">
+      <div class="sec-eyebrow">BY THE NUMBERS</div>
+      <h2 class="sec-h2">Results that <em>speak</em></h2>
+      <div class="stats-row">
+        <div class="stat-tile" *ngFor="let s of stats; let i=index" [style.animation-delay]="i*0.1+'s'">
+          <div class="st-val">{{s.val}}</div>
+          <div class="st-lbl">{{s.lbl}}</div>
+          <div class="st-bar"><div class="st-bar-fill" [style.width]="s.pct+'%'" [style.animation-delay]="(i*0.1+0.6)+'s'"></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ FEATURES ═══════════════════ -->
+  <section class="feat-sec" id="features">
+    <div class="sec-wrap">
+      <div class="sec-eyebrow">FEATURE SET</div>
+      <h2 class="sec-h2">Everything to get<br><em>paid faster</em></h2>
+
+      <div class="bento-grid">
+        <div class="bcard bcard-wide bcard-glow-purple">
+          <div class="bc-icon icon-amber"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
+          <div class="bc-badge">⚡ Most Popular</div>
+          <h3>Smart Invoice Builder</h3>
+          <p>Drag-and-drop line items, live tax calculations, custom branding. Zero to sent in 60 seconds.</p>
+          <div class="bc-preview">
+            <div class="bp-hdr"></div>
+            <div class="bp-r"><div class="bp-c w60"></div><div class="bp-c w20"></div><div class="bp-c w15"></div></div>
+            <div class="bp-r"><div class="bp-c w55"></div><div class="bp-c w22"></div><div class="bp-c w18"></div></div>
+            <div class="bp-r"><div class="bp-c w65"></div><div class="bp-c w18"></div><div class="bp-c w12"></div></div>
+            <div class="bp-total-row"></div>
+          </div>
+        </div>
+
+        <div class="bcard bcard-glow-blue">
+          <div class="bc-icon icon-blue"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></div>
+          <h3>Live Tracking</h3>
+          <p>Know the instant your invoice is opened, viewed, or paid. Real-time payment pipeline.</p>
+        </div>
+
+        <div class="bcard bcard-glow-green">
+          <div class="bc-icon icon-green"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg></div>
+          <h3>Auto Reminders</h3>
+          <p>Smart follow-ups that cut overdue invoices by up to 68%. Set once, forget forever.</p>
+        </div>
+
+        <div class="bcard bcard-glow-purple">
+          <div class="bc-icon icon-purple"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+          <h3>Revenue Analytics</h3>
+          <p>Visual trends, aging reports, and customer behaviour — all in one beautiful pane.</p>
+        </div>
+
+        <div class="bcard bcard-glow-pink">
+          <div class="bc-icon icon-pink"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+          <h3>Multi-Type Support</h3>
+          <p>B2B, B2C, Retail, Recurring and Credit notes handled natively.</p>
+        </div>
+
+        <div class="bcard bcard-dark">
+          <div class="bc-icon icon-light"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div>
+          <h3 style="color:#fff">Bank-Grade Security</h3>
+          <p style="color:rgba(255,255,255,.55)">256-bit TLS, role-based access, full immutable audit trails on every invoice action.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ HOW IT WORKS ═══════════════════ -->
+  <section class="how-sec" id="how">
+    <div class="sec-wrap">
+      <div class="sec-eyebrow">SIMPLE PROCESS</div>
+      <h2 class="sec-h2">Up and running<br><em>in minutes</em></h2>
+
+      <div class="steps-row">
+        <div class="step-card" *ngFor="let s of howSteps; let i=index; let last=last">
+          <div class="step-num">{{s.num}}</div>
+          <div class="step-ico" [innerHTML]="s.icon"></div>
+          <h3>{{s.title}}</h3>
+          <p>{{s.desc}}</p>
+          <div class="step-connector" *ngIf="!last">
+            <svg viewBox="0 0 40 16" fill="none"><path d="M0 8 Q20 0 40 8" stroke="url(#connGrad)" stroke-width="1.5" stroke-dasharray="3 3"/><defs><linearGradient id="connGrad" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stop-color="#a855f7"/><stop offset="100%" stop-color="#ec4899"/></linearGradient></defs></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ PRICING ═══════════════════ -->
+  <section class="price-sec" id="pricing">
+    <div class="sec-wrap">
+      <div class="sec-eyebrow">PRICING</div>
+      <h2 class="sec-h2">Simple, honest <em>pricing</em></h2>
+
+      <div class="price-row">
+        <div class="price-card" *ngFor="let p of pricing" [class.price-feat]="p.featured">
+          <div class="pc-glow" *ngIf="p.featured"></div>
+          <div class="pc-badge" *ngIf="p.badge">{{p.badge}}</div>
+          <div class="pc-name">{{p.name}}</div>
+          <div class="pc-price"><span class="pc-cur">$</span>{{p.price}}<span class="pc-per">/mo</span></div>
+          <div class="pc-desc">{{p.desc}}</div>
+          <ul class="pc-feats">
+            <li *ngFor="let f of p.feats">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#a855f7" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+              {{f}}
+            </li>
+          </ul>
+          <button class="pc-btn" [class.pc-btn-primary]="p.featured" (click)="onGetStarted()">{{p.cta}}</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ FINAL CTA ═══════════════════ -->
+  <section class="final-cta-sec">
+    <div class="fcta-orb fcta-orb-1"></div>
+    <div class="fcta-orb fcta-orb-2"></div>
+    <div class="sec-wrap fcta-inner">
+      <div class="fcta-eyebrow">NO CREDIT CARD · FREE 30-DAY TRIAL · CANCEL ANYTIME</div>
+      <h2 class="fcta-h2">Stop chasing payments.<br><span class="fcta-accent">Start getting paid.</span></h2>
+      <button class="btn-fcta" (click)="onGetStarted()">
+        <span class="btn-glow"></span>
+        <span class="btn-label">Create Your Free Account
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+        </span>
+      </button>
+    </div>
+  </section>
+
+  <!-- ═══════════════════ FOOTER ═══════════════════ -->
+  <footer class="site-footer">
+    <div class="footer-wrap">
+      <div class="footer-left">
+        <div class="footer-brand">
+          <div class="brand-gem sm"><svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/></svg></div>
+          <span class="brand-text sm">Core<em>Invoice</em></span>
+        </div>
+        <p>Simple, powerful invoicing for modern businesses.</p>
+      </div>
+      <div class="footer-links">
+        <span>Privacy</span><span>Terms</span><span>Support</span><span>Blog</span>
+      </div>
+      <div class="footer-copy">© 2025 CoreInvoice Inc. All rights reserved.</div>
+    </div>
+  </footer>
+
 </div>

@@ -45,6 +45,18 @@
               isEditMode || invoiceData.id ? "Edit Invoice" : "Create Invoice"
             }}
           </h1>
+          <!-- Status Badge for Edit Mode
+          <div *ngIf="isEditMode && currentInvoiceStatus" class="ml-4">
+            <span
+              class="px-3 py-1 text-xs font-medium rounded-full"
+              [ngClass]="getStatusBadgeClass(currentInvoiceStatus)"
+            >
+              <mat-icon class="text-sm mr-1">{{
+                getStatusIcon(currentInvoiceStatus)
+              }}</mat-icon>
+              {{ currentInvoiceStatus }}
+            </span>
+          </div> -->
         </div>
         <div class="header-right flex flex-col sm:flex-row gap-3 mt-4 sm:mt-0">
           <button
@@ -79,13 +91,124 @@
                 : "Save and Continue"
             }}
           </button>
-          <button
-            *ngIf="isEditMode"
-            class="send-btn px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
-            (click)="sendInvoice()"
-          >
-            Send Invoice
-          </button>
+          <!-- Three Dots Menu for Edit Mode -->
+          <div *ngIf="isEditMode" class="relative" #menuContainer>
+            <button
+              class="icon-btn p-2 rounded-full hover:bg-gray-200 transition"
+              (click)="toggleStatusMenu()"
+              title="More Actions"
+            >
+              <svg
+                class="w-5 h-5 text-gray-600"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  stroke-width="2"
+                  d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z"
+                />
+              </svg>
+            </button>
+
+            <!-- Dropdown Menu -->
+            <div
+              *ngIf="showStatusMenu"
+              class="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-gray-200 z-50"
+              @menuAnimation
+            >
+              <div class="py-2">
+                <div
+                  class="px-3 py-2 text-xs font-semibold text-gray-500 uppercase border-b"
+                >
+                  Update Invoice Status
+                </div>
+
+                <!-- Mark as Draft -->
+                <button
+                  *ngIf="canMarkAsDraft"
+                  class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition flex items-center gap-3"
+                  (click)="updateInvoiceStatus('Draft')"
+                >
+                  <mat-icon class="text-gray-500">edit_note</mat-icon>
+                  <span>Mark as Draft</span>
+                </button>
+
+                <!-- Mark as Sent -->
+                <button
+                  *ngIf="canMarkAsSent"
+                  class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition flex items-center gap-3"
+                  (click)="updateInvoiceStatus('Sent')"
+                >
+                  <mat-icon class="text-blue-500">send</mat-icon>
+                  <span>Mark as Sent</span>
+                </button>
+
+                <!-- Mark as Viewed -->
+                <button
+                  *ngIf="canMarkAsViewed"
+                  class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition flex items-center gap-3"
+                  (click)="updateInvoiceStatus('Viewed')"
+                >
+                  <mat-icon class="text-purple-500">visibility</mat-icon>
+                  <span>Mark as Viewed</span>
+                </button>
+
+                <!-- Mark as Paid -->
+                <button
+                  *ngIf="canMarkAsPaid"
+                  class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition flex items-center gap-3"
+                  (click)="updateInvoiceStatus('Paid')"
+                >
+                  <mat-icon class="text-green-500">paid</mat-icon>
+                  <span>Mark as Paid</span>
+                </button>
+
+                <!-- Mark as Partially Paid -->
+                <button
+                  *ngIf="canMarkAsPartiallyPaid"
+                  class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition flex items-center gap-3"
+                  (click)="updateInvoiceStatus('PartiallyPaid')"
+                >
+                  <mat-icon class="text-yellow-500">payments</mat-icon>
+                  <span>Mark as Partially Paid</span>
+                </button>
+
+                <!-- Mark as Overdue -->
+                <button
+                  *ngIf="canMarkAsOverdue"
+                  class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition flex items-center gap-3"
+                  (click)="updateInvoiceStatus('Overdue')"
+                >
+                  <mat-icon class="text-red-500">warning</mat-icon>
+                  <span>Mark as Overdue</span>
+                </button>
+
+                <!-- Mark as Void -->
+                <button
+                  *ngIf="canMarkAsVoid"
+                  class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition flex items-center gap-3"
+                  (click)="updateInvoiceStatus('Void')"
+                >
+                  <mat-icon class="text-gray-500">block</mat-icon>
+                  <span>Mark as Void</span>
+                </button>
+
+                <div class="border-t my-2"></div>
+
+                <!-- Send Invoice -->
+                <button
+                  class="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 transition flex items-center gap-3"
+                  (click)="sendInvoice()"
+                >
+                  <mat-icon class="text-green-500">email</mat-icon>
+                  <span>Send Invoice Email</span>
+                </button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -267,11 +390,12 @@
             <div
               class="items-header grid grid-cols-12 gap-4 pb-3 border-b text-sm font-medium text-gray-600"
             >
-              <span class="col-span-1">#</span>
-              <span class="col-span-5">Items</span>
+              <span class="col-span-1 text-center">#</span>
+              <span class="col-span-4">Items</span>
               <span class="col-span-2 text-center">QTY</span>
               <span class="col-span-2 text-center">Cost</span>
               <span class="col-span-2 text-right">Amount</span>
+              <span class="col-span-1 text-center">Action</span>
             </div>
             <div class="items-list flex flex-col gap-4 pt-4">
               <div
@@ -282,12 +406,15 @@
                   trackBy: trackByItem
                 "
               >
+                <!-- Item Number -->
                 <div
-                  class="item-number col-span-1 w-6 h-6 bg-gray-200 rounded-full flex items-center justify-center text-xs text-gray-600"
+                  class="item-number col-span-1 w-8 h-8 bg-gray-200 rounded-full flex items-center justify-center text-xs text-gray-600 mx-auto"
                 >
                   {{ i + 1 }}
                 </div>
-                <div class="item-details col-span-5 flex flex-col gap-3">
+
+                <!-- Description & Tax (Inline) -->
+                <div class="item-details col-span-4 flex flex-col gap-2">
                   <input
                     type="text"
                     class="item-input w-full p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -301,28 +428,12 @@
                   >
                     {{ errors["items[" + i + "].description"] }}
                   </div>
-                  <!-- <div class="tax-section flex items-center gap-2">
-                    <span class="tax-label text-sm text-gray-600">Tax</span>
-                    <select
-                      class="tax-select p-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      [(ngModel)]="item.taxType"
-                      (ngModelChange)="onTaxTypeChange()"
-                    >
-                      <option value="">No Tax</option>
-                      <option *ngFor="let tax of taxTypes" [value]="tax.name">
-                        {{ tax.name }}
-                      </option>
-                    </select>
-                    <span class="tax-amount text-sm text-gray-600"
-                      >Tax Amount: {{ invoiceData.currency }}
-                      {{ item.taxAmount.toFixed(2) }}</span
-                    >
-                  </div> -->
-                  <!-- Tax Section with Custom Dropdown -->
-                  <div class="tax-section flex items-center gap-2">
-                    <span class="tax-label text-sm text-gray-600">Tax</span>
 
-                    <!-- Custom Tax Dropdown (Same style as Currency) -->
+                  <!-- Tax Selection - Inline below description with larger tax amount -->
+                  <div class="tax-section flex items-center gap-3 mt-1">
+                    <span class="tax-label text-sm text-gray-600 font-medium"
+                      >Tax:</span
+                    >
                     <div
                       class="custom-dropdown relative"
                       [class.active]="
@@ -330,14 +441,14 @@
                       "
                     >
                       <div
-                        class="dropdown-trigger p-3 border rounded-lg flex justify-between items-center cursor-pointer hover:border-blue-500 transition"
+                        class="dropdown-trigger px-3 py-1.5 border rounded-lg flex justify-between items-center cursor-pointer hover:border-purple-500 transition text-sm min-w-[120px] bg-gray-50"
                         (click)="toggleTaxDropdown(i)"
                       >
-                        <span class="selected-value text-sm">
+                        <span class="selected-value">
                           {{ item.taxType || "No Tax" }}
                         </span>
                         <svg
-                          class="w-4 h-4 text-gray-600"
+                          class="w-3 h-3 text-gray-500 ml-2"
                           fill="none"
                           stroke="currentColor"
                           viewBox="0 0 24 24"
@@ -357,29 +468,36 @@
                         *ngIf="showTaxDropdown && currentTaxItemIndex === i"
                       >
                         <div
-                          class="option-item p-3 cursor-pointer hover:bg-gray-100 transition"
+                          class="option-item px-3 py-2 cursor-pointer hover:bg-gray-100 transition text-sm"
                           (click)="selectTax(i, '')"
                         >
                           No Tax
                         </div>
-
                         <div
-                          class="option-item p-3 cursor-pointer hover:bg-gray-100 transition"
+                          class="option-item px-3 py-2 cursor-pointer hover:bg-gray-100 transition text-sm"
                           *ngFor="let tax of taxTypes"
                           (click)="selectTax(i, tax.name)"
                         >
-                          {{ tax.name }}
+                          {{ tax.name }} ({{ tax.rate }}%)
                         </div>
                       </div>
                     </div>
 
-                    <!-- Tax Amount Display -->
-                    <span class="tax-amount text-sm text-gray-600">
-                      Tax Amount: {{ invoiceData.currency }}
-                      {{ item.taxAmount.toFixed(2) }}
-                    </span>
+                    <!-- Larger Tax Amount Display -->
+                    <div
+                      class="tax-amount-container flex items-center gap-1 bg-purple-50 px-3 py-1.5 rounded-lg border border-purple-200"
+                    >
+                      <span class="text-sm text-purple-600 font-medium"
+                        >Tax:</span
+                      >
+                      <span class="text-sm font-semibold text-purple-700">
+                        {{ getCurrencySymbol() }}{{ item.taxAmount.toFixed(2) }}
+                      </span>
+                    </div>
                   </div>
                 </div>
+
+                <!-- Quantity -->
                 <div class="item-qty col-span-2">
                   <input
                     type="number"
@@ -389,13 +507,16 @@
                     min="1"
                   />
                 </div>
+
+                <!-- Unit Price / Cost -->
                 <div class="item-cost col-span-2">
                   <div
                     class="cost-input-group flex border rounded-lg overflow-hidden"
                   >
-                    <span class="currency p-2 bg-gray-100 text-gray-600">{{
-                      invoiceData.currency
-                    }}</span>
+                    <span
+                      class="currency px-2 py-2 bg-gray-100 text-gray-600 text-sm"
+                      >{{ getCurrencySymbol() }}</span
+                    >
                     <input
                       type="number"
                       class="cost-input w-full p-2 border-l focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
@@ -406,13 +527,24 @@
                     />
                   </div>
                 </div>
-                <div
-                  class="item-amount col-span-2 flex items-center justify-between"
-                >
-                  <span class="amount-text text-sm font-medium text-gray-800"
-                    >{{ invoiceData.currency }}
-                    {{ (item.quantity * item.unitPrice).toFixed(2) }}</span
-                  >
+
+                <!-- Total Amount -->
+                <div class="item-amount col-span-2">
+                  <input
+                    type="text"
+                    class="amount-input w-full p-2 border rounded-lg bg-gray-50 text-right font-medium text-gray-800 cursor-not-allowed"
+                    [value]="
+                      getCurrencySymbol() +
+                      ' ' +
+                      (item.quantity * item.unitPrice).toFixed(2)
+                    "
+                    readonly
+                    disabled
+                  />
+                </div>
+
+                <!-- Actions -->
+                <div class="item-actions col-span-1 flex justify-center">
                   <button
                     class="delete-item-btn p-2 rounded-full hover:bg-red-100 transition"
                     (click)="removeItem(i)"
@@ -438,6 +570,7 @@
                 </div>
               </div>
             </div>
+
             <button
               class="add-item-btn flex items-center gap-2 mt-4 text-purple-600 hover:text-purple-700 font-medium"
               (click)="addItem()"
@@ -591,179 +724,83 @@
             </div>
           </div>
 
-          <!-- Notes Section (Collapsible) -->
-          <div class="notes-section bg-white p-4 sm:p-6 rounded-lg shadow-sm">
+          <!-- Notes Section - Compact Professional Version -->
+          <div
+            class="notes-section bg-white p-4 sm:p-6 rounded-lg shadow-sm mt-6"
+          >
             <div
-              class="flex justify-between items-center cursor-pointer"
-              (click)="toggleNotesSection()"
+              class="flex items-center gap-2 mb-4 pb-2 border-b border-gray-200"
             >
-              <h2 class="section-title text-xl font-semibold text-gray-800">
+              <mat-icon class="text-purple-600">note_add</mat-icon>
+              <h2 class="text-lg font-semibold text-gray-800">
                 Additional Notes & Terms
               </h2>
-              <svg
-                class="w-5 h-5 text-gray-500 transition-transform"
-                [class.rotate-180]="showNotesSection"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                  stroke-width="2"
-                  d="M19 9l-7 7-7-7"
-                />
-              </svg>
             </div>
 
-            <div *ngIf="showNotesSection" class="mt-4 space-y-4">
-              <!-- Customer Notes Toggle -->
-              <div class="border rounded-lg overflow-hidden">
-                <div
-                  class="flex justify-between items-center p-3 bg-gray-50 cursor-pointer"
-                  (click)="toggleNoteSection('customerNotes')"
+            <!-- Customer Notes -->
+            <div class="mb-4">
+              <div class="flex items-center gap-2 mb-2">
+                <mat-icon class="text-gray-500 text-sm">visibility</mat-icon>
+                <label class="text-sm font-medium text-gray-700"
+                  >Customer Notes</label
                 >
-                  <label class="field-label text-sm font-medium text-gray-700"
-                    >Customer Notes</label
-                  >
-                  <svg
-                    class="w-4 h-4 text-gray-500 transition-transform"
-                    [class.rotate-180]="notesSections.customerNotes"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </div>
-                <div *ngIf="notesSections.customerNotes" class="p-3">
-                  <textarea
-                    class="notes-textarea w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y"
-                    [(ngModel)]="invoiceData.customerNotes"
-                    placeholder="Notes visible to customer (e.g., Thank you for your business!)"
-                    rows="2"
-                  ></textarea>
-                  <div class="helper-text text-xs text-gray-500 mt-1">
-                    *These notes will appear on the customer-facing invoice
-                  </div>
-                </div>
+                <span class="text-xs text-gray-400">(Visible to customer)</span>
               </div>
+              <textarea
+                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-y transition-all"
+                [(ngModel)]="invoiceData.customerNotes"
+                placeholder="Add notes that will appear on the customer's invoice..."
+                rows="2"
+              ></textarea>
+            </div>
 
-              <!-- Internal Notes Toggle -->
-              <div class="border rounded-lg overflow-hidden">
-                <div
-                  class="flex justify-between items-center p-3 bg-gray-50 cursor-pointer"
-                  (click)="toggleNoteSection('internalNotes')"
+            <!-- Internal Notes -->
+            <div class="mb-4">
+              <div class="flex items-center gap-2 mb-2">
+                <mat-icon class="text-gray-500 text-sm">lock</mat-icon>
+                <label class="text-sm font-medium text-gray-700"
+                  >Internal Notes</label
                 >
-                  <label class="field-label text-sm font-medium text-gray-700"
-                    >Internal Notes</label
-                  >
-                  <svg
-                    class="w-4 h-4 text-gray-500 transition-transform"
-                    [class.rotate-180]="notesSections.internalNotes"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </div>
-                <div *ngIf="notesSections.internalNotes" class="p-3">
-                  <textarea
-                    class="notes-textarea w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y"
-                    [(ngModel)]="invoiceData.internalNotes"
-                    placeholder="Internal notes (not visible to customer) - e.g., payment follow-up notes, approvals"
-                    rows="2"
-                  ></textarea>
-                  <div class="helper-text text-xs text-gray-500 mt-1">
-                    *For internal reference only - not shown to customers
-                  </div>
-                </div>
+                <span class="text-xs text-gray-400">(Staff only)</span>
               </div>
+              <textarea
+                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-y transition-all"
+                [(ngModel)]="invoiceData.internalNotes"
+                placeholder="Internal notes for staff reference..."
+                rows="2"
+              ></textarea>
+            </div>
 
-              <!-- Terms & Conditions Toggle -->
-              <div class="border rounded-lg overflow-hidden">
-                <div
-                  class="flex justify-between items-center p-3 bg-gray-50 cursor-pointer"
-                  (click)="toggleNoteSection('termsAndConditions')"
+            <!-- Terms & Conditions -->
+            <div class="mb-4">
+              <div class="flex items-center gap-2 mb-2">
+                <mat-icon class="text-gray-500 text-sm">gavel</mat-icon>
+                <label class="text-sm font-medium text-gray-700"
+                  >Terms & Conditions</label
                 >
-                  <label class="field-label text-sm font-medium text-gray-700"
-                    >Terms & Conditions</label
-                  >
-                  <svg
-                    class="w-4 h-4 text-gray-500 transition-transform"
-                    [class.rotate-180]="notesSections.termsAndConditions"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </div>
-                <div *ngIf="notesSections.termsAndConditions" class="p-3">
-                  <textarea
-                    class="notes-textarea w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y"
-                    [(ngModel)]="invoiceData.termsAndConditions"
-                    placeholder="Payment terms and conditions (e.g., Late payment fee of 1.5% per month)"
-                    rows="2"
-                  ></textarea>
-                  <div class="helper-text text-xs text-gray-500 mt-1">
-                    *Legal terms that apply to this invoice
-                  </div>
-                </div>
               </div>
+              <textarea
+                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-y transition-all"
+                [(ngModel)]="invoiceData.termsAndConditions"
+                placeholder="Enter payment terms and conditions..."
+                rows="2"
+              ></textarea>
+            </div>
 
-              <!-- Footer Note Toggle -->
-              <div class="border rounded-lg overflow-hidden">
-                <div
-                  class="flex justify-between items-center p-3 bg-gray-50 cursor-pointer"
-                  (click)="toggleNoteSection('footerNote')"
+            <!-- Footer Note -->
+            <div>
+              <div class="flex items-center gap-2 mb-2">
+                <mat-icon class="text-gray-500 text-sm">format_quote</mat-icon>
+                <label class="text-sm font-medium text-gray-700"
+                  >Footer Note</label
                 >
-                  <label class="field-label text-sm font-medium text-gray-700"
-                    >Footer Note</label
-                  >
-                  <svg
-                    class="w-4 h-4 text-gray-500 transition-transform"
-                    [class.rotate-180]="notesSections.footerNote"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                      stroke-width="2"
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </div>
-                <div *ngIf="notesSections.footerNote" class="p-3">
-                  <textarea
-                    class="notes-textarea w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-y"
-                    [(ngModel)]="invoiceData.footerNote"
-                    placeholder="Footer message (e.g., Thank you for your business! Please include invoice number with payment.)"
-                    rows="2"
-                  ></textarea>
-                  <div class="helper-text text-xs text-gray-500 mt-1">
-                    *Appears at the bottom of the invoice
-                  </div>
-                </div>
               </div>
+              <textarea
+                class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 resize-y transition-all"
+                [(ngModel)]="invoiceData.footerNote"
+                placeholder="Footer message that appears at the bottom of the invoice..."
+                rows="1"
+              ></textarea>
             </div>
           </div>
         </div>
@@ -936,20 +973,59 @@
                   <div
                     *ngFor="let term of paymentTermOptions"
                     class="option-item p-3 cursor-pointer hover:bg-gray-100 transition text-sm"
+                    [class.bg-purple-50]="
+                      invoiceData.paymentTerms === term.value &&
+                      !showCustomPaymentTerms
+                    "
                     (click)="selectPaymentTerm(term.value)"
                   >
-                    {{ term.label }}
+                    <div class="flex justify-between items-center">
+                      <span>{{ term.label }}</span>
+                      <span *ngIf="term.days" class="text-xs text-gray-400"
+                        >{{ term.days }} days</span
+                      >
+                      <span
+                        *ngIf="term.specialCalculation"
+                        class="text-xs text-purple-500"
+                        >{{ term.specialCalculation }}</span
+                      >
+                    </div>
+                    <div
+                      *ngIf="term.description"
+                      class="text-xs text-gray-400 mt-1"
+                    >
+                      {{ term.description }}
+                    </div>
                   </div>
                 </div>
               </div>
 
-              <div *ngIf="showCustomPaymentTerms" class="mt-2">
-                <input
-                  type="text"
-                  class="form-input w-full p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  [(ngModel)]="invoiceData.paymentTerms"
-                  placeholder="Enter custom payment terms (e.g., Net 15)"
-                />
+              <!-- Custom Payment Terms Input -->
+              <div *ngIf="showCustomPaymentTerms" class="mt-3 space-y-2">
+                <div class="flex gap-2 items-center">
+                  <label class="text-sm text-gray-600">Net</label>
+                  <input
+                    type="number"
+                    class="form-input flex-1 p-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    [(ngModel)]="customPaymentTermDays"
+                    (ngModelChange)="onCustomDaysChange()"
+                    placeholder="Enter number of days (e.g., 120)"
+                    min="1"
+                    max="365"
+                  />
+                  <span class="text-gray-500">days</span>
+                </div>
+                <div class="text-xs text-gray-500">
+                  <i class="fas fa-info-circle"></i>
+                  Custom terms will be displayed as "Net
+                  {{ customPaymentTermDays || "X" }}"
+                </div>
+                <div
+                  *ngIf="errors['paymentTerms']"
+                  class="error-text text-red-500 text-sm"
+                >
+                  {{ errors["paymentTerms"] }}
+                </div>
               </div>
 
               <div class="helper-text text-xs text-gray-500 mt-1">
@@ -1425,57 +1501,59 @@
             <!-- Summary Section -->
             <div class="summary-section border-t pt-4">
               <div
-                class="summary-row flex justify-between text-sm text-gray-600 mb-2"
+                class="summary-row flex justify-between text-sm text-gray-600 mb-4"
               >
                 <span class="summary-label">Subtotal</span>
                 <span class="summary-value font-medium text-gray-800"
-                  >{{ invoiceData.currency }} {{ getSubtotal() }}</span
+                  >{{ getCurrencySymbol() }} {{ getSubtotal() }}</span
                 >
               </div>
               <div
-                class="summary-row flex justify-between text-sm text-gray-600 mb-2"
+                class="summary-row flex justify-between text-sm text-gray-600 mb-4"
               >
                 <span class="summary-label">Discount Total</span>
-                <span class="summary-value font-medium text-gray-800"
-                  >{{ invoiceData.currency }} {{ getDiscountTotal() }}</span
+                <span class="summary-value font-medium text-green-800"
+                  >-{{ getCurrencySymbol() }} {{ getDiscountTotal() }}</span
                 >
               </div>
               <div
-                class="summary-row flex justify-between text-sm text-gray-600 mb-2"
+                class="summary-row flex justify-between text-sm text-gray-600 mb-4"
               >
                 <span class="summary-label">Tax Total</span>
                 <span class="summary-value font-medium text-gray-800"
-                  >{{ invoiceData.currency }} {{ getTaxTotal() }}</span
+                  >{{ getCurrencySymbol() }} {{ getTaxTotal() }}</span
                 >
               </div>
               <div
-                class="summary-row flex justify-between text-sm text-gray-600 mb-2"
+                class="summary-row flex justify-between text-sm text-gray-600 mb-4"
               >
                 <span class="summary-label">Shipping</span>
                 <span class="summary-value font-medium text-gray-800"
-                  >{{ invoiceData.currency }}
+                  >{{ getCurrencySymbol() }}
                   {{ (invoiceData.shippingAmount || 0).toFixed(2) }}</span
                 >
               </div>
               <div
-                class="summary-row flex justify-between text-sm text-gray-600 mb-2"
+                class="summary-row flex justify-between text-sm text-gray-600 mb-4"
                 *ngIf="invoiceData.adjustmentAmount !== 0"
               >
                 <span class="summary-label">Adjustment</span>
                 <span class="summary-value font-medium text-gray-800"
-                  >{{ invoiceData.currency }}
+                  >{{ getCurrencySymbol() }}
                   {{ (invoiceData.adjustmentAmount || 0).toFixed(2) }}</span
                 >
               </div>
               <div
-                class="total-row flex justify-between pt-4 border-t text-base font-semibold text-gray-800"
+                class="total-row flex justify-between pt-4 border-t text-lg font-bold text-gray-900"
               >
                 <span class="total-label">Total</span>
-                <span class="total-value text-purple-600"
-                  >{{ invoiceData.currency }} {{ getTotal() }}</span
+                <span class="total-value text-purple-700"
+                  >{{ getCurrencySymbol() }} {{ getTotal() }}</span
                 >
               </div>
-              <div class="helper-text text-xs text-gray-500 mt-2">
+              <div
+                class="helper-text text-xs text-gray-500 mt-2 italic text-right"
+              >
                 *Amount due from customer
               </div>
             </div>

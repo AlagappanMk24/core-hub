@@ -1,39 +1,54 @@
+<!-- register.component.html -->
 <div class="register-container">
+
+  <!-- ░░ BACKGROUND ░░ -->
+  <div class="auth-mesh"></div>
+  <div class="auth-noise"></div>
+  <div class="auth-orb-1"></div>
+  <div class="auth-orb-2"></div>
+
   <div class="register-card">
-    <!-- Header -->
+
+    <!-- ─── HEADER ─── -->
     <div class="header">
-      <div class="logo">
-        <span class="logo-text">
-          <span class="violet-first-letter">A</span>ngular
-          <span class="violet-first-letter">C</span>ore
-        </span>
-      </div>
+      <a class="logo" href="#">
+        <div class="logo-gem">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
+                  stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <span class="logo-text">Core<em>Invoice</em></span>
+      </a>
       <div class="existing-user">
-        <span>Already have an account? </span>
+        Already have an account?&nbsp;
         <a [routerLink]="['/auth/login']" class="sign-in-link">Sign In</a>
       </div>
     </div>
 
-    <!-- Main Content -->
+    <!-- ─── MAIN CONTENT ─── -->
     <div class="main-content">
-      <!-- Registration Form Section -->
+
+      <!-- ░░ LEFT — Form ░░ -->
       <div class="form-section" #formSection [class.has-errors]="errorMessage">
+
         <div class="welcome-text">
           <h2>Create Account!</h2>
-          <p>Sign up to get started</p>
+          <p>Sign up to get started with CoreInvoice</p>
         </div>
 
-        <!-- Error Message -->
-        <div class="error-message global-error" *ngIf="errorMessage">
-          {{ errorMessage }}
-        </div>
+        <div class="error-message global-error" *ngIf="errorMessage">{{ errorMessage }}</div>
 
+        <!-- ALL ngModel, validators, handlers UNCHANGED -->
         <form class="register-form" #registerForm="ngForm" (ngSubmit)="onRegister()">
-          <!-- Full Name Input -->
+
+          <!-- Full Name -->
           <div class="input-group">
             <div class="input-wrapper" [class.error]="fullNameInput.invalid && fullNameInput.touched">
               <i class="icon user-icon"></i>
-              <input type="text" [(ngModel)]="fullName" name="fullName" placeholder="Full Name" class="form-input" required maxlength="255" #fullNameInput="ngModel" />
+              <input type="text" [(ngModel)]="fullName" name="fullName"
+                     placeholder="Full Name" class="form-input"
+                     required maxlength="255" #fullNameInput="ngModel"/>
             </div>
             <div class="error-message" *ngIf="fullNameInput.invalid && fullNameInput.touched">
               <span *ngIf="fullNameInput.errors?.['required']">Full name is required</span>
@@ -41,11 +56,13 @@
             </div>
           </div>
 
-          <!-- Email Input -->
+          <!-- Email -->
           <div class="input-group">
             <div class="input-wrapper" [class.error]="emailInput.invalid && emailInput.touched">
               <i class="icon email-icon"></i>
-              <input type="email" [(ngModel)]="email" name="email" placeholder="Email Address" class="form-input" required email maxlength="255" #emailInput="ngModel" />
+              <input type="email" [(ngModel)]="email" name="email"
+                     placeholder="Email Address" class="form-input"
+                     required email maxlength="255" #emailInput="ngModel"/>
             </div>
             <div class="error-message" *ngIf="emailInput.invalid && emailInput.touched">
               <span *ngIf="emailInput.errors?.['required']">Email is required</span>
@@ -54,11 +71,13 @@
             </div>
           </div>
 
-          <!-- Phone Number Input -->
+          <!-- Phone -->
           <div class="input-group">
             <div class="input-wrapper" [class.error]="phoneInput.invalid && phoneInput.touched">
               <i class="icon phone-icon"></i>
-              <input type="tel" [(ngModel)]="phoneNumber" name="phoneNumber" placeholder="Phone Number" class="form-input" required maxlength="20" (input)="formatPhoneNumber()" #phoneInput="ngModel" />
+              <input type="tel" [(ngModel)]="phoneNumber" name="phoneNumber"
+                     placeholder="Phone Number" class="form-input"
+                     required maxlength="20" (input)="formatPhoneNumber()" #phoneInput="ngModel"/>
             </div>
             <div class="error-message" *ngIf="phoneInput.invalid && phoneInput.touched">
               <span *ngIf="phoneInput.errors?.['required']">Phone number is required</span>
@@ -66,11 +85,14 @@
             </div>
           </div>
 
-          <!-- Company Input -->
+          <!-- Company dropdown -->
           <div class="input-group">
-            <div class="input-wrapper custom-dropdown-wrapper" [class.error]="!companyId && registerForm.submitted">
+            <div class="input-wrapper custom-dropdown-wrapper"
+                 [class.error]="!companyId && registerForm.submitted">
               <i class="icon company-icon"></i>
-              <div class="custom-dropdown-trigger form-input" [class.active]="showCompanyDropdown" (click)="toggleCompanyDropdown()">
+              <div class="custom-dropdown-trigger form-input"
+                   [class.active]="showCompanyDropdown"
+                   (click)="toggleCompanyDropdown()">
                 <span *ngIf="selectedCompanyDisplayName; else selectCompanyPlaceholder">
                   {{ selectedCompanyDisplayName }}
                 </span>
@@ -78,66 +100,80 @@
                   <span class="placeholder-text">Select Company</span>
                 </ng-template>
                 <svg class="dropdown-arrow-icon" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                 </svg>
               </div>
-
               <div class="custom-dropdown-content" *ngIf="showCompanyDropdown">
                 <div class="search-box">
-                  <input type="text" placeholder="Search Company" [(ngModel)]="companySearchTerm" (ngModelChange)="filterCompanies()" name="companySearch" class="search-input">
-                  <svg class="search-icon" viewBox="0 0 24 24">
-                    <circle cx="11" cy="11" r="8" />
-                    <path d="M21 21l-4.35-4.35" />
+                  <input type="text" placeholder="Search Company"
+                         [(ngModel)]="companySearchTerm"
+                         (ngModelChange)="filterCompanies()"
+                         name="companySearch" class="search-input"/>
+                  <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
                   </svg>
                 </div>
                 <div class="options-list">
-                  <div class="option-item" *ngFor="let company of filteredCompanies" (click)="selectCompany(company)">
-                    {{ company.name }}
-                  </div>
-                  <div class="no-results" *ngIf="filteredCompanies.length === 0 && companySearchTerm">
-                    No matching companies found. <a href="#" (click)="requestCompany()">Request</a> your company or contact the administrator.
+                  <div class="option-item" *ngFor="let company of filteredCompanies"
+                       (click)="selectCompany(company)">{{ company.name }}</div>
+                  <div class="no-results"
+                       *ngIf="filteredCompanies.length === 0 && companySearchTerm">
+                    No matching companies found.
+                    <a href="#" (click)="requestCompany()">Request</a> your company or contact the administrator.
                   </div>
                 </div>
               </div>
             </div>
             <div class="error-message" *ngIf="!companyId && registerForm.submitted">
-              Company selection is required. If your company is not listed, <a href="#" (click)="requestCompany()">request</a> it or contact the administrator.
+              Company selection is required. If your company is not listed,
+              <a href="#" (click)="requestCompany()">request</a> it or contact the administrator.
             </div>
           </div>
 
-          <!-- Password Input -->
+          <!-- Password -->
           <div class="input-group">
             <div class="input-wrapper" [class.error]="passwordInput.invalid && passwordInput.touched">
               <i class="icon lock-icon"></i>
-              <input [type]="showPassword ? 'text' : 'password'" [(ngModel)]="password" name="password" placeholder="Password" class="form-input" required minlength="8" maxlength="100" #passwordInput="ngModel" />
-              <i class="toggle-password" [class.show]="showPassword" (click)="togglePasswordVisibility()">👁</i>
+              <input [type]="showPassword ? 'text' : 'password'"
+                     [(ngModel)]="password" name="password"
+                     placeholder="Password" class="form-input"
+                     required minlength="8" maxlength="100" #passwordInput="ngModel"/>
+              <i class="toggle-password" [class.show]="showPassword"
+                 (click)="togglePasswordVisibility()">👁</i>
             </div>
             <div class="error-message" *ngIf="passwordInput.invalid && passwordInput.touched">
               <span *ngIf="passwordInput.errors?.['required']">Password is required</span>
-              <span *ngIf="!isPasswordValid() && passwordInput.value">Password must contain at least 8 characters, one uppercase, one lowercase, one number, and one special character</span>
+              <span *ngIf="!isPasswordValid() && passwordInput.value">
+                Must be 8+ characters with uppercase, lowercase, number &amp; special character
+              </span>
             </div>
           </div>
 
-          <!-- Confirm Password Input -->
+          <!-- Confirm Password -->
           <div class="input-group">
             <div class="input-wrapper" [class.error]="confirmPasswordInput.touched && !passwordsMatch()">
               <i class="icon lock-icon"></i>
-              <input [type]="showConfirmPassword ? 'text' : 'password'" [(ngModel)]="confirmPassword" name="confirmPassword" placeholder="Confirm Password" class="form-input" required #confirmPasswordInput="ngModel" />
-              <i class="toggle-password" [class.show]="showConfirmPassword" (click)="toggleConfirmPasswordVisibility()">👁</i>
+              <input [type]="showConfirmPassword ? 'text' : 'password'"
+                     [(ngModel)]="confirmPassword" name="confirmPassword"
+                     placeholder="Confirm Password" class="form-input"
+                     required #confirmPasswordInput="ngModel"/>
+              <i class="toggle-password" [class.show]="showConfirmPassword"
+                 (click)="toggleConfirmPasswordVisibility()">👁</i>
             </div>
             <div class="error-message" *ngIf="confirmPasswordInput.touched && !passwordsMatch()">
               Passwords do not match
             </div>
           </div>
 
-          <!-- Terms and Conditions -->
+          <!-- Terms -->
           <div class="checkbox-group">
             <label class="checkbox-label">
-              <input type="checkbox" [(ngModel)]="agreeToTerms" name="agreeToTerms" required #termsInput="ngModel" />
+              <input type="checkbox" [(ngModel)]="agreeToTerms"
+                     name="agreeToTerms" required #termsInput="ngModel"/>
               <span class="checkmark"></span>
               <span class="checkbox-text">
                 I agree to the
-                <a href="#" class="terms-link" (click)="onTermsClick($event)">Terms & Conditions</a>
+                <a href="#" class="terms-link" (click)="onTermsClick($event)">Terms &amp; Conditions</a>
                 and
                 <a href="#" class="privacy-link" (click)="onPrivacyClick($event)">Privacy Policy</a>
               </span>
@@ -147,45 +183,67 @@
             </div>
           </div>
 
-          <!-- Register Button -->
-          <button type="submit" class="register-btn" [disabled]="isLoading || !registerForm.valid || !passwordsMatch()">
-            CREATE ACCOUNT
+          <!-- Submit -->
+          <button type="submit" class="register-btn"
+                  [disabled]="isLoading || !registerForm.valid || !passwordsMatch()">
+            <span class="btn-shine-layer"></span>
+            <span class="register-btn-inner">CREATE ACCOUNT</span>
           </button>
         </form>
 
-        <!-- Loading Overlay -->
+        <!-- Loading overlay -->
         <div class="loading-overlay" *ngIf="isLoading">
           <div class="violet-loader"></div>
           <p class="loading-text">{{ loadingText }}</p>
         </div>
+
       </div>
 
-      <!-- Illustration Section -->
+      <!-- ░░ RIGHT — Illustration ░░ -->
       <div class="illustration-section">
-        <div class="illustration">
-          <div class="welcome-scene">
-            <div class="character laptop-person">
-              <div class="person-head"></div>
-              <div class="person-body"></div>
-              <div class="person-arm-left"></div>
-              <div class="person-arm-right"></div>
-              <div class="laptop"></div>
-            </div>
-            <div class="floating-element rocket"></div>
-            <div class="floating-element star star1"></div>
-            <div class="floating-element star star2"></div>
-            <div class="floating-element star star3"></div>
-            <div class="success-icons">
-              <div class="icon-circle">✓</div>
-              <div class="icon-heart">♥</div>
-              <div class="icon-bulb">💡</div>
-            </div>
-            <div class="bg-shape shape1"></div>
-            <div class="bg-shape shape2"></div>
-            <div class="bg-shape shape3"></div>
+        <div class="illus-content">
+
+          <h2 class="illus-heading">Start sending<br>invoices <em>today</em></h2>
+
+          <div class="illus-stats-grid">
+            <div class="illus-stat-card"><div class="isc-val">$2.4B+</div><div class="isc-lbl">Invoiced</div></div>
+            <div class="illus-stat-card"><div class="isc-val">12K+</div><div class="isc-lbl">Businesses</div></div>
+            <div class="illus-stat-card"><div class="isc-val">99.9%</div><div class="isc-lbl">Uptime</div></div>
+            <div class="illus-stat-card"><div class="isc-val">&lt;3s</div><div class="isc-lbl">Per invoice</div></div>
           </div>
+
+          <div class="illus-features">
+            <div class="illus-feat">
+              <div class="if-icon" style="background:rgba(168,85,247,0.12);color:#9333ea">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+              </div>
+              Smart invoice builder with live preview
+            </div>
+            <div class="illus-feat">
+              <div class="if-icon" style="background:rgba(16,185,129,0.12);color:#059669">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              Real-time payment tracking &amp; alerts
+            </div>
+            <div class="illus-feat">
+              <div class="if-icon" style="background:rgba(245,158,11,0.12);color:#d97706">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/></svg>
+              </div>
+              Automated reminders for overdue invoices
+            </div>
+            <div class="illus-feat">
+              <div class="if-icon" style="background:rgba(59,130,246,0.12);color:#2563eb">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              </div>
+              Bank-grade encryption &amp; audit trails
+            </div>
+          </div>
+
+          <p class="illus-sub">No credit card required · Free 30-day trial<br>Cancel anytime</p>
+
         </div>
       </div>
+
     </div>
   </div>
 </div>

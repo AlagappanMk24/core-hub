@@ -40,19 +40,9 @@ export class CompanyRequestService {
   authService = inject(AuthService);
   constructor(private http: HttpClient) {}
 
-  private getHeaders(): HttpHeaders {
-      const token = this.authService.getAuthToken();
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
-      return new HttpHeaders({
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      });
-    }
   // Public endpoints
   createRequest(request: CreateCompanyRequest): Observable<any> {
-    return this.http.post(this.apiUrl, request, { headers: this.getHeaders() });
+    return this.http.post(this.apiUrl, request);
   }
 
   getRequestStatus(email: string): Observable<CompanyRequestResponse[]> {
@@ -68,18 +58,18 @@ export class CompanyRequestService {
     status?: string;
     search?: string;
   }): Observable<CompanyRequestListResponse> {
-    return this.http.get<CompanyRequestListResponse>(this.adminApiUrl, { params, headers: this.getHeaders() });
+    return this.http.get<CompanyRequestListResponse>(this.adminApiUrl, { params });
   }
 
   getRequestById(id: number): Observable<CompanyRequestResponse> {
-    return this.http.get<CompanyRequestResponse>(`${this.adminApiUrl}/${id}`, { headers: this.getHeaders() });
+    return this.http.get<CompanyRequestResponse>(`${this.adminApiUrl}/${id}`);
   }
 
   approveRequest(id: number): Observable<any> {
-    return this.http.post(`${this.adminApiUrl}/${id}/approve`, {}, { headers: this.getHeaders() });
+    return this.http.post(`${this.adminApiUrl}/${id}/approve`, {});
   }
 
   rejectRequest(id: number, reason: string): Observable<any> {
-    return this.http.post(`${this.adminApiUrl}/${id}/reject`, { reason }, { headers: this.getHeaders() });
+    return this.http.post(`${this.adminApiUrl}/${id}/reject`, { reason });
   }
 }

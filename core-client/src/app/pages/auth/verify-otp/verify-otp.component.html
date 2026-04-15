@@ -1,58 +1,111 @@
 <!-- verify-otp.component.html -->
 <div class="otp-container">
+
+  <!-- ░░ BACKGROUND ░░ -->
+  <div class="auth-mesh"></div>
+  <div class="auth-noise"></div>
+  <div class="auth-orb-1"></div>
+  <div class="auth-orb-2"></div>
+
   <div class="otp-card">
-    <!-- Header -->
+
+    <!-- ─── HEADER ─── -->
     <header class="header">
-      <div class="logo">
-        <span class="logo-text">
-          <span class="violet-first-letter">A</span>ngular
-          <span class="violet-first-letter">C</span>ore
-        </span>
-      </div>
+      <a class="logo" href="#">
+        <div class="logo-gem">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
+                  stroke="currentColor" stroke-width="2.2" stroke-linejoin="round"/>
+          </svg>
+        </div>
+        <span class="logo-text">Core<em>Invoice</em></span>
+      </a>
       <div class="back-to-login">
-        <a [routerLink]="['/auth/login']" class="back-link">← Back to Login</a>
+        <a [routerLink]="['/auth/login']" class="back-link">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+               stroke="currentColor" stroke-width="2.5">
+            <path d="M19 12H5M12 5l-7 7 7 7"/>
+          </svg>
+          Back to Login
+        </a>
       </div>
     </header>
 
-    <!-- Main Content -->
+    <!-- ─── MAIN CONTENT ─── -->
     <div class="main-content">
-      <!-- Illustration Section -->
+
+      <!-- ░░ LEFT — Illustration ░░ -->
       <div class="illustration-section">
-        <div class="illustration">
-          <!-- Person with phone illustration -->
-          <div class="character person-with-phone">
-            <div class="person-head"></div>
-            <div class="person-body"></div>
-            <div class="person-arm-left"></div>
-            <div class="person-arm-right"></div>
-            <div class="person-leg-left"></div>
-            <div class="person-leg-right"></div>
-            <div class="phone"></div>
+        <div class="illus-content">
+
+          <h2 class="illus-heading">
+            Secure<br><em>verification</em><br>in seconds
+          </h2>
+
+          <!-- Shield + OTP preview -->
+          <div class="shield-wrap">
+            <svg class="shield-svg" viewBox="0 0 90 90" fill="none">
+              <path d="M45 8L12 22v20c0 18.5 13.5 35.8 33 40 19.5-4.2 33-21.5 33-40V22L45 8z"
+                    fill="url(#shieldGrad)" opacity="0.95"/>
+              <defs>
+                <linearGradient id="shieldGrad" x1="12" y1="8" x2="78" y2="82" gradientUnits="userSpaceOnUse">
+                  <stop offset="0%" stop-color="#c084fc"/>
+                  <stop offset="100%" stop-color="#7e22ce"/>
+                </linearGradient>
+              </defs>
+              <path d="M31 46l9 9 18-18" stroke="white" stroke-width="3.5"
+                    stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
           </div>
 
-          <!-- Security shield -->
-          <div class="security-shield">
-            <div class="shield-body"></div>
-            <div class="shield-check">✓</div>
+          <!-- Decorative OTP digit preview -->
+          <div class="otp-preview">
+            <div class="otp-prev-box">•</div>
+            <div class="otp-prev-box">•</div>
+            <div class="otp-prev-box">•</div>
+            <div class="otp-prev-box">•</div>
+            <div class="otp-prev-box">•</div>
+            <div class="otp-prev-box">•</div>
           </div>
 
-          <!-- Message bubbles -->
-          <div class="message-bubble bubble1">
-            <div class="bubble-content">OTP</div>
-          </div>
-          <div class="message-bubble bubble2">
-            <div class="bubble-content">123456</div>
+          <!-- Info bubbles -->
+          <div class="otp-bubbles">
+            <div class="otp-bubble">
+              <div class="ob-icon" style="background:rgba(168,85,247,0.10);color:#9333ea">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <rect x="2" y="4" width="20" height="16" rx="2"/>
+                  <path d="m22 7-10 7L2 7"/>
+                </svg>
+              </div>
+              Check your email for the 6-digit code
+            </div>
+            <div class="otp-bubble">
+              <div class="ob-icon" style="background:rgba(16,185,129,0.10);color:#059669">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                </svg>
+              </div>
+              Code expires in 2 minutes — act fast
+            </div>
+            <div class="otp-bubble">
+              <div class="ob-icon" style="background:rgba(245,158,11,0.10);color:#d97706">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                </svg>
+              </div>
+              Never share your OTP with anyone
+            </div>
           </div>
 
-          <!-- Decorative elements -->
-          <div class="floating-icon icon1">🔐</div>
-          <div class="floating-icon icon2">📱</div>
-          <div class="floating-icon icon3">✉️</div>
+          <p class="illus-sub">Two-factor authentication keeps<br>your account safe from unauthorised access.</p>
+
         </div>
       </div>
 
-      <!-- OTP Form Section -->
+      <!-- ░░ RIGHT — OTP Form ░░ -->
+      <!-- ALL bindings, handlers, validators UNCHANGED -->
       <div class="form-section" [ngClass]="{ 'has-error': errorMessage }">
+
         <div class="welcome-text">
           <h2>Verify Your Account</h2>
           <p>Enter the 6-digit code sent to</p>
@@ -64,65 +117,77 @@
         </div>
 
         <form class="otp-form" (ngSubmit)="onVerifyOTP()">
-          <!-- OTP Input Fields -->
+
+          <!-- OTP Inputs -->
           <div class="otp-inputs">
             <input
               *ngFor="let digit of otpDigits; let i = index"
-              type="text"
-              maxlength="1"
-              [name]="'otp' + i"
-              [id]="'otp' + i"
+              type="text" maxlength="1"
+              [name]="'otp' + i" [id]="'otp' + i"
               class="otp-input"
               [(ngModel)]="otpDigits[i]"
               (keydown)="onKeydown($event, i)"
               (input)="onInput($event, i)"
               (paste)="onPaste($event, i)"
               #otpInput
-              inputmode="numeric"
-              pattern="[0-9]"
-              autocomplete="one-time-code"
-              required
+              inputmode="numeric" pattern="[0-9]"
+              autocomplete="one-time-code" required
             />
           </div>
 
-          <!-- Timer and Resend -->
+          <!-- Timer / Resend -->
           <div class="timer-section">
             <div class="timer" *ngIf="timeLeft > 0">
               Resend code in
               <span class="timer-text">{{ formatTime(timeLeft) }}</span>
             </div>
             <div class="resend-section" *ngIf="timeLeft === 0">
-              <span>Didn't receive code? </span>
-              <a href="#" class="resend-link" (click)="onResendOTP($event)"
-                >Resend OTP</a
-              >
+              <span>Didn't receive code?&nbsp;</span>
+              <a href="#" class="resend-link" (click)="onResendOTP($event)">Resend OTP</a>
             </div>
           </div>
 
-          <!-- Verify Button -->
-          <button
-            type="submit"
-            class="verify-btn"
-            [disabled]="!isOtpComplete() || isVerifying"
-          >
-            {{ isVerifying ? "VERIFYING..." : "VERIFY OTP" }}
+          <!-- Submit -->
+          <button type="submit" class="verify-btn"
+                  [disabled]="!isOtpComplete() || isVerifying">
+            <span class="btn-shine-layer" *ngIf="!isVerifying && isOtpComplete()"></span>
+            <span class="verify-btn-inner">
+              {{ isVerifying ? 'VERIFYING...' : 'VERIFY OTP' }}
+            </span>
           </button>
+
         </form>
 
-        <!-- Help Section -->
+        <!-- Help tips -->
         <div class="help-section">
           <div class="help-text">
-            <p>• Check your spam folder if using email</p>
-            <p>• Ensure your phone has good signal</p>
-            <p>• Contact support if issues persist</p>
+            <p>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9333ea" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              Check your spam folder if using email
+            </p>
+            <p>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9333ea" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              Ensure your phone has good signal
+            </p>
+            <p>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#9333ea" stroke-width="2">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              Contact support if issues persist
+            </p>
           </div>
         </div>
 
-        <!-- Loading Overlay -->
+        <!-- Loading overlay -->
         <div class="loading-overlay" *ngIf="isVerifying">
           <div class="violet-loader"></div>
           <p class="loading-text">{{ loadingText }}</p>
         </div>
+
       </div>
     </div>
   </div>

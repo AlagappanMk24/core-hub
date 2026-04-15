@@ -117,7 +117,7 @@ button.action-btn:disabled {
 /* Stats Section */
 .stats-section {
   display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  grid-template-columns: repeat(6, 1fr);
   gap: 16px;
   margin-bottom: 24px;
 }
@@ -159,7 +159,7 @@ button.action-btn:disabled {
 }
 
 .stat-amount {
-  font-size: 24px;
+  font-size: 20px;
   font-weight: 600;
   color: #1e293b;
   margin-bottom: 4px;

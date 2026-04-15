@@ -20,17 +20,6 @@ export class EmailService {
     private readonly authService: AuthService
   ) {}
 
-  private getHeaders(): HttpHeaders {
-    const token = this.authService.getAuthToken();
-    if (!token) {
-      throw new Error('No authentication token found');
-    }
-    return new HttpHeaders({
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    });
-  }
-
   private handleError(error: unknown, message: string): Observable<never> {
     console.error(message, error);
     return throwError(() => new Error(message));
@@ -38,9 +27,7 @@ export class EmailService {
 
   getEmailSettings(): Observable<EmailSettings> {
     return this.http
-      .get<EmailSettings>(`${this.apiUrl}/settings`, {
-        headers: this.getHeaders(),
-      })
+      .get<EmailSettings>(`${this.apiUrl}/settings`)
       .pipe(
         catchError((error) =>
           this.handleError(error, 'Failed to fetch email settings')
@@ -50,9 +37,7 @@ export class EmailService {
 
   saveEmailSettings(settings: EmailSettings): Observable<void> {
     return this.http
-      .post<void>(`${this.apiUrl}/settings`, settings, {
-        headers: this.getHeaders(),
-      })
+      .post<void>(`${this.apiUrl}/settings`, settings)
       .pipe(
         catchError((error) =>
           this.handleError(error, 'Failed to save email settings')

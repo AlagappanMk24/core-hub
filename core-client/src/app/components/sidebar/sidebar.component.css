@@ -1,4 +1,5 @@
 /* sidebar.component.css */
+@import url("https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Outfit:wght@300;400;500;600;700&display=swap");
 .sidebar-container {
   width: 280px;
   height: 100vh;
@@ -23,27 +24,6 @@
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   flex-shrink: 0;
   background: inherit;
-}
-
-.logo-wrapper {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
-}
-
-.logo-gradient {
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
 }
 
 .app-title {
@@ -104,7 +84,7 @@
   width: 100%;
   height: 100%;
   border-radius: 16px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #c084fc, #7e22ce);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -477,4 +457,65 @@
     justify-content: center;
     padding: 10px;
   }
+}
+
+:host {
+  --p400: #c084fc;
+  --p500: #a855f7;
+  --p700: #7e22ce;
+  --text-dark: #1e293b; /* For light backgrounds like the sidebar */
+  --text-light: #f0eeff; /* For dark backgrounds like the home navbar */
+  --font-body: "Outfit", sans-serif;
+  /* --font-disp: 'Syne', sans-serif; */
+}
+
+.brand-link {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+}
+
+.brand-gem {
+  width: 34px;
+  height: 34px;
+  background: linear-gradient(135deg, var(--p400), var(--p700));
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  box-shadow: 0 4px 16px rgba(168, 85, 247, 0.4);
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+}
+
+.brand-gem:hover {
+  transform: rotate(-8deg) scale(1.08);
+  box-shadow: 0 8px 24px rgba(168, 85, 247, 0.5);
+}
+
+.brand-text {
+  font-family: var(--font-body);
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  /* Use current color or a variable that changes based on theme */
+  color: inherit;
+}
+
+.brand-text em {
+  font-style: normal;
+  color: var(--p500);
+}
+
+/* Small variation for tight spaces */
+.brand-gem.sm {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+}
+.nav-item .fa-tasks {
+  color: #10b981; /* A nice success-green for tasks */
 }

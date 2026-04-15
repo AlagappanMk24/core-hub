@@ -44,6 +44,7 @@ import { CustomerDialogComponent } from '../customer-dialog/customer-dialog.comp
 import { CustomerFilterRequest } from '../../../../services/customer/models/customer.model';
 import {
   AVATAR_COLORS,
+  calculateDueDateFromPaymentTerm,
   DEFAULT_COMPANY,
   DEFAULT_INVOICE_FORM_DATA,
   DISCOUNT_TYPES,
@@ -51,10 +52,13 @@ import {
   discountTypeToNumber,
   MONTHS,
   PAYMENT_METHODS,
+  PAYMENT_TERM_OPTIONS,
   SUPPORTED_CURRENCIES,
   WEEKDAYS,
 } from '../../../../constants/invoice.constants';
 import { environment } from '../../../../environments/environment.development';
+import { animate, style, transition, trigger } from '@angular/animations';
+import { LoaderService } from '../../../../services/loader/loader.service';
 
 /**
  * Component for creating and editing invoices
@@ -73,6 +77,23 @@ import { environment } from '../../../../environments/environment.development';
     MatIconModule,
     MatSelectModule,
     MatInputModule,
+  ],
+  animations: [
+    trigger('menuAnimation', [
+      transition(':enter', [
+        style({ opacity: 0, transform: 'translateY(-10px) scale(0.95)' }),
+        animate(
+          '200ms ease-out',
+          style({ opacity: 1, transform: 'translateY(0) scale(1)' }),
+        ),
+      ]),
+      transition(':leave', [
+        animate(
+          '150ms ease-in',
+          style({ opacity: 0, transform: 'translateY(-10px) scale(0.95)' }),
+        ),
+      ]),
+    ]),
   ],
 })
 export class CreateInvoiceComponent implements OnInit {
@@ -124,31 +145,12 @@ export class CreateInvoiceComponent implements OnInit {
   );
   readonly paymentMethods = PAYMENT_METHODS;
   readonly discountTypes = DISCOUNT_TYPES;
+  readonly paymentTermOptions = PAYMENT_TERM_OPTIONS;
 
-  // Payment terms options for dropdown
-  readonly paymentTermOptions = [
-    { value: 'Due on Receipt', label: 'Due on Receipt', days: 0 },
-    { value: 'Net 7', label: 'Net 7 Days', days: 7 },
-    { value: 'Net 15', label: 'Net 15 Days', days: 15 },
-    { value: 'Net 30', label: 'Net 30 Days', days: 30 },
-    { value: 'Net 45', label: 'Net 45 Days', days: 45 },
-    { value: 'Net 60', label: 'Net 60 Days', days: 60 },
-    { value: 'Custom', label: 'Custom (Enter Below)', days: null },
-  ];
-
-  // Flag to show/hide custom payment terms input
+  // Payment terms
   showCustomPaymentTerms: boolean = false;
-
-  // ──────────────────────────────────────────────────────────────────
-  // Notes Section Toggle
-  // ──────────────────────────────────────────────────────────────────
-  showNotesSection: boolean = false;
-  notesSections = {
-    customerNotes: false,
-    internalNotes: false,
-    termsAndConditions: false,
-    footerNote: false,
-  };
+  customPaymentTermDays: number | null = null;
+  showCustomDaysInput: boolean = false;
 
   // ──────────────────────────────────────────────────────────────────
   // UI State Flags
@@ -166,6 +168,12 @@ export class CreateInvoiceComponent implements OnInit {
   private blobUrls: string[] = [];
   isDragging: boolean = false;
 
+  showStatusMenu: boolean = false;
+  currentInvoiceStatus: string = '';
+  currentPaymentStatus: string = '';
+
+  private isInitialized = false;
+
   // ──────────────────────────────────────────────────────────────────
   // Constructor & Dependency Injection
   // ──────────────────────────────────────────────────────────────────
@@ -174,6 +182,7 @@ export class CreateInvoiceComponent implements OnInit {
     private invoiceService: InvoiceService,
     private companyService: CompanyService,
     private authService: AuthService,
+    private loaderService: LoaderService,
     private dialog: MatDialog,
     private router: Router,
     private route: ActivatedRoute,
@@ -184,6 +193,7 @@ export class CreateInvoiceComponent implements OnInit {
   // ──────────────────────────────────────────────────────────────────
   ngOnInit(): void {
     this.initializeDates();
+    this.resetFormForNewInvoice();
     this.loadInitialData();
   }
 
@@ -197,13 +207,63 @@ export class CreateInvoiceComponent implements OnInit {
   /** Initializes issue and due dates */
   private initializeDates(): void {
     const today = new Date();
-    this.currentMonth = today.getMonth();
-    this.currentYear = today.getFullYear();
+    const utcToday = new Date(
+      Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()),
+    );
 
-    this.invoiceData.issuedDate = this.formatDate(today);
-    const dueDate = new Date(today);
-    dueDate.setDate(today.getDate() + 30);
-    this.invoiceData.dueDate = this.formatDate(dueDate);
+    this.currentMonth = utcToday.getUTCMonth();
+    this.currentYear = utcToday.getUTCFullYear();
+
+    // Set issue date to today
+    this.invoiceData.issuedDate = this.formatDate(utcToday);
+
+    // Calculate due date based on default payment terms (Net 30)
+    const defaultPaymentTerm = this.paymentTermOptions.find(
+      (term) => term.value === 'Net 30',
+    );
+    if (defaultPaymentTerm && defaultPaymentTerm.days !== null) {
+      const dueDate = new Date(
+        Date.UTC(
+          utcToday.getUTCFullYear(),
+          utcToday.getUTCMonth(),
+          utcToday.getUTCDate(),
+        ),
+      );
+      dueDate.setUTCDate(utcToday.getUTCDate() + defaultPaymentTerm.days);
+      this.invoiceData.dueDate = this.formatDate(dueDate);
+    } else {
+      // Fallback to 30 days
+      const dueDate = new Date(
+        Date.UTC(
+          utcToday.getUTCFullYear(),
+          utcToday.getUTCMonth(),
+          utcToday.getUTCDate(),
+        ),
+      );
+      dueDate.setUTCDate(utcToday.getUTCDate() + 30);
+      this.invoiceData.dueDate = this.formatDate(dueDate);
+    }
+  }
+
+  private resetFormForNewInvoice(): void {
+    // Check if we're in create mode (not edit mode)
+    const id = this.route.snapshot.paramMap.get('id');
+    if (!id) {
+      // Reset to default with empty items array
+      this.invoiceData = {
+        ...DEFAULT_INVOICE_FORM_DATA,
+        items: [], // Empty items array
+        discounts: [], // Empty discounts array
+        taxDetails: [], // Empty tax details array
+        invoiceAttachments: [], // Empty attachments array
+      };
+      this.isEditMode = false;
+      this.customPaymentTermDays = null;
+      this.showCustomPaymentTerms = false;
+      this.showCustomDaysInput = false;
+      // Re-initialize dates after reset
+      this.initializeDates();
+    }
   }
 
   /** Loads all required initial data */
@@ -212,9 +272,13 @@ export class CreateInvoiceComponent implements OnInit {
       next: () => {
         this.loadTaxTypes().subscribe(() => {
           this.loadCustomers();
-          this.addItem();
           this.setupSearchDebounce();
           this.checkEditMode();
+          // Only add item for new invoice after all data is loaded and not in edit mode
+          if (!this.isEditMode && !this.isInitialized) {
+            this.isInitialized = true;
+            this.addItem();
+          }
         });
       },
       error: () => {
@@ -302,22 +366,11 @@ export class CreateInvoiceComponent implements OnInit {
     this.invoiceService.getInvoiceById(id).subscribe({
       next: (invoice) => {
         this.invoiceData = this.mapInvoiceToFormData(invoice);
+        this.currentInvoiceStatus = invoice.invoiceStatus;
+        this.currentPaymentStatus = invoice.paymentStatus;
         this.selectExistingCustomer(invoice.customerId);
         this.updateTaxDetails();
         this.setPaymentTermFromValue(invoice.paymentTerms);
-        // Update due date based on payment terms if needed
-        if (invoice.paymentTerms) {
-          const matchedTerm = this.paymentTermOptions.find(
-            (t) => t.value === invoice.paymentTerms,
-          );
-          if (
-            matchedTerm &&
-            matchedTerm.days !== null &&
-            matchedTerm.days > 0
-          ) {
-            this.updateDueDateFromPaymentTerms(matchedTerm.days);
-          }
-        }
       },
       error: (err) => {
         console.error('Error fetching invoice:', err);
@@ -330,30 +383,63 @@ export class CreateInvoiceComponent implements OnInit {
       },
     });
   }
-  private updateDueDateFromPaymentTerms(days: number): void {
-    const issueDate = this.parseDate(this.invoiceData.issuedDate);
-    if (issueDate) {
-      const newDueDate = new Date(issueDate);
-      newDueDate.setDate(issueDate.getDate() + days);
-      this.invoiceData.dueDate = this.formatDate(newDueDate);
-    }
-  }
 
   private setPaymentTermFromValue(paymentTerms: string | undefined): void {
-    if (!paymentTerms) return;
+    if (!paymentTerms) {
+      this.invoiceData.paymentTerms = 'Net 30';
+      return;
+    }
+
+    // Check if it's a custom Net term (e.g., "Net 120")
+    if (
+      paymentTerms.startsWith('Net ') &&
+      paymentTerms !== 'Net 7' &&
+      paymentTerms !== 'Net 10' &&
+      paymentTerms !== 'Net 15' &&
+      paymentTerms !== 'Net 30' &&
+      paymentTerms !== 'Net 45' &&
+      paymentTerms !== 'Net 60' &&
+      paymentTerms !== 'Net 90' &&
+      paymentTerms !== 'Net 120'
+    ) {
+      const days = parseInt(paymentTerms.split(' ')[1]);
+      if (!isNaN(days)) {
+        this.customPaymentTermDays = days;
+        this.showCustomPaymentTerms = true;
+        this.showCustomDaysInput = true;
+        this.invoiceData.paymentTerms = paymentTerms;
+        return;
+      }
+    }
 
     const matchedOption = this.paymentTermOptions.find(
       (opt) => opt.value === paymentTerms,
     );
 
-    if (matchedOption) {
+    if (matchedOption && !matchedOption.isCustom) {
       this.invoiceData.paymentTerms = paymentTerms;
       this.showCustomPaymentTerms = false;
+      this.showCustomDaysInput = false;
+      this.customPaymentTermDays = null;
+    } else if (matchedOption && matchedOption.isCustom) {
+      this.showCustomPaymentTerms = true;
+      this.showCustomDaysInput = true;
+      this.invoiceData.paymentTerms = '';
     } else {
       this.invoiceData.paymentTerms = paymentTerms;
       this.showCustomPaymentTerms = true;
+      this.showCustomDaysInput = true;
     }
   }
+
+  // private updateDueDateFromPaymentTerms(days: number): void {
+  //   const issueDate = this.parseDate(this.invoiceData.issuedDate);
+  //   if (issueDate) {
+  //     const newDueDate = new Date(issueDate);
+  //     newDueDate.setDate(issueDate.getDate() + days);
+  //     this.invoiceData.dueDate = this.formatDate(newDueDate);
+  //   }
+  // }
 
   /** Maps Invoice entity to form data structure */
   private mapInvoiceToFormData(invoice: Invoice): InvoiceFormData {
@@ -561,8 +647,12 @@ export class CreateInvoiceComponent implements OnInit {
   // ──────────────────────────────────────────────────────────────────
   parseDate(dateStr: string): Date | null {
     if (!dateStr) return null;
+
+    // Handle dd/mm/yyyy format
     const ddmmyyyyRegex = /^\d{2}\/\d{2}\/\d{4}$/;
+    // Handle yyyy-mm-dd format
     const yyyymmddRegex = /^\d{4}-\d{2}-\d{2}$/;
+
     let day: number, month: number, year: number;
 
     if (ddmmyyyyRegex.test(dateStr)) {
@@ -573,27 +663,44 @@ export class CreateInvoiceComponent implements OnInit {
       return null;
     }
 
+    // Validate date
     if (month < 1 || month > 12 || day < 1 || day > 31 || year < 1900)
       return null;
+
+    // ✅ FIX: Create date in local timezone, not UTC
     const date = new Date(year, month - 1, day);
+
+    // Validate the date is correct
     if (
       date.getMonth() + 1 !== month ||
       date.getDate() !== day ||
       date.getFullYear() !== year
     )
       return null;
+
     return date;
   }
 
   formatDate(date: Date): string {
     if (!date || isNaN(date.getTime())) return '';
-    return `${date.getDate().toString().padStart(2, '0')}/${(date.getMonth() + 1).toString().padStart(2, '0')}/${date.getFullYear()}`;
+
+    // ✅ FIX: Use UTC methods to avoid timezone shifts
+    const day = date.getUTCDate().toString().padStart(2, '0');
+    const month = (date.getUTCMonth() + 1).toString().padStart(2, '0');
+    const year = date.getUTCFullYear();
+
+    return `${day}/${month}/${year}`;
   }
 
   formatDateOnly(date: Date): string {
     if (!date || isNaN(date.getTime()))
       throw new Error('Invalid date provided');
-    return date.toISOString().split('T')[0];
+
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+
+    return `${year}-${month}-${day}`;
   }
 
   validateDates(showErrors: boolean = true): boolean {
@@ -627,15 +734,9 @@ export class CreateInvoiceComponent implements OnInit {
       return;
     }
     this.validateDates();
-    // Also update due date based on payment terms if a standard term is selected
-    if (this.invoiceData.paymentTerms && !this.showCustomPaymentTerms) {
-      const matchedTerm = this.paymentTermOptions.find(
-        (t) => t.value === this.invoiceData.paymentTerms,
-      );
-      if (matchedTerm && matchedTerm.days !== null && matchedTerm.days > 0) {
-        this.updateDueDateFromPaymentTerms(matchedTerm.days);
-      }
-    }
+
+    // Update due date based on current payment terms
+    this.recalculateDueDate();
   }
 
   onDueDateChange(): void {
@@ -684,8 +785,10 @@ export class CreateInvoiceComponent implements OnInit {
   selectDay(day: number): void {
     if (day <= 0) return;
 
-    const selectedDate = new Date(this.currentYear, this.currentMonth, day);
-    const formattedDate = `${day.toString().padStart(2, '0')}/${(this.currentMonth + 1).toString().padStart(2, '0')}/${this.currentYear}`;
+    const selectedDate = new Date(
+      Date.UTC(this.currentYear, this.currentMonth, day),
+    );
+    const formattedDate = this.formatDate(selectedDate);
 
     if (this.calendarType === 'issued') {
       this.invoiceData.issuedDate = formattedDate;
@@ -799,35 +902,151 @@ export class CreateInvoiceComponent implements OnInit {
   }
 
   // ──────────────────────────────────────────────────────────────────
-  // Notes Section Toggle
-  // ──────────────────────────────────────────────────────────────────
-  toggleNotesSection(): void {
-    this.showNotesSection = !this.showNotesSection;
-  }
-
-  toggleNoteSection(section: keyof typeof this.notesSections): void {
-    this.notesSections[section] = !this.notesSections[section];
-  }
-
-  // ──────────────────────────────────────────────────────────────────
-  // Payment Terms Handling
+  // Payment Terms Handling Methods
   // ──────────────────────────────────────────────────────────────────
   onPaymentTermChange(selectedValue: string): void {
+    const selectedTerm = this.paymentTermOptions.find(
+      (t) => t.value === selectedValue,
+    );
     if (selectedValue === 'Custom') {
       this.showCustomPaymentTerms = true;
+      this.showCustomDaysInput = true;
+      this.invoiceData.paymentTerms = '';
+      this.customPaymentTermDays = null;
+    } else if (selectedTerm && selectedTerm.isCustom) {
+      this.showCustomPaymentTerms = true;
+      this.showCustomDaysInput = true;
       this.invoiceData.paymentTerms = '';
     } else {
       this.showCustomPaymentTerms = false;
+      this.showCustomDaysInput = false;
       this.invoiceData.paymentTerms = selectedValue;
-
-      // Update due date based on selected payment terms
-      const matchedTerm = this.paymentTermOptions.find(
-        (t) => t.value === selectedValue,
-      );
-      if (matchedTerm && matchedTerm.days !== null && matchedTerm.days > 0) {
-        this.updateDueDateFromPaymentTerms(matchedTerm.days);
-      }
+      this.recalculateDueDate();
     }
+  }
+
+  onCustomDaysChange(): void {
+    if (this.customPaymentTermDays && this.customPaymentTermDays > 0) {
+      this.invoiceData.paymentTerms = `Net ${this.customPaymentTermDays}`;
+      this.recalculateDueDate();
+    }
+  }
+
+  private recalculateDueDate(): void {
+    const issueDate = this.parseDate(this.invoiceData.issuedDate);
+    if (!issueDate) return;
+
+    let dueDate: Date;
+
+    if (this.showCustomPaymentTerms && this.customPaymentTermDays) {
+      // ✅ FIX: Clone date properly and add days in UTC
+      dueDate = new Date(
+        Date.UTC(
+          issueDate.getUTCFullYear(),
+          issueDate.getUTCMonth(),
+          issueDate.getUTCDate(),
+        ),
+      );
+      dueDate.setUTCDate(issueDate.getUTCDate() + this.customPaymentTermDays);
+    } else if (this.invoiceData.paymentTerms) {
+      const daysToAdd = this.getDaysFromPaymentTerm(
+        this.invoiceData.paymentTerms,
+      );
+      if (daysToAdd !== null) {
+        dueDate = new Date(
+          Date.UTC(
+            issueDate.getUTCFullYear(),
+            issueDate.getUTCMonth(),
+            issueDate.getUTCDate(),
+          ),
+        );
+        dueDate.setUTCDate(issueDate.getUTCDate() + daysToAdd);
+      } else {
+        dueDate = new Date(
+          Date.UTC(
+            issueDate.getUTCFullYear(),
+            issueDate.getUTCMonth(),
+            issueDate.getUTCDate(),
+          ),
+        );
+        dueDate.setUTCDate(issueDate.getUTCDate() + 30);
+      }
+    } else {
+      dueDate = new Date(
+        Date.UTC(
+          issueDate.getUTCFullYear(),
+          issueDate.getUTCMonth(),
+          issueDate.getUTCDate(),
+        ),
+      );
+      dueDate.setUTCDate(issueDate.getUTCDate() + 30);
+    }
+
+    this.invoiceData.dueDate = this.formatDate(dueDate);
+  }
+
+  // Helper method to extract days from payment term
+  private getDaysFromPaymentTerm(paymentTerm: string): number | null {
+    if (!paymentTerm) return null;
+
+    // Handle "Net X" format
+    const netMatch = paymentTerm.match(/Net\s+(\d+)/i);
+    if (netMatch) {
+      return parseInt(netMatch[1], 10);
+    }
+
+    // Handle other terms
+    switch (paymentTerm.toLowerCase()) {
+      case 'due on receipt':
+        return 0;
+      case 'cod':
+        return 0;
+      case 'eom':
+        return this.getEndOfMonthDays();
+      default:
+        return null;
+    }
+  }
+
+  private getEndOfMonthDays(): number {
+    const issueDate = this.parseDate(this.invoiceData.issuedDate);
+    if (!issueDate) return 30;
+
+    const lastDayOfMonth = new Date(
+      issueDate.getUTCFullYear(),
+      issueDate.getUTCMonth() + 1,
+      0,
+    );
+    return lastDayOfMonth.getUTCDate() - issueDate.getUTCDate();
+  }
+
+  selectPaymentTerm(value: string): void {
+    this.onPaymentTermChange(value);
+    this.showPaymentTermsDropdown = false;
+  }
+
+  getSelectedPaymentTermLabel(): string {
+    if (!this.invoiceData.paymentTerms) return 'Select Payment Terms';
+
+    if (this.showCustomPaymentTerms && this.customPaymentTermDays) {
+      return `Net ${this.customPaymentTermDays} Days (Custom)`;
+    }
+
+    const matchedTerm = this.paymentTermOptions.find(
+      (t) => t.value === this.invoiceData.paymentTerms,
+    );
+
+    if (matchedTerm) {
+      return matchedTerm.label;
+    }
+
+    // Handle custom Net terms
+    if (this.invoiceData.paymentTerms.startsWith('Net ')) {
+      const days = this.invoiceData.paymentTerms.split(' ')[1];
+      return `Net ${days} Days`;
+    }
+
+    return this.invoiceData.paymentTerms;
   }
 
   // ──────────────────────────────────────────────────────────────────
@@ -954,7 +1173,7 @@ export class CreateInvoiceComponent implements OnInit {
       this.updateTotals(); // Recalculate totals when discount type changes
     }
   }
-  
+
   onTaxTypeChange(): void {
     this.updateTaxDetails();
   }
@@ -971,14 +1190,6 @@ export class CreateInvoiceComponent implements OnInit {
     }
     this.showTaxDropdown = false;
     this.currentTaxItemIndex = -1;
-  }
-  // Optional: Close dropdown when clicking outside
-  @HostListener('document:click', ['$event'])
-  onClickOutside(event: Event): void {
-    const target = event.target as HTMLElement;
-    if (!target.closest('.custom-dropdown')) {
-      this.showTaxDropdown = false;
-    }
   }
 
   // ──────────────────────────────────────────────────────────────────
@@ -1014,6 +1225,9 @@ export class CreateInvoiceComponent implements OnInit {
 
     // Validate Company
     if (!this.validateCompany(showErrors)) isValid = false;
+
+    // Validate Payment Terms
+    if (!this.validatePaymentTerms(showErrors)) isValid = false;
 
     return isValid;
   }
@@ -1138,6 +1352,22 @@ export class CreateInvoiceComponent implements OnInit {
     return true;
   }
 
+  private validatePaymentTerms(showErrors: boolean): boolean {
+    if (this.showCustomPaymentTerms && this.customPaymentTermDays) {
+      if (this.customPaymentTermDays < 1) {
+        if (showErrors)
+          this.errors['paymentTerms'] = 'Payment term must be at least 1 day';
+        return false;
+      }
+      if (this.customPaymentTermDays > 365) {
+        if (showErrors)
+          this.errors['paymentTerms'] = 'Payment term cannot exceed 365 days';
+        return false;
+      }
+    }
+    return true;
+  }
+
   // ──────────────────────────────────────────────────────────────────
   // Save Operations
   // ──────────────────────────────────────────────────────────────────
@@ -1147,9 +1377,26 @@ export class CreateInvoiceComponent implements OnInit {
   ): void {
     if (!this.validateInvoiceData()) return;
 
+    // Show loader with progress steps
+    this.showInvoiceLoader(this.isEditMode);
+    // Step 1: Validating Data (0-25%)
+    setTimeout(() => {
+      this.updateLoaderProgress(1, 25, 'Validating invoice data...');
+    }, 500);
     const issueDate = this.parseDate(this.invoiceData.issuedDate)!;
     const dueDate = this.parseDate(this.invoiceData.dueDate)!;
     const formData = this.buildFormData(status, issueDate, dueDate);
+
+    // Step 2: Saving/Updating (25-75%)
+    setTimeout(() => {
+      this.updateLoaderProgress(
+        2,
+        50,
+        this.isEditMode
+          ? 'Updating invoice in database...'
+          : 'Creating invoice in database...',
+      );
+    }, 1500);
 
     const request =
       this.isEditMode && this.invoiceData.id
@@ -1157,9 +1404,24 @@ export class CreateInvoiceComponent implements OnInit {
         : this.invoiceService.createInvoice(formData);
 
     request.subscribe({
-      next: (response) =>
-        this.handleSaveSuccess(response, status, continueEditing),
-      error: (err) => this.handleSaveError(err),
+      next: (response) => {
+        // Step 3: Processing complete (75-100%)
+        this.updateLoaderProgress(3, 75, 'Processing attachments...');
+
+        setTimeout(() => {
+          this.updateLoaderProgress(4, 100, 'Finalizing...');
+
+          setTimeout(() => {
+            this.loaderService.hide();
+            this.handleSaveSuccess(response, status, continueEditing);
+          }, 500);
+        }, 500);
+      },
+      error: (err) => {
+        this.loaderService.hide();
+        // ✅ Use existing handleSaveError dialog instead of loader error
+        this.handleSaveError(err);
+      },
     });
   }
 
@@ -1204,10 +1466,15 @@ export class CreateInvoiceComponent implements OnInit {
       'PaymentMethod',
       this.invoiceData.paymentMethod?.trim() || '',
     );
-    formData.append(
-      'PaymentTerms',
-      this.invoiceData.paymentTerms?.trim() || 'Net 30',
-    );
+    // Save payment terms - for custom terms, save the formatted string
+    if (this.showCustomPaymentTerms && this.customPaymentTermDays) {
+      formData.append('PaymentTerms', `Net ${this.customPaymentTermDays}`);
+    } else {
+      formData.append(
+        'PaymentTerms',
+        this.invoiceData.paymentTerms?.trim() || 'Net 30',
+      );
+    }
     formData.append(
       'ShippingAmount',
       (this.invoiceData.shippingAmount || 0).toString(),
@@ -1356,14 +1623,38 @@ export class CreateInvoiceComponent implements OnInit {
 
   private handleSaveError(err: any): void {
     console.error('Error saving invoice:', err);
-    const errorMessage =
-      err.error?.detail || err.message || 'Failed to save invoice.';
-    this.openDialog(
-      'error',
-      'Save Failed',
-      'Failed to save invoice.',
-      errorMessage,
-    );
+
+    let title = 'Save Failed';
+    let subMessage = 'We encountered an issue:'; // Default sub-message
+    let message = 'An unexpected error occurred.';
+
+    if (err.status === 0) {
+      title = 'Connection Error';
+      subMessage = 'Network issue detected:';
+      message =
+        'Could not connect to the server. Please check if the API is running.';
+    } else if (err.error) {
+      title = err.error.title || 'Validation Error';
+      // If it's a 400 error, the sub-message should guide the user to fix data
+      subMessage =
+        err.status === 400 ? 'Please check the following:' : 'Server response:';
+      message =
+        err.error.detail ||
+        err.error.message ||
+        'The server returned an error.';
+
+      if (err.error.errors) {
+        const validationMessages = Object.values(err.error.errors).flat();
+        if (validationMessages.length > 0) {
+          message = validationMessages.join('\n');
+        }
+      }
+    } else {
+      message = err.message || 'Failed to save invoice.';
+    }
+
+    // Now passing the dynamic subMessage
+    this.openDialog('error', title, subMessage, message);
   }
 
   saveToDraft(): void {
@@ -1380,7 +1671,19 @@ export class CreateInvoiceComponent implements OnInit {
 
   sendInvoice(): void {
     if (this.validateInvoiceData()) {
-      this.saveInvoice('Sent');
+      // Show confirmation before sending
+      this.loaderService.showWarning(
+        'Send Invoice',
+        'Are you sure you want to send this invoice to the customer?',
+        () => {
+          // User confirmed - proceed with sending
+          this.saveInvoice('Sent');
+        },
+        () => {
+          // User cancelled
+          console.log('Send invoice cancelled');
+        },
+      );
     }
   }
 
@@ -1433,7 +1736,7 @@ export class CreateInvoiceComponent implements OnInit {
       amountDue: parseFloat(this.getTotal()),
       amountRefunded: 0,
       paymentMethod: this.invoiceData.paymentMethod,
-      paymentTerms: this.invoiceData.paymentTerms,
+      paymentTerms: this.getPaymentTermForPreview(),
       notes: this.invoiceData.customerNotes || '',
       customerNotes: this.invoiceData.customerNotes,
       internalNotes: this.invoiceData.internalNotes,
@@ -1479,6 +1782,13 @@ export class CreateInvoiceComponent implements OnInit {
       createdDate: new Date(),
       createdBy: 'system',
     };
+  }
+
+  private getPaymentTermForPreview(): string {
+    if (this.showCustomPaymentTerms && this.customPaymentTermDays) {
+      return `Net ${this.customPaymentTermDays}`;
+    }
+    return this.invoiceData.paymentTerms || 'Net 30';
   }
 
   private openPreviewDialog(invoice: Invoice): void {
@@ -1724,17 +2034,7 @@ export class CreateInvoiceComponent implements OnInit {
   togglePaymentTermsDropdown(): void {
     this.showPaymentTermsDropdown = !this.showPaymentTermsDropdown;
   }
-  selectPaymentTerm(value: string): void {
-    this.invoiceData.paymentTerms = value;
-    this.onPaymentTermChange(value); // Keep your existing logic
-    this.showPaymentTermsDropdown = false;
-  }
-  getSelectedPaymentTermLabel(): string {
-    const selected = this.paymentTermOptions.find(
-      (t) => t.value === this.invoiceData.paymentTerms,
-    );
-    return selected ? selected.label : 'Select Payment Terms';
-  }
+
   // ──────────────────────────────────────────────────────────────────
   // Input Change Handlers
   // ──────────────────────────────────────────────────────────────────
@@ -1823,6 +2123,345 @@ export class CreateInvoiceComponent implements OnInit {
       !target.closest('.date-input-wrapper')
     ) {
       this.showCalendar = false;
+    }
+
+    if (this.showStatusMenu && !target.closest('.relative')) {
+      this.showStatusMenu = false;
+    }
+  }
+
+  // ──────────────────────────────────────────────────────────────────
+  // Status Menu Methods
+  // ──────────────────────────────────────────────────────────────────
+  // Add these getters for menu item visibility
+  get canMarkAsDraft(): boolean {
+    return this.isEditMode && this.currentInvoiceStatus !== 'Draft';
+  }
+
+  get canMarkAsSent(): boolean {
+    return (
+      this.isEditMode &&
+      this.currentInvoiceStatus !== 'Sent' &&
+      this.currentInvoiceStatus !== 'Paid'
+    );
+  }
+
+  get canMarkAsViewed(): boolean {
+    return this.isEditMode && this.currentInvoiceStatus === 'Sent';
+  }
+
+  get canMarkAsPaid(): boolean {
+    return (
+      this.isEditMode &&
+      this.currentInvoiceStatus !== 'Paid' &&
+      this.currentInvoiceStatus !== 'Void'
+    );
+  }
+
+  get canMarkAsPartiallyPaid(): boolean {
+    return (
+      this.isEditMode &&
+      this.currentInvoiceStatus !== 'Paid' &&
+      this.currentInvoiceStatus !== 'PartiallyPaid'
+    );
+  }
+  get canMarkAsOverdue(): boolean {
+    return (
+      this.isEditMode &&
+      this.currentInvoiceStatus !== 'Overdue' &&
+      this.currentInvoiceStatus !== 'Paid'
+    );
+  }
+
+  get canMarkAsVoid(): boolean {
+    return this.isEditMode && this.currentInvoiceStatus !== 'Void';
+  }
+
+  get canSendInvoice(): boolean {
+    return (
+      this.isEditMode &&
+      this.currentInvoiceStatus !== 'Sent' &&
+      this.currentInvoiceStatus !== 'Paid'
+    );
+  }
+
+  toggleStatusMenu(): void {
+    this.showStatusMenu = !this.showStatusMenu;
+  }
+
+  updateInvoiceStatus(status: string): void {
+    this.showStatusMenu = false;
+
+    // Show confirmation dialog based on status change
+    let message = `Are you sure you want to mark this invoice as ${status}?`;
+    let submessage = '';
+
+    switch (status) {
+      case 'Paid':
+        submessage =
+          'This will mark the invoice as fully paid. The payment status will be updated to "Paid".';
+        break;
+      case 'Sent':
+        submessage = 'This will mark the invoice as sent to the customer.';
+        break;
+      case 'Void':
+        submessage =
+          'This will void the invoice. This action cannot be undone.';
+        break;
+      case 'Overdue':
+        submessage = 'This will mark the invoice as overdue.';
+        break;
+      default:
+        submessage = `The invoice status will be updated to "${status}".`;
+    }
+
+    const confirmDialog = this.dialog.open(NotificationDialogComponent, {
+      width: '400px',
+      data: {
+        type: 'confirm',
+        title: `Confirm Status Change`,
+        message: message,
+        submessage: submessage,
+        confirmText: 'Yes, Update',
+        cancelText: 'Cancel',
+      },
+    });
+
+    confirmDialog.afterClosed().subscribe((result) => {
+      if (result) {
+        this.performStatusUpdate(status);
+      }
+    });
+  }
+
+  private performStatusUpdate(status: string): void {
+    if (!this.invoiceData.id) return;
+
+    this.loaderService.showLoading(
+      'Updating Status',
+      `Marking invoice as ${status}...`,
+    );
+
+    // Map status to appropriate fields
+    const updateData: any = {
+      invoiceStatus: status,
+      paymentStatus: this.getPaymentStatusForInvoiceStatus(status),
+    };
+
+    // If marking as paid, set paid date
+    if (status === 'Paid') {
+      updateData.paidDate = new Date().toISOString();
+    }
+
+    // If marking as sent, set sent date
+    if (status === 'Sent') {
+      updateData.sentDate = new Date().toISOString();
+    }
+
+    this.invoiceService
+      .updateInvoiceStatus(this.invoiceData.id, updateData)
+      .subscribe({
+        next: (response) => {
+          this.loaderService.hide();
+          this.currentInvoiceStatus = status;
+          this.currentPaymentStatus = updateData.paymentStatus;
+          this.openDialog(
+            'success',
+            'Status Updated',
+            `Invoice status updated to "${status}" successfully!`,
+            `The invoice has been marked as ${status}.`,
+          );
+
+          // this.loaderService.showSuccess(
+          //   'Status Updated',
+          //   `Invoice status updated to "${status}" successfully!`,
+          //   3000
+          // );
+          // Reload invoice data to refresh all fields
+          this.loadInvoiceData(this.invoiceData.id!);
+        },
+        error: (err) => {
+          // this.isLoading = false;
+          console.error('Error updating invoice status:', err);
+          // this.openDialog(
+          //   'error',
+          //   'Update Failed',
+          //   'Failed to update invoice status.',
+          //   err.error?.detail || 'Please try again later.',
+          // );
+          this.loaderService.hide();
+          this.loaderService.showError(
+            'Update Failed',
+            err.error?.detail || 'Failed to update invoice status.',
+            () => this.performStatusUpdate(status),
+          );
+        },
+      });
+  }
+  private getPaymentStatusForInvoiceStatus(invoiceStatus: string): string {
+    switch (invoiceStatus) {
+      case 'Paid':
+        return 'Paid';
+      case 'PartiallyPaid':
+        return 'PartiallyPaid';
+      case 'Overdue':
+        return 'Overdue';
+      case 'Void':
+        return 'Cancelled';
+      case 'Sent':
+        return 'Pending';
+      default:
+        return 'Pending';
+    }
+  }
+  getStatusBadgeClass(status: string): string {
+    switch (status) {
+      case 'Draft':
+        return 'bg-gray-100 text-gray-800';
+      case 'Sent':
+        return 'bg-blue-100 text-blue-800';
+      case 'Viewed':
+        return 'bg-purple-100 text-purple-800';
+      case 'Paid':
+        return 'bg-green-100 text-green-800';
+      case 'PartiallyPaid':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'Overdue':
+        return 'bg-red-100 text-red-800';
+      case 'Void':
+        return 'bg-gray-200 text-gray-600';
+      default:
+        return 'bg-gray-100 text-gray-800';
+    }
+  }
+
+  getStatusIcon(status: string): string {
+    switch (status) {
+      case 'Draft':
+        return 'edit_note';
+      case 'Sent':
+        return 'send';
+      case 'Viewed':
+        return 'visibility';
+      case 'Paid':
+        return 'paid';
+      case 'PartiallyPaid':
+        return 'payments';
+      case 'Overdue':
+        return 'warning';
+      case 'Void':
+        return 'block';
+      default:
+        return 'info';
+    }
+  }
+
+  // ──────────────────────────────────────────────────────────────────
+  // Loader Management Methods
+  // ──────────────────────────────────────────────────────────────────
+
+  /**
+   * Shows loading spinner with progress steps for create/update operations
+   */
+  private showInvoiceLoader(isEditMode: boolean): void {
+    const title = isEditMode ? 'Updating Invoice' : 'Creating Invoice';
+    const steps = isEditMode
+      ? [
+          'Validating Data',
+          'Updating Invoice',
+          'Processing Attachments',
+          'Finalizing',
+        ]
+      : [
+          'Validating Data',
+          'Creating Invoice',
+          'Processing Attachments',
+          'Finalizing',
+        ];
+
+    this.loaderService.showProgress(
+      title,
+      'Preparing your invoice data...',
+      steps,
+    );
+  }
+
+  /**
+   * Updates loader progress during invoice save operation
+   */
+  private updateLoaderProgress(
+    step: number,
+    progress: number,
+    message: string,
+  ): void {
+    this.loaderService.updateProgress(progress, step, message);
+  }
+
+  /**
+   * Shows warning confirmation dialog for status changes
+   */
+  private showStatusChangeWarning(status: string, onConfirm: () => void): void {
+    let message = `Are you sure you want to mark this invoice as ${status}?`;
+    let submessage = '';
+
+    switch (status) {
+      case 'Paid':
+        submessage =
+          'This will mark the invoice as fully paid. The payment status will be updated to "Paid".';
+        break;
+      case 'Sent':
+        submessage = 'This will mark the invoice as sent to the customer.';
+        break;
+      case 'Void':
+        submessage =
+          'This will void the invoice. This action cannot be undone.';
+        break;
+      case 'Overdue':
+        submessage = 'This will mark the invoice as overdue.';
+        break;
+      default:
+        submessage = `The invoice status will be updated to "${status}".`;
+    }
+
+    this.loaderService.showWarning(
+      `Confirm Status Change`,
+      message,
+      onConfirm,
+      () => console.log('Status change cancelled'),
+    );
+  }
+  /**
+   * Gets the currency symbol for the selected currency
+   */
+  getCurrencySymbol(): string {
+    const currency = this.invoiceData.currency;
+    switch (currency) {
+      case 'USD':
+        return '$';
+      case 'EUR':
+        return '€';
+      case 'GBP':
+        return '£';
+      case 'INR':
+        return '₹';
+      case 'JPY':
+        return '¥';
+      case 'CAD':
+        return 'C$';
+      case 'AUD':
+        return 'A$';
+      case 'CHF':
+        return 'CHF';
+      case 'CNY':
+        return '¥';
+      case 'NZD':
+        return 'NZ$';
+      case 'SGD':
+        return 'S$';
+      case 'HKD':
+        return 'HK$';
+      default:
+        return '$';
     }
   }
 }

@@ -36,7 +36,7 @@ import { MatIconModule } from '@angular/material/icon';
             class="action-btn" 
             [ngClass]="data.type"
             (click)="dialogRef.close(true)">
-            {{ data.buttonText || (data.type === 'success' ? 'Done' : 'Try Again') }}
+            {{ data.buttonText || (data.type === 'success' ? 'Ok' : 'Try Again') }}
           </button>
         </mat-dialog-actions>
 

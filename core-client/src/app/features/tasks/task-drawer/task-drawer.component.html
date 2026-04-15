@@ -1,0 +1,214 @@
+<!-- src/app/features/tasks/task-drawer/task-drawer.component.html -->
+<div class="drawer-overlay" (click)="close()">
+  <div class="drawer-container" [@slideIn] (click)="$event.stopPropagation()">
+    <!-- Drawer Header -->
+    <div class="drawer-header">
+      <div class="header-left">
+        <button class="close-btn" (click)="close()">
+          <mat-icon>close</mat-icon>
+        </button>
+        <h2>{{ isEditMode ? 'Edit Task' : 'Create New Task' }}</h2>
+      </div>
+      <div class="header-right">
+        <div class="task-badge" [style.background]="getPriorityBg(task.priority)">
+          <mat-icon [style.color]="getPriorityColor(task.priority)">
+            {{ getPriorityIcon(task.priority) }}
+          </mat-icon>
+          <span [style.color]="getPriorityColor(task.priority)">
+            {{ getPriorityLabel(task.priority) }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Drawer Content -->
+    <div class="drawer-content">
+      <!-- Title Section -->
+      <div class="form-section">
+        <div class="section-title">
+          <mat-icon>title</mat-icon>
+          <span>Task Details</span>
+        </div>
+        
+        <div class="form-group">
+          <label class="required">Task Title</label>
+          <input
+            type="text"
+            class="form-control"
+            [(ngModel)]="task.title"
+            placeholder="Enter task title"
+            autofocus
+          />
+        </div>
+
+        <div class="form-group">
+          <label>Description</label>
+          <textarea
+            class="form-control textarea"
+            [(ngModel)]="task.description"
+            placeholder="Describe what needs to be done..."
+            rows="4"
+          ></textarea>
+        </div>
+      </div>
+
+      <!-- Priority Section -->
+      <div class="form-section">
+        <div class="section-title">
+          <mat-icon>flag</mat-icon>
+          <span>Priority Level</span>
+        </div>
+        
+        <div class="priority-options">
+          <div
+            *ngFor="let option of priorityOptions"
+            class="priority-option"
+            [class.selected]="task.priority === option.value"
+            (click)="task.priority = option.value"
+          >
+            <div class="priority-icon" [style.background]="option.bg">
+              <mat-icon [style.color]="option.color">{{ option.icon }}</mat-icon>
+            </div>
+            <span class="priority-label" [style.color]="option.color">
+              {{ option.label }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Assignment & Dates -->
+      <div class="form-row-2">
+        <div class="form-section">
+          <div class="section-title">
+            <mat-icon>person</mat-icon>
+            <span>Assignment</span>
+          </div>
+          
+          <div class="form-group">
+            <label>Assign To</label>
+            <select class="form-control" [(ngModel)]="task.assignedToUserId">
+              <option [value]="null">Select user...</option>
+              <option *ngFor="let user of users" [value]="user.id">
+                 {{ getUserDisplayName(user) }}
+              </option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="section-title">
+            <mat-icon>schedule</mat-icon>
+            <span>Timeline</span>
+          </div>
+          
+          <div class="form-group">
+            <label>Due Date</label>
+            <input type="date" class="form-control" [(ngModel)]="task.dueDate" />
+          </div>
+
+          <div class="form-group">
+            <label>Reminder Date</label>
+            <input type="datetime-local" class="form-control" [(ngModel)]="task.reminderDate" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Categorization -->
+      <div class="form-row-2">
+        <div class="form-section">
+          <div class="section-title">
+            <mat-icon>label</mat-icon>
+            <span>Categorization</span>
+          </div>
+          
+          <div class="form-group">
+            <label>Category</label>
+            <input type="text" class="form-control" [(ngModel)]="task.category" placeholder="e.g., Development, Design" />
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="section-title">
+            <mat-icon>local_offer</mat-icon>
+            <span>Tags</span>
+          </div>
+          
+          <div class="form-group">
+            <label>Tag</label>
+            <input type="text" class="form-control" [(ngModel)]="task.tag" placeholder="e.g., urgent, review" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Time Tracking & Recurring -->
+      <div class="form-row-2">
+        <div class="form-section">
+          <div class="section-title">
+            <mat-icon>timer</mat-icon>
+            <span>Time Tracking</span>
+          </div>
+          
+          <div class="form-group">
+            <label>Estimated Hours</label>
+            <input type="number" step="0.5" class="form-control" [(ngModel)]="task.estimatedHours" placeholder="Hours" />
+          </div>
+        </div>
+
+        <div class="form-section">
+          <div class="section-title">
+            <mat-icon>repeat</mat-icon>
+            <span>Recurring Task</span>
+          </div>
+          
+          <div class="form-group checkbox-group">
+            <label class="checkbox-label">
+              <input type="checkbox" [(ngModel)]="task.isRecurring" />
+              <span>Make this a recurring task</span>
+            </label>
+          </div>
+
+          <div *ngIf="task.isRecurring" class="form-group">
+            <label>Recurrence Pattern</label>
+            <select class="form-control" [(ngModel)]="task.recurrencePattern">
+              <option *ngFor="let pattern of recurrencePatterns" [value]="pattern.value">
+                {{ pattern.label }}
+              </option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Parent Task -->
+      <div class="form-section" *ngIf="parentTasks.length > 0">
+        <div class="section-title">
+          <mat-icon>account_tree</mat-icon>
+          <span>Parent Task</span>
+        </div>
+        
+        <div class="form-group">
+          <label>Make this a subtask of</label>
+          <select class="form-control" [(ngModel)]="task.parentTaskId">
+            <option [value]="null">None (Top-level task)</option>
+            <option *ngFor="let parent of parentTasks" [value]="parent.id">
+              {{ parent.title }}
+            </option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- Drawer Footer -->
+    <div class="drawer-footer">
+      <button class="btn-cancel" (click)="close()">
+        Cancel
+      </button>
+      <button class="btn-save" (click)="saveTask()" [disabled]="saving">
+        <mat-icon *ngIf="!saving">{{ isEditMode ? 'save' : 'add' }}</mat-icon>
+        <mat-icon *ngIf="saving" class="spinner-icon">
+          <mat-spinner diameter="20" color="accent"></mat-spinner>
+        </mat-icon>
+        {{ isEditMode ? (saving ? 'Saving...' : 'Update Task') : (saving ? 'Creating...' : 'Create Task') }}
+      </button>
+    </div>
+  </div>
+</div>

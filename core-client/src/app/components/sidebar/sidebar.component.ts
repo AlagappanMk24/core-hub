@@ -47,12 +47,6 @@ export class SidebarComponent implements OnInit {
       route: '/dashboard', // Will be overridden for customers
       active: true,
     },
-    // {
-    //   label: 'Invoices',
-    //   icon: 'fas fa-file-invoice',
-    //   route: '/invoices',
-    //   active: false,
-    // },
     {
       label: 'Invoices', // Concise and clear
       icon: 'fas fa-file-invoice',
@@ -130,6 +124,22 @@ export class SidebarComponent implements OnInit {
       route: '/company-requests',
       active: false,
       requiredRole: 'Admin',
+    },
+    {
+      label: 'Tasks',
+      icon: 'fas fa-tasks', // or 'fas fa-check-double'
+      route: '/tasks',
+      active: false,
+      hasSubmenu: true,
+      submenuOpen: false,
+      subItems: [
+        {
+          label: 'All Tasks',
+          icon: 'fas fa-list-ul',
+          route: '/tasks/list',
+          active: false,
+        },
+      ],
     },
     {
       label: 'Support',

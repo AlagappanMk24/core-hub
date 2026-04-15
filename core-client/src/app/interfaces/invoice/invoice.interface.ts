@@ -277,10 +277,16 @@ export interface StatsItem {
 }
 
 export interface InvoiceSettings {
+ companyId?: number;
   isAutomated: boolean;
   invoicePrefix: string;
   invoiceStartingNumber: number;
-  // companyId: number;
+  invoiceNumberFormat?: string;
+  lastUsedNumber?: number;
+  lastUsedYear?: number;
+  includeYear: boolean;
+  separator: string;
+  numberPadding: number;
 }
 
 export interface InvoiceFilter {

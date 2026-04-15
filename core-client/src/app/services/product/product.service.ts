@@ -16,24 +16,17 @@ export class ProductService {
     private authService: AuthService
   ) {}
 
-  private getHeaders(): HttpHeaders {
-    const token = this.authService.getAuthToken();
-    return new HttpHeaders({
-      'Content-Type': 'application/json',
-      ...(token ? { Authorization: `Bearer ${token}` } : {})
-    });
-  }
 
   getAllProducts(): Observable<ProductResponse[]> {
-    return this.http.get<ProductResponse[]>(`${this.apiBaseUrl}home`, { headers: this.getHeaders() });
+    return this.http.get<ProductResponse[]>(`${this.apiBaseUrl}home`);
   }
 
   getTrendingProducts(): Observable<ProductResponse[]> {
-    return this.http.get<ProductResponse[]>(`${this.apiBaseUrl}home/trending`, { headers: this.getHeaders() });
+    return this.http.get<ProductResponse[]>(`${this.apiBaseUrl}home/trending`,);
   }
 
  getCart(): Observable<CartViewModel> {
-  return this.http.get<CartViewModel>(`${this.apiBaseUrl}cart`, { headers: this.getHeaders() })
+  return this.http.get<CartViewModel>(`${this.apiBaseUrl}cart`)
     .pipe(
       tap(response => console.log('GetCart Response:', response)),
       catchError(error => {
@@ -48,14 +41,14 @@ export class ProductService {
 }
 
   addToCart(request: AddToCartRequest): Observable<CartViewModel> {
-    return this.http.post<CartViewModel>(`${this.apiBaseUrl}cart`, request, { headers: this.getHeaders() });
+    return this.http.post<CartViewModel>(`${this.apiBaseUrl}cart`, request, );
   }
 
   updateCartItemCount(cartItemId: number, count: number): Observable<CartViewModel> {
-     return this.http.put<CartViewModel>(`${this.apiBaseUrl}cart/${cartItemId}`, count, { headers: this.getHeaders() });
+     return this.http.put<CartViewModel>(`${this.apiBaseUrl}cart/${cartItemId}`, count,);
   }
 
   removeFromCart(cartItemId: number): Observable<CartViewModel> {
-    return this.http.delete<CartViewModel>(`${this.apiBaseUrl}cart/${cartItemId}`, { headers: this.getHeaders() });
+    return this.http.delete<CartViewModel>(`${this.apiBaseUrl}cart/${cartItemId}`, );
   }
 }

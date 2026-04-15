@@ -12,11 +12,57 @@ export const PAYMENT_METHODS: PaymentMethod[] = [
   { value: 'UPI', display: 'UPI', icon: 'upi' },
 ];
 
+export interface PaymentTermOption {
+  value: string;
+  label: string;
+  days: number | null;
+  isCustom: boolean;
+  specialCalculation?: 'EOM' | '15thFollowing' | 'EOM+10';
+  description?: string;
+}
+
 export interface DiscountTypeOption {
   value: number;        // Backend enum value
   label: string;        // Display label
   displayValue: DiscountTypeDisplay;  // UI display value
 }
+
+export const PAYMENT_TERM_OPTIONS: PaymentTermOption[] = [
+  { value: 'Due on Receipt', label: 'Due on Receipt', days: 0, isCustom: false, description: 'Payment due immediately upon receipt' },
+  { value: 'Net 7', label: 'Net 7 Days', days: 7, isCustom: false, description: 'Payment due within 7 days' },
+  { value: 'Net 10', label: 'Net 10 Days', days: 10, isCustom: false, description: 'Payment due within 10 days' },
+  { value: 'Net 15', label: 'Net 15 Days', days: 15, isCustom: false, description: 'Payment due within 15 days' },
+  { value: 'Net 30', label: 'Net 30 Days', days: 30, isCustom: false, description: 'Payment due within 30 days' },
+  { value: 'Net 45', label: 'Net 45 Days', days: 45, isCustom: false, description: 'Payment due within 45 days' },
+  { value: 'Net 60', label: 'Net 60 Days', days: 60, isCustom: false, description: 'Payment due within 60 days' },
+  { value: 'Net 90', label: 'Net 90 Days', days: 90, isCustom: false, description: 'Payment due within 90 days' },
+  { value: 'Net 120', label: 'Net 120 Days', days: 120, isCustom: false, description: 'Payment due within 120 days' },
+  { 
+    value: 'EOM', 
+    label: 'End of Month', 
+    days: null, 
+    isCustom: false, 
+    specialCalculation: 'EOM',
+    description: 'Payment due at the end of the current month'
+  },
+  { 
+    value: '15th Following Month', 
+    label: '15th of Following Month', 
+    days: null, 
+    isCustom: false, 
+    specialCalculation: '15thFollowing',
+    description: 'Payment due on the 15th day of the next month'
+  },
+  { 
+    value: 'EOM+10', 
+    label: 'End of Month + 10 Days', 
+    days: null, 
+    isCustom: false, 
+    specialCalculation: 'EOM+10',
+    description: 'Payment due 10 days after the end of the month'
+  },
+  { value: 'Custom', label: 'Custom', days: null, isCustom: true, description: 'Define your own payment terms' }
+];
 
 export const DISCOUNT_TYPES: DiscountTypeOption[] = [
   { value: 0, label: 'Percentage (%)', displayValue: 'Percentage' },
@@ -88,3 +134,41 @@ export const DEFAULT_INVOICE_FORM_DATA = {
   adjustmentAmount: 0,
   invoiceAttachments: [],
 };
+
+// Helper function to calculate due date based on payment terms
+export function calculateDueDateFromPaymentTerm(issueDate: Date, paymentTermValue: string, customDays?: number): Date {
+  const dueDate = new Date(issueDate);
+  
+  // Check for custom Net terms
+  if (paymentTermValue && paymentTermValue.startsWith('Net ') && !isNaN(parseInt(paymentTermValue.split(' ')[1]))) {
+    const days = parseInt(paymentTermValue.split(' ')[1]);
+    dueDate.setDate(issueDate.getDate() + days);
+    return dueDate;
+  }
+  
+  const matchedTerm = PAYMENT_TERM_OPTIONS.find(term => term.value === paymentTermValue);
+  
+  if (matchedTerm) {
+    if (matchedTerm.days !== null) {
+      dueDate.setDate(issueDate.getDate() + matchedTerm.days);
+      return dueDate;
+    }
+    
+    switch (matchedTerm.specialCalculation) {
+      case 'EOM':
+        return new Date(issueDate.getFullYear(), issueDate.getMonth() + 1, 0);
+      case '15thFollowing':
+        return new Date(issueDate.getFullYear(), issueDate.getMonth() + 1, 15);
+      case 'EOM+10':
+        const eom = new Date(issueDate.getFullYear(), issueDate.getMonth() + 1, 0);
+        eom.setDate(eom.getDate() + 10);
+        return eom;
+      default:
+        return dueDate;
+    }
+  }
+  
+  // Default to 30 days
+  dueDate.setDate(issueDate.getDate() + 30);
+  return dueDate;
+}

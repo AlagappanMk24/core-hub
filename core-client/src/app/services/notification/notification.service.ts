@@ -1,5 +1,9 @@
 import { Injectable, OnDestroy } from '@angular/core';
-import { HubConnection, HubConnectionBuilder } from '@microsoft/signalr';
+import {
+  HubConnection,
+  HubConnectionBuilder,
+  HubConnectionState,
+} from '@microsoft/signalr';
 import { Subject, Observable, BehaviorSubject } from 'rxjs';
 import { environment } from '../../environments/environment';
 import { Router } from '@angular/router';
@@ -27,7 +31,10 @@ export class NotificationService implements OnDestroy {
   notificationReceived$: Observable<InvoiceNotification> =
     this.notificationReceived.asObservable();
 
-  constructor(private authService: AuthService, private router: Router) {
+  constructor(
+    private authService: AuthService,
+    private router: Router,
+  ) {
     this.setupSignalR();
   }
 
@@ -37,13 +44,24 @@ export class NotificationService implements OnDestroy {
       console.error('No authentication token available for SignalR.');
       return;
     }
+    console.log('Setting up SignalR connection with token');
 
     this.hubConnection = new HubConnectionBuilder()
       .withUrl(`${environment.signalRBaseUrl}/notificationHub`, {
         accessTokenFactory: () => token,
+        // accessTokenFactory: () => {
+        //   const currentToken = this.authService.getAuthToken();
+        //   console.log('Access token provided for SignalR');
+        //   return currentToken || '';
+        // },
       })
       .withAutomaticReconnect([0, 2000, 10000, 30000])
       .build();
+
+    // Pong response for testing
+    this.hubConnection.on('Pong', (data) => {
+      console.log('SignalR Pong received:', data);
+    });
 
     this.hubConnection.on(
       'ReceiveInvoiceNotification',
@@ -52,7 +70,7 @@ export class NotificationService implements OnDestroy {
         invoiceNumber: string;
         message: string;
       }) => {
-              console.log('Received notification:', notification); 
+        console.log('Received notification:', notification);
         const newNotification: InvoiceNotification = {
           invoiceId: notification.invoiceId,
           invoiceNumber: notification.invoiceNumber,
@@ -64,20 +82,22 @@ export class NotificationService implements OnDestroy {
         };
         const currentNotifications = this.notificationsSubject.value;
         this.notificationsSubject.next(
-          [newNotification, ...currentNotifications].slice(0, 10)
+          [newNotification, ...currentNotifications].slice(0, 10),
         );
         this.notificationReceived.next(newNotification);
-      }
+      },
     );
+    // Start connection
+    this.startConnection();
+  }
 
-    this.hubConnection.onclose((err) => {
-      console.error('SignalR connection closed:', err);
-    });
-
-    this.hubConnection
-      .start()
-      .then(() => console.log('SignalR connected successfully'))
-      .catch((err) => console.error('SignalR connection error:', err));
+  private async startConnection(): Promise<void> {
+    try {
+      await this.hubConnection.start();
+      console.log('✅ SignalR connected successfully');
+    } catch (err) {
+      console.error('❌ SignalR connection error:', err);
+    }
   }
 
   markAsRead(notification: InvoiceNotification): void {
@@ -85,7 +105,7 @@ export class NotificationService implements OnDestroy {
       n.invoiceId === notification.invoiceId &&
       n.timestamp === notification.timestamp
         ? { ...n, read: true }
-        : n
+        : n,
     );
     this.notificationsSubject.next(notifications);
   }

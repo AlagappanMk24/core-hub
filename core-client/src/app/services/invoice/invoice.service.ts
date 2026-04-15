@@ -4,6 +4,7 @@ import { Observable, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { AuthService } from '../auth/auth.service';
 import {
+  Company,
   Invoice,
   InvoiceApiResponse,
   InvoiceFilter,
@@ -20,32 +21,12 @@ import { environment } from '../../environments/environment.development';
 })
 export class InvoiceService {
   private readonly apiUrl = `${environment.apiBaseUrl}/invoice`;
+  private readonly companyApiUrl = `${environment.apiBaseUrl}/companies`; 
 
   constructor(
     private readonly http: HttpClient,
     private readonly authService: AuthService,
   ) {}
-
-  private getHeaders(): HttpHeaders {
-    const token = this.authService.getAuthToken();
-    if (!token) {
-      throw new Error('No authentication token found');
-    }
-    return new HttpHeaders({
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
-    });
-  }
-
-  private getMultipartHeaders(): HttpHeaders {
-    const token = this.authService.getAuthToken();
-    if (!token) {
-      throw new Error('No authentication token found');
-    }
-    return new HttpHeaders({
-      Authorization: `Bearer ${token}`,
-    });
-  }
 
   private mapToInvoice(apiResponse: any): Invoice {
     return {
@@ -107,9 +88,13 @@ export class InvoiceService {
     };
   }
 
-  private handleError(error: unknown, message: string): Observable<never> {
-    console.error(message, error);
-    return throwError(() => new Error(message));
+  private handleError(error: any, message: string): Observable<never> {
+    // Log the full error for the developer
+    console.error(`${message}:`, error);
+
+    // If the error has a body (like the 400 Bad Request), pass the whole error object.
+    // Otherwise, pass a new error with your custom message.
+    return throwError(() => error || new Error(message));
   }
 
   getPagedInvoices(
@@ -146,7 +131,6 @@ export class InvoiceService {
 
     return this.http
       .get<PaginatedResult<Invoice>>(this.apiUrl, {
-        headers: this.getHeaders(),
         params,
       })
       .pipe(
@@ -160,34 +144,26 @@ export class InvoiceService {
       );
   }
 
-  getInvoiceById(id: Number): Observable<Invoice> {
-    return this.http
-      .get<InvoiceApiResponse>(`${this.apiUrl}/${id}`, {
-        headers: this.getHeaders(),
-      })
-      .pipe(
-        map((apiResponse: InvoiceApiResponse) =>
-          this.mapToInvoice(apiResponse),
-        ),
-        catchError((error) =>
-          this.handleError(error, 'Failed to fetch invoice'),
-        ),
-      );
+  getInvoiceById(id: number): Observable<Invoice> {
+    return this.http.get<InvoiceApiResponse>(`${this.apiUrl}/${id}`).pipe(
+      map((apiResponse: InvoiceApiResponse) => {
+        const response = this.mapToInvoice(apiResponse);
+        console.log('Mapped Invoice:', response);
+        return response;
+      }),
+      catchError((error) => this.handleError(error, 'Failed to fetch invoice')),
+    );
   }
-
   getInvoiceStats(): Observable<InvoiceStats> {
     return this.http
-      .get<InvoiceStats>(`${this.apiUrl}/stats`, {
-        headers: this.getHeaders(),
-      })
+      .get<InvoiceStats>(`${this.apiUrl}/stats`)
       .pipe(
         catchError((error) => this.handleError(error, 'Failed to fetch stats')),
       );
   }
 
   createInvoice(formData: FormData): Observable<Invoice> {
-    const headers = this.getMultipartHeaders();
-    return this.http.post<any>(this.apiUrl, formData, { headers }).pipe(
+    return this.http.post<any>(this.apiUrl, formData).pipe(
       map((response) => this.mapToInvoice(response)),
       catchError((error) =>
         this.handleError(error, 'Failed to create invoice'),
@@ -200,22 +176,17 @@ export class InvoiceService {
     if (!invoiceId) {
       return throwError(() => new Error('Invoice ID is required for update'));
     }
-    const headers = this.getMultipartHeaders();
-    return this.http
-      .put<any>(`${this.apiUrl}/${invoiceId}`, formData, { headers })
-      .pipe(
-        map((response) => this.mapToInvoice(response)),
-        catchError((error) =>
-          this.handleError(error, 'Failed to update invoice'),
-        ),
-      );
+    return this.http.put<any>(`${this.apiUrl}/${invoiceId}`, formData).pipe(
+      map((response) => this.mapToInvoice(response)),
+      catchError((error) =>
+        this.handleError(error, 'Failed to update invoice'),
+      ),
+    );
   }
 
   deleteInvoice(id: number): Observable<void> {
     return this.http
-      .delete<void>(`${this.apiUrl}/${id}`, {
-        headers: this.getHeaders(),
-      })
+      .delete<void>(`${this.apiUrl}/${id}`)
       .pipe(
         catchError((error) =>
           this.handleError(error, 'Failed to delete invoice'),
@@ -225,9 +196,7 @@ export class InvoiceService {
 
   getTaxTypes(): Observable<TaxType[]> {
     return this.http
-      .get<TaxType[]>(`${this.apiUrl}/tax-types`, {
-        headers: this.getHeaders(),
-      })
+      .get<TaxType[]>(`${this.apiUrl}/tax-types`)
       .pipe(
         catchError((error) =>
           this.handleError(error, 'Failed to fetch tax types'),
@@ -237,9 +206,7 @@ export class InvoiceService {
 
   createTaxType(taxType: TaxTypeCreate): Observable<TaxType> {
     return this.http
-      .post<TaxType>(`${this.apiUrl}/tax-types`, taxType, {
-        headers: this.getHeaders(),
-      })
+      .post<TaxType>(`${this.apiUrl}/tax-types`, taxType)
       .pipe(
         catchError((error) =>
           this.handleError(error, 'Failed to create tax type'),
@@ -250,7 +217,6 @@ export class InvoiceService {
   downloadInvoicePdf(invoiceId: number): Observable<Blob> {
     return this.http
       .get(`${this.apiUrl}/${invoiceId}/pdf`, {
-        headers: this.getHeaders(),
         responseType: 'blob',
       })
       .pipe(
@@ -262,9 +228,7 @@ export class InvoiceService {
 
   sendInvoice(invoiceId: number, emailData: any): Observable<void> {
     return this.http
-      .post<void>(`${this.apiUrl}/${invoiceId}/send`, emailData, {
-        headers: this.getHeaders(),
-      })
+      .post<void>(`${this.apiUrl}/${invoiceId}/send`, emailData)
       .pipe(
         catchError((error) =>
           this.handleError(error, 'Failed to send invoice'),
@@ -274,13 +238,7 @@ export class InvoiceService {
 
   duplicateInvoice(id: number): Observable<void> {
     return this.http
-      .post<void>(
-        `${this.apiUrl}/${id}/duplicate`,
-        {},
-        {
-          headers: this.getHeaders(),
-        },
-      )
+      .post<void>(`${this.apiUrl}/${id}/duplicate`, {})
       .pipe(
         catchError((error) =>
           this.handleError(error, 'Failed to duplicate invoice'),
@@ -288,11 +246,13 @@ export class InvoiceService {
       );
   }
 
-  getInvoiceSettings(): Observable<InvoiceSettings> {
+  getInvoiceSettings(companyId?: number): Observable<InvoiceSettings> {
+    let params = new HttpParams();
+    if (companyId) {
+      params = params.set('companyId', companyId.toString());
+    }
     return this.http
-      .get<InvoiceSettings>(`${this.apiUrl}/settings`, {
-        headers: this.getHeaders(),
-      })
+      .get<InvoiceSettings>(`${this.apiUrl}/settings`, { params })
       .pipe(
         catchError((error) =>
           this.handleError(error, 'Failed to fetch invoice settings'),
@@ -302,9 +262,7 @@ export class InvoiceService {
 
   saveInvoiceSettings(settings: InvoiceSettings): Observable<void> {
     return this.http
-      .post<void>(`${this.apiUrl}/settings`, settings, {
-        headers: this.getHeaders(),
-      })
+      .post<void>(`${this.apiUrl}/settings`, settings)
       .pipe(
         catchError((error) =>
           this.handleError(error, 'Failed to save invoice settings'),
@@ -312,11 +270,19 @@ export class InvoiceService {
       );
   }
 
+  getAllCompanies(): Observable<Company[]> {
+    return this.http
+      .get<Company[]>(`${this.companyApiUrl}`)
+      .pipe(
+        catchError((error) =>
+          this.handleError(error, 'Failed to fetch companies'),
+        ),
+      );
+  }
+
   getNextInvoiceNumber(): Observable<string> {
     return this.http
-      .get<string>(`${this.apiUrl}/next-invoice-number`, {
-        headers: this.getHeaders(),
-      })
+      .get<string>(`${this.apiUrl}/next-invoice-number`)
       .pipe(
         catchError((error) =>
           this.handleError(error, 'Failed to fetch next invoice number'),
@@ -356,7 +322,6 @@ export class InvoiceService {
 
     return this.http
       .get(`${this.apiUrl}/export/excel`, {
-        headers: this.getHeaders(),
         params,
         responseType: 'blob',
       })
@@ -399,7 +364,6 @@ export class InvoiceService {
 
     return this.http
       .get(`${this.apiUrl}/export/pdf`, {
-        headers: this.getHeaders(),
         params,
         responseType: 'blob',
       })
@@ -436,7 +400,6 @@ export class InvoiceService {
   downloadImportTemplate(): Observable<Blob> {
     return this.http
       .get(`${this.apiUrl}/template`, {
-        headers: this.getHeaders(),
         responseType: 'blob',
       })
       .pipe(
@@ -448,19 +411,17 @@ export class InvoiceService {
 
   deleteAttachment(invoiceId: number, attachmentId: number): Observable<void> {
     return this.http
-      .delete<void>(`${this.apiUrl}/${invoiceId}/attachments/${attachmentId}`, {
-        headers: this.getHeaders(),
-      })
+      .delete<void>(`${this.apiUrl}/${invoiceId}/attachments/${attachmentId}`)
       .pipe(
         catchError((error) =>
           this.handleError(error, 'Failed to delete attachment'),
         ),
-      );
+      );  
   }
+
   getAttachment(fileUrl: string): Observable<Blob> {
     return this.http
       .get(fileUrl, {
-        headers: this.getHeaders(),
         responseType: 'blob',
       })
       .pipe(
@@ -468,5 +429,13 @@ export class InvoiceService {
           this.handleError(error, 'Failed to fetch attachment'),
         ),
       );
+  }
+  updateInvoiceStatus(id: number, updateData: any): Observable<Invoice> {
+    return this.http.patch<any>(`${this.apiUrl}/${id}/status`, updateData).pipe(
+      map((response) => this.mapToInvoice(response)),
+      catchError((error) =>
+        this.handleError(error, 'Failed to update invoice status'),
+      ),
+    );
   }
 }

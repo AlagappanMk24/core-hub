@@ -262,8 +262,9 @@
                 class="px-2 py-1 text-xs font-medium rounded-full text-white"
                 [ngClass]="{
                   'bg-green-500': invoice.status === 'Paid',
-                  'bg-yellow-500': invoice.status === 'Pending',
+                  'bg-blue-500': invoice.status === 'Pending',
                   'bg-red-500': invoice.status === 'Overdue',
+                  'bg-yellow-500': invoice.status === 'PartiallyPaid'
                 }"
               >
                 {{ invoice.status }}

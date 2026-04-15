@@ -52,6 +52,7 @@
     </div>
     <!-- Stats Cards Section -->
     <div class="stats-section">
+      <!-- All Invoices Card -->
       <div
         class="stat-card all"
         [class.active]="selectedInvoiceStatus === 'All'"
@@ -63,18 +64,14 @@
           <mat-icon class="stat-icon">description</mat-icon>
           <span class="stat-label">All Invoices ({{ stats.all.count }})</span>
         </div>
-        <div class="stat-amount">{{ stats.all.amount | currency : "USD" }}</div>
-        <div
-          class="stat-change"
-          [ngClass]="stats.all.change >= 0 ? 'positive' : 'negative'"
-        >
-          {{ stats.all.change >= 0 ? "+" : ""
-          }}{{ stats.all.change | number : "1.1-1" }}%
-          <mat-icon class="change-icon">{{
-            stats.all.change >= 0 ? "trending_up" : "trending_down"
-          }}</mat-icon>
+        <div class="stat-amount">{{ stats.all.amount | currency: "USD" }}</div>
+        <div class="stat-change" [ngClass]="getStatsChangeClass(stats.all)">
+          {{ getFormattedChange(stats.all) }}
+          <mat-icon class="change-icon">{{ getStatsIcon(stats.all) }}</mat-icon>
         </div>
       </div>
+
+      <!-- Draft Card -->
       <div
         class="stat-card draft"
         [class.active]="selectedInvoiceStatus === 'Draft'"
@@ -87,19 +84,17 @@
           <span class="stat-label">Draft ({{ stats.draft.count }})</span>
         </div>
         <div class="stat-amount">
-          {{ stats.draft.amount | currency : "USD" }}
+          {{ stats.draft.amount | currency: "USD" }}
         </div>
-        <div
-          class="stat-change"
-          [ngClass]="stats.draft.change >= 0 ? 'positive' : 'negative'"
-        >
-          {{ stats.draft.change >= 0 ? "+" : ""
-          }}{{ stats.draft.change | number : "1.1-1" }}%
+        <div class="stat-change" [ngClass]="getStatsChangeClass(stats.draft)">
+          {{ getFormattedChange(stats.draft) }}
           <mat-icon class="change-icon">{{
-            stats.draft.change >= 0 ? "trending_up" : "trending_down"
+            getStatsIcon(stats.draft)
           }}</mat-icon>
         </div>
       </div>
+
+      <!-- Sent Card -->
       <div
         class="stat-card sent"
         [class.active]="selectedInvoiceStatus === 'Sent'"
@@ -112,19 +107,40 @@
           <span class="stat-label">Sent ({{ stats.sent.count }})</span>
         </div>
         <div class="stat-amount">
-          {{ stats.sent.amount | currency : "USD" }}
+          {{ stats.sent.amount | currency: "USD" }}
         </div>
-        <div
-          class="stat-change"
-          [ngClass]="stats.sent.change >= 0 ? 'positive' : 'negative'"
-        >
-          {{ stats.sent.change >= 0 ? "+" : ""
-          }}{{ stats.sent.change | number : "1.1-1" }}%
+        <div class="stat-change" [ngClass]="getStatsChangeClass(stats.sent)">
+          {{ getFormattedChange(stats.sent) }}
           <mat-icon class="change-icon">{{
-            stats.sent.change >= 0 ? "trending_up" : "trending_down"
+            getStatsIcon(stats.sent)
           }}</mat-icon>
         </div>
       </div>
+
+      <!-- Viewed Card -->
+      <div
+        class="stat-card viewed"
+        [class.active]="selectedInvoiceStatus === 'Viewed'"
+        (click)="onSelectInvoiceStatus('Viewed')"
+        @scaleIn
+        [@pulse]="selectedInvoiceStatus === 'Viewed' ? 'active' : 'inactive'"
+      >
+        <div class="stat-header">
+          <mat-icon class="stat-icon">visibility</mat-icon>
+          <span class="stat-label">Viewed ({{ stats.viewed.count }})</span>
+        </div>
+        <div class="stat-amount">
+          {{ stats.viewed.amount | currency: "USD" }}
+        </div>
+        <div class="stat-change" [ngClass]="getStatsChangeClass(stats.viewed)">
+          {{ getFormattedChange(stats.viewed) }}
+          <mat-icon class="change-icon">{{
+            getStatsIcon(stats.viewed)
+          }}</mat-icon>
+        </div>
+      </div>
+
+      <!-- Approved Card (for backward compatibility) -->
       <div
         class="stat-card approved"
         [class.active]="selectedInvoiceStatus === 'Approved'"
@@ -137,18 +153,20 @@
           <span class="stat-label">Approved ({{ stats.approved?.count }})</span>
         </div>
         <div class="stat-amount">
-          {{ stats.approved?.amount | currency : "USD" }}
+          {{ stats.approved?.amount | currency: "USD" }}
         </div>
         <div
           class="stat-change"
-         [ngClass]="(stats.approved?.change || 0) >= 0 ? 'positive' : 'negative'"
+          [ngClass]="getStatsChangeClass(stats.approved)"
         >
-         {{ (stats.approved?.change || 0) >= 0 ? "+" : "" }}{{ stats.approved?.change || 0 | number : "1.1-1" }}%
+          {{ getFormattedChange(stats.approved) }}
           <mat-icon class="change-icon">{{
-   (stats.approved?.change || 0) >= 0 ? "trending_up" : "trending_down"
+            getStatsIcon(stats.approved)
           }}</mat-icon>
         </div>
       </div>
+
+      <!-- Cancelled Card -->
       <div
         class="stat-card cancelled"
         [class.active]="selectedInvoiceStatus === 'Cancelled'"
@@ -163,19 +181,41 @@
           >
         </div>
         <div class="stat-amount">
-          {{ stats.cancelled.amount | currency : "USD" }}
+          {{ stats.cancelled.amount | currency: "USD" }}
         </div>
         <div
           class="stat-change"
-          [ngClass]="stats.cancelled.change >= 0 ? 'positive' : 'negative'"
+          [ngClass]="getStatsChangeClass(stats.cancelled)"
         >
-          {{ stats.cancelled.change >= 0 ? "+" : ""
-          }}{{ stats.cancelled.change | number : "1.1-1" }}%
+          {{ getFormattedChange(stats.cancelled) }}
           <mat-icon class="change-icon">{{
-            stats.cancelled.change >= 0 ? "trending_up" : "trending_down"
+            getStatsIcon(stats.cancelled)
           }}</mat-icon>
         </div>
       </div>
+
+      <!-- Void Card
+      <div
+        class="stat-card void"
+        [class.active]="selectedInvoiceStatus === 'Void'"
+        (click)="onSelectInvoiceStatus('Void')"
+        @scaleIn
+        [@pulse]="selectedInvoiceStatus === 'Void' ? 'active' : 'inactive'"
+      >
+        <div class="stat-header">
+          <mat-icon class="stat-icon">block</mat-icon>
+          <span class="stat-label">Void ({{ stats.void.count }})</span>
+        </div>
+        <div class="stat-amount">{{ stats.void.amount | currency: "USD" }}</div>
+        <div class="stat-change" [ngClass]="getStatsChangeClass(stats.void)">
+          {{ getFormattedChange(stats.void) }}
+          <mat-icon class="change-icon">{{
+            getStatsIcon(stats.void)
+          }}</mat-icon>
+        </div>
+      </div> -->
+
+      <!-- Pending Payment Card -->
       <div
         class="stat-card pending"
         [class.active]="selectedPaymentStatus === 'Pending'"
@@ -190,19 +230,17 @@
           >
         </div>
         <div class="stat-amount">
-          {{ stats.pending.amount | currency : "USD" }}
+          {{ stats.pending.amount | currency: "USD" }}
         </div>
-        <div
-          class="stat-change"
-          [ngClass]="stats.pending.change >= 0 ? 'positive' : 'negative'"
-        >
-          {{ stats.pending.change >= 0 ? "+" : ""
-          }}{{ stats.pending.change | number : "1.1-1" }}%
+        <div class="stat-change" [ngClass]="getStatsChangeClass(stats.pending)">
+          {{ getFormattedChange(stats.pending) }}
           <mat-icon class="change-icon">{{
-            stats.pending.change >= 0 ? "trending_up" : "trending_down"
+            getStatsIcon(stats.pending)
           }}</mat-icon>
         </div>
       </div>
+
+      <!-- Completed Payment Card (maps to Paid) -->
       <div
         class="stat-card completed"
         [class.active]="selectedPaymentStatus === 'Completed'"
@@ -216,17 +254,42 @@
             >Completed Payment ({{ stats.completed?.count }})</span
           >
         </div>
-           <div class="stat-amount">{{ stats.completed?.amount || 0 | currency : "USD" }}</div>
+        <div class="stat-amount">
+          {{ stats.completed?.amount || 0 | currency: "USD" }}
+        </div>
         <div
           class="stat-change"
-    [ngClass]="(stats.completed?.change || 0) >= 0 ? 'positive' : 'negative'"
+          [ngClass]="getStatsChangeClass(stats.completed)"
         >
-        {{ (stats.completed?.change || 0) >= 0 ? "+" : "" }}{{ stats.completed?.change || 0 | number : "1.1-1" }}%
+          {{ getFormattedChange(stats.completed) }}
           <mat-icon class="change-icon">{{
-            stats.completed?.change || 0 >= 0 ? "trending_up" : "trending_down"
+            getStatsIcon(stats.completed)
           }}</mat-icon>
         </div>
       </div>
+
+      <!-- Paid Card -->
+      <div
+        class="stat-card paid"
+        [class.active]="selectedPaymentStatus === 'Paid'"
+        (click)="onSelectPaymentStatus('Paid')"
+        @scaleIn
+        [@pulse]="selectedPaymentStatus === 'Paid' ? 'active' : 'inactive'"
+      >
+        <div class="stat-header">
+          <mat-icon class="stat-icon">paid</mat-icon>
+          <span class="stat-label">Paid ({{ stats.paid.count }})</span>
+        </div>
+        <div class="stat-amount">{{ stats.paid.amount | currency: "USD" }}</div>
+        <div class="stat-change" [ngClass]="getStatsChangeClass(stats.paid)">
+          {{ getFormattedChange(stats.paid) }}
+          <mat-icon class="change-icon">{{
+            getStatsIcon(stats.paid)
+          }}</mat-icon>
+        </div>
+      </div>
+
+      <!-- Partially Paid Card -->
       <div
         class="stat-card partially-paid"
         [class.active]="selectedPaymentStatus === 'PartiallyPaid'"
@@ -243,19 +306,20 @@
           >
         </div>
         <div class="stat-amount">
-          {{ stats.partiallyPaid.amount | currency : "USD" }}
+          {{ stats.partiallyPaid.amount | currency: "USD" }}
         </div>
         <div
           class="stat-change"
-          [ngClass]="stats.partiallyPaid.change >= 0 ? 'positive' : 'negative'"
+          [ngClass]="getStatsChangeClass(stats.partiallyPaid)"
         >
-          {{ stats.partiallyPaid.change >= 0 ? "+" : ""
-          }}{{ stats.partiallyPaid.change | number : "1.1-1" }}%
+          {{ getFormattedChange(stats.partiallyPaid) }}
           <mat-icon class="change-icon">{{
-            stats.partiallyPaid.change >= 0 ? "trending_up" : "trending_down"
+            getStatsIcon(stats.partiallyPaid)
           }}</mat-icon>
         </div>
       </div>
+
+      <!-- Overdue Card -->
       <div
         class="stat-card overdue"
         [class.active]="selectedPaymentStatus === 'Overdue'"
@@ -270,19 +334,17 @@
           >
         </div>
         <div class="stat-amount">
-          {{ stats.overdue.amount | currency : "USD" }}
+          {{ stats.overdue.amount | currency: "USD" }}
         </div>
-        <div
-          class="stat-change"
-          [ngClass]="stats.overdue.change >= 0 ? 'positive' : 'negative'"
-        >
-          {{ stats.overdue.change >= 0 ? "+" : ""
-          }}{{ stats.overdue.change | number : "1.1-1" }}%
+        <div class="stat-change" [ngClass]="getStatsChangeClass(stats.overdue)">
+          {{ getFormattedChange(stats.overdue) }}
           <mat-icon class="change-icon">{{
-            stats.overdue.change >= 0 ? "trending_up" : "trending_down"
+            getStatsIcon(stats.overdue)
           }}</mat-icon>
         </div>
       </div>
+
+      <!-- Refunded Card -->
       <div
         class="stat-card refunded"
         [class.active]="selectedPaymentStatus === 'Refunded'"
@@ -297,16 +359,15 @@
           >
         </div>
         <div class="stat-amount">
-          {{ stats.refunded.amount | currency : "USD" }}
+          {{ stats.refunded.amount | currency: "USD" }}
         </div>
         <div
           class="stat-change"
-          [ngClass]="stats.refunded.change >= 0 ? 'positive' : 'negative'"
+          [ngClass]="getStatsChangeClass(stats.refunded)"
         >
-          {{ stats.refunded.change >= 0 ? "+" : ""
-          }}{{ stats.refunded.change | number : "1.1-1" }}%
+          {{ getFormattedChange(stats.refunded) }}
           <mat-icon class="change-icon">{{
-            stats.refunded.change >= 0 ? "trending_up" : "trending_down"
+            getStatsIcon(stats.refunded)
           }}</mat-icon>
         </div>
       </div>
@@ -367,7 +428,12 @@
           </tr>
         </thead>
         <tbody>
-          <ng-container *ngIf="isLoading; else invoiceData">
+          <ng-container
+            *ngIf="
+              isFirstLoad || (isLoading && invoices.length === 0);
+              else invoiceData
+            "
+          >
             <tr class="skeleton-row" *ngFor="let _ of [1, 2, 3, 4, 5, 6]">
               <td><div class="skeleton skeleton-avatar"></div></td>
               <td><div class="skeleton skeleton-text"></div></td>
@@ -416,12 +482,12 @@
                 </span>
               </td>
               <td class="amount">
-                {{ invoice.totalAmount | currency : "USD" }}
+                {{ invoice.totalAmount | currency: "USD" }}
               </td>
               <td class="date">
-                {{ invoice.issueDate | date : "dd MMM yyyy" }}
+                {{ invoice.issueDate | date: "dd MMM yyyy" }}
               </td>
-              <td class="date">{{ invoice.dueDate | date : "dd MMM yyyy" }}</td>
+              <td class="date">{{ invoice.dueDate | date: "dd MMM yyyy" }}</td>
               <td class="actions">
                 <button
                   *ngIf="isAdmin || isUser"
@@ -579,8 +645,8 @@
       exportingFormat === "excel"
         ? "Exporting as Excel..."
         : isIndividualDownload
-        ? "Downloading Invoice PDF..."
-        : "Exporting as PDF..."
+          ? "Downloading Invoice PDF..."
+          : "Exporting as PDF..."
     }}</span>
   </div>
 </div>
