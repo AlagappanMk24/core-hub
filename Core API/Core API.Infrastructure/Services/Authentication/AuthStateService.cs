@@ -5,9 +5,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Core_API.Infrastructure.Services.Authentication
 {
-    public class AuthStateService(CoreAPIDbContext context) : IAuthStateService
+    public class AuthStateService(CoreInvoiceDbContext context) : IAuthStateService
     {
-        private readonly CoreAPIDbContext _context = context;
+        private readonly CoreInvoiceDbContext _context = context;
         public async Task<AuthState> CreateAuthStateAsync(string userId)
         {
             var authState = new AuthState

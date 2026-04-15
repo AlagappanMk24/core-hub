@@ -20,4 +20,17 @@
         public decimal Amount { get; set; }
         public decimal Change { get; set; }
     }
+    public class MonthlyRevenueDto
+    {
+        public string Month { get; set; }
+        public decimal Revenue { get; set; }
+        public int InvoiceCount { get; set; }
+    }
+    public class TopCustomerDto
+    {
+        public int CustomerId { get; set; }
+        public string CustomerName { get; set; }
+        public decimal TotalAmount { get; set; }
+        public int InvoiceCount { get; set; }
+    }
 }

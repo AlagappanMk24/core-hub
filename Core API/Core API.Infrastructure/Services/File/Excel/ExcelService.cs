@@ -44,24 +44,8 @@ namespace Core_API.Infrastructure.Services.File.Excel
                     return OperationResult<byte[]>.FailureResult("No invoices found for export.");
                 }
 
-                using var workbook = new XSSFWorkbook();
-
-                // Create all sheets
-                CreateInvoiceSummarySheet(workbook, result.Items);
-                CreateInvoiceDetailsSheet(workbook, result.Items);
-                CreateInvoiceItemsSheet(workbook, result.Items);
-                CreateTaxDetailsSheet(workbook, result.Items);
-                CreateDiscountsSheet(workbook, result.Items);
-                CreatePaymentsSheet(workbook, result.Items);
-                CreateAuditLogsSheet(workbook, result.Items);
-                CreateAttachmentsSheet(workbook, result.Items);
-
-                // Write to memory stream
-                using var stream = new MemoryStream();
-                workbook.Write(stream);
-                stream.Position = 0;
-
-                return OperationResult<byte[]>.SuccessResult(stream.ToArray());
+                var excelBytes = GenerateExcelBytes(result.Items);
+                return OperationResult<byte[]>.SuccessResult(excelBytes);
             }
             catch (Exception ex)
             {
@@ -70,7 +54,26 @@ namespace Core_API.Infrastructure.Services.File.Excel
             }
         }
 
-        private void CreateInvoiceSummarySheet(IWorkbook workbook, List<Invoice> invoices)
+        private byte[] GenerateExcelBytes(List<Domain.Entities.Invoice> invoices)
+        {
+            using var workbook = new XSSFWorkbook();
+
+            // Create all sheets
+            CreateInvoiceSummarySheet(workbook, invoices);
+            CreateInvoiceDetailsSheet(workbook, invoices);
+            CreateInvoiceItemsSheet(workbook, invoices);
+            CreateTaxDetailsSheet(workbook, invoices);
+            CreateDiscountsSheet(workbook, invoices);
+            CreatePaymentsSheet(workbook, invoices);
+            CreateAuditLogsSheet(workbook, invoices);
+            CreateAttachmentsSheet(workbook, invoices);
+
+            // Write to memory stream
+            using var memoryStream = new MemoryStream();
+            workbook.Write(memoryStream);
+            return memoryStream.ToArray();
+        }
+        private void CreateInvoiceSummarySheet(IWorkbook workbook, List<Domain.Entities.Invoice> invoices)
         {
             var sheet = workbook.CreateSheet("Invoice Summary");
 
@@ -237,7 +240,7 @@ namespace Core_API.Infrastructure.Services.File.Excel
             }
         }
 
-        private void CreateInvoiceDetailsSheet(IWorkbook workbook, List<Invoice> invoices)
+        private void CreateInvoiceDetailsSheet(IWorkbook workbook, List<Domain.Entities.Invoice> invoices)
         {
             var sheet = workbook.CreateSheet("Invoice Details");
 
@@ -319,7 +322,7 @@ namespace Core_API.Infrastructure.Services.File.Excel
             }
         }
 
-        private void CreateInvoiceItemsSheet(IWorkbook workbook, List<Invoice> invoices)
+        private void CreateInvoiceItemsSheet(IWorkbook workbook, List<Domain.Entities.Invoice> invoices)
         {
             var sheet = workbook.CreateSheet("Invoice Items");
 
@@ -388,7 +391,7 @@ namespace Core_API.Infrastructure.Services.File.Excel
             }
         }
 
-        private void CreateTaxDetailsSheet(IWorkbook workbook, List<Invoice> invoices)
+        private void CreateTaxDetailsSheet(IWorkbook workbook, List<Domain.Entities.Invoice> invoices)
         {
             var sheet = workbook.CreateSheet("Tax Details");
 
@@ -436,7 +439,7 @@ namespace Core_API.Infrastructure.Services.File.Excel
             }
         }
 
-        private void CreateDiscountsSheet(IWorkbook workbook, List<Invoice> invoices)
+        private void CreateDiscountsSheet(IWorkbook workbook, List<Domain.Entities.Invoice> invoices)
         {
             var sheet = workbook.CreateSheet("Discounts");
 
@@ -484,7 +487,7 @@ namespace Core_API.Infrastructure.Services.File.Excel
             }
         }
 
-        private void CreatePaymentsSheet(IWorkbook workbook, List<Invoice> invoices)
+        private void CreatePaymentsSheet(IWorkbook workbook, List<Domain.Entities.Invoice> invoices)
         {
             var sheet = workbook.CreateSheet("Payments");
 
@@ -541,7 +544,7 @@ namespace Core_API.Infrastructure.Services.File.Excel
             }
         }
 
-        private void CreateAuditLogsSheet(IWorkbook workbook, List<Invoice> invoices)
+        private void CreateAuditLogsSheet(IWorkbook workbook, List<Domain.Entities.Invoice> invoices)
         {
             var sheet = workbook.CreateSheet("Audit Logs");
 
@@ -593,7 +596,7 @@ namespace Core_API.Infrastructure.Services.File.Excel
             }
         }
 
-        private void CreateAttachmentsSheet(IWorkbook workbook, List<Invoice> invoices)
+        private void CreateAttachmentsSheet(IWorkbook workbook, List<Domain.Entities.Invoice> invoices)
         {
             var sheet = workbook.CreateSheet("Attachments");
 

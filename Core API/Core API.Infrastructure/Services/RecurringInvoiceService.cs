@@ -85,7 +85,7 @@ namespace Core_API.Infrastructure.Services
                 }
 
                 // Validate source invoice if provided
-                Invoice? sourceInvoice = null;
+                Domain.Entities.Invoice? sourceInvoice = null;
                 if (dto.SourceInvoiceId.HasValue)
                 {
                     sourceInvoice = await _unitOfWork.Invoices.GetAsync(

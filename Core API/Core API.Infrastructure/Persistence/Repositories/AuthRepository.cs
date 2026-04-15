@@ -6,10 +6,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Core_API.Infrastructure.Persistence.Repositories
 {
-    public class AuthRepository(CoreAPIDbContext context, UserManager<ApplicationUser> userManager) : GenericRepository<ApplicationUser>(context), IAuthRepository
+    public class AuthRepository(CoreInvoiceDbContext context, UserManager<ApplicationUser> userManager) : GenericRepository<ApplicationUser>(context), IAuthRepository
     {
         private readonly UserManager<ApplicationUser> _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
-        private readonly CoreAPIDbContext _context = context;
+        private readonly CoreInvoiceDbContext _context = context;
         public async Task<ApplicationUser?> FindByNameAsync(string name)
         {
             return await _userManager.FindByNameAsync(name);
@@ -38,14 +38,10 @@ namespace Core_API.Infrastructure.Persistence.Repositories
         {
             return await _userManager.AddLoginAsync(user, loginInfo);
         }
-
-        // Example of a repository method using DbContext directly (if needed)
         public async Task<List<ApplicationUser>> GetAllUsersAsync()
         {
             return await _context.Users.ToListAsync();
         }
-
-        //Another example to find user by id
         public async Task AddToRoleAsync(ApplicationUser user, string role)
         {
             await _userManager.AddToRoleAsync(user, role);

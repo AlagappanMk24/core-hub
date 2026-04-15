@@ -13,12 +13,12 @@ namespace Core_API.Infrastructure.Services.Authorization
     public class PermissionService(
     UserManager<ApplicationUser> userManager,
     RoleManager<IdentityRole> roleManager,
-    CoreAPIDbContext dbContext,
+    CoreInvoiceDbContext dbContext,
     ILogger<PermissionService> logger) : IPermissionService
     {
         private readonly UserManager<ApplicationUser> _userManager = userManager;
         private readonly RoleManager<IdentityRole> _roleManager = roleManager;
-        private readonly CoreAPIDbContext _dbContext = dbContext;
+        private readonly CoreInvoiceDbContext _dbContext = dbContext;
         private readonly ILogger<PermissionService> _logger = logger;
         public async Task<bool> UserHasPermissionAsync(ClaimsPrincipal user, string permission)
         {

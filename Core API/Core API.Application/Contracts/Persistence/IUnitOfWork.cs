@@ -24,6 +24,10 @@ namespace Core_API.Application.Contracts.Persistence
         IEmailSettingsRepository EmailSettings { get; }
         ICompanyRepository Companies { get; }
         ICompanyRequestRepository CompanyRequests { get; }
+        ITaskRepository TaskItems { get; }
+        ITaskAttachmentRepository TaskAttachments { get; }
+        ITaskCommentRepository TaskComments { get; }
+        ITaskAuditLogRepository TaskAuditLogs { get; }
         Task SaveChangesAsync();
         Task SaveChangesAsync(CancellationToken cancellationToken);
         Task<IDbContextTransaction> BeginTransactionAsync(); 

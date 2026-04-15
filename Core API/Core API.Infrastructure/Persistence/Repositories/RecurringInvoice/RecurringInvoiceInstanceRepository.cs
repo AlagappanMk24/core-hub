@@ -7,7 +7,7 @@ using Microsoft.Extensions.Logging;
 namespace Core_API.Infrastructure.Persistence.Repositories.RecurringInvoice
 {
     public class RecurringInvoiceInstanceRepository(
-        CoreAPIDbContext dbContext,
+        CoreInvoiceDbContext dbContext,
         ILogger<RecurringInvoiceInstanceRepository> logger) : GenericRepository<RecurringInvoiceInstance>(dbContext), IRecurringInvoiceInstanceRepository
     {
         private readonly ILogger<RecurringInvoiceInstanceRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));

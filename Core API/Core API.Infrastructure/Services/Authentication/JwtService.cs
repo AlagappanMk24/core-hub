@@ -13,10 +13,10 @@ using Core_API.Application.Contracts.Services.Auth;
 
 namespace Core_API.Infrastructure.Services.Authentication
 {
-    public class JwtService(IConfiguration configuration, CoreAPIDbContext context, ILogger<JwtService> logger) : IJwtService
+    public class JwtService(IConfiguration configuration, CoreInvoiceDbContext context, ILogger<JwtService> logger) : IJwtService
     {
         private readonly IConfiguration _configuration = configuration;
-        private readonly CoreAPIDbContext _context = context;
+        private readonly CoreInvoiceDbContext _context = context;
         private readonly ILogger<JwtService> _logger = logger;
         public string GenerateJwtToken(ApplicationUser user)
         {

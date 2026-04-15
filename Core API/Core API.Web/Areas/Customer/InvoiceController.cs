@@ -1,5 +1,6 @@
 ﻿using Core_API.Application.Common.Models;
 using Core_API.Application.Contracts.Services;
+using Core_API.Application.Contracts.Services.Invoice;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
@@ -9,9 +10,10 @@ namespace Core_API.Web.Areas.Customer
     [Route("api/customer")]
     [ApiController]
     [Authorize(Policy = "Customer")]
-    public class InvoiceController(IInvoiceService invoiceService, ILogger<CustomerDashboardController> logger) : ControllerBase
+    public class InvoiceController(IInvoiceService invoiceService, ICustomerInvoiceService customerInvoiceService, ILogger<CustomerDashboardController> logger) : ControllerBase
     {
         private readonly IInvoiceService _invoiceService = invoiceService ?? throw new ArgumentNullException(nameof(invoiceService));
+        private readonly ICustomerInvoiceService _customerInvoiceService = customerInvoiceService ?? throw new ArgumentNullException(nameof(customerInvoiceService));
         private readonly ILogger<CustomerDashboardController> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         private OperationContext GetOperationContext()
         {
@@ -58,7 +60,7 @@ namespace Core_API.Web.Areas.Customer
                 var context = GetOperationContext();
 
                 _logger.LogInformation("Retrieving invoices for customer {CustomerId}, page {PageNumber}, size {PageSize}, status: {Status}", context.CustomerId, pageNumber, pageSize, status ?? "none");
-                var result = await _invoiceService.GetCustomerInvoicesAsync(context, pageNumber, pageSize, status);
+                var result = await _customerInvoiceService.GetCustomerInvoicesAsync(context, pageNumber, pageSize, status);
                 if (!result.IsSuccess)
                 {
                     _logger.LogWarning("Customer invoices retrieval failed: {ErrorMessage}", result.ErrorMessage);
@@ -100,7 +102,7 @@ namespace Core_API.Web.Areas.Customer
                 var context = GetOperationContext();
                 _logger.LogInformation("Retrieving invoice {InvoiceId} for customer {CustomerId}", id, context.CustomerId);
 
-                var result = await _invoiceService.GetCustomerInvoiceByIdAsync(id, context);
+                var result = await _customerInvoiceService.GetCustomerInvoiceByIdAsync(id, context);
                 if (!result.IsSuccess)
                 {
                     _logger.LogWarning("Invoice retrieval failed: {ErrorMessage}", result.ErrorMessage);

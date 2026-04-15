@@ -5,9 +5,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Core_API.Infrastructure.Persistence.Repositories
 {
-    public class UserRepository(CoreAPIDbContext dbContext) : GenericRepository<ApplicationUser>(dbContext), IUserRepository
+    public class UserRepository(CoreInvoiceDbContext dbContext) : GenericRepository<ApplicationUser>(dbContext), IUserRepository
     {
-        private readonly CoreAPIDbContext _dbContext = dbContext;
+        private readonly CoreInvoiceDbContext _dbContext = dbContext;
         public new void Update(ApplicationUser applicationUser)
         {
             _dbContext.ApplicationUsers.Update(applicationUser);

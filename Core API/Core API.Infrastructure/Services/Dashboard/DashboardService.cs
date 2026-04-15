@@ -19,22 +19,32 @@ namespace Core_API.Infrastructure.Services.Dashboard
         {
             try
             {
-                if (!operationContext.CompanyId.HasValue)
+                IQueryable<Domain.Entities.Invoice> query = _unitOfWork.Invoices.Query().Where(i => !i.IsDeleted);
+
+                // Super Admin sees ALL invoices across all companies
+                if (operationContext.IsSuperAdmin)
                 {
-                    return OperationResult<DashboardSummaryDto>.FailureResult("Company ID is required");
+                    _logger.LogInformation("Super Admin dashboard - showing all invoices across all companies");
+                    // No company filter - show everything
+                }
+                // Company Admin/User sees only their company's invoices
+                else if (operationContext.CompanyId.HasValue)
+                {
+                    _logger.LogInformation($"Company Admin dashboard - showing invoices for company {operationContext.CompanyId}");
+                    query = query.Where(i => i.CompanyId == operationContext.CompanyId.Value);
+                }
+                else
+                {
+                    return OperationResult<DashboardSummaryDto>.FailureResult("Company ID is required for non-super admin users");
                 }
 
-                var companyId = operationContext.CompanyId.Value;
-
-                // Get all invoices for the company
-                var invoices = await _unitOfWork.Invoices.Query()
-                    .Where(i => i.CompanyId == companyId && !i.IsDeleted)
-                    .Include(i => i.Customer)
-                    .Include(i => i.InvoiceItems)
-                    .ToListAsync();
+                var invoices = await query
+                      .Include(i => i.Customer)
+                      .Include(i => i.InvoiceItems)
+                      .ToListAsync();
 
                 // Calculate stats
-                var stats = CalculateStats(invoices, companyId);
+                var stats = CalculateStats(invoices, operationContext.CompanyId);
 
                 // Get recent invoices
                 var recentInvoices = GetRecentInvoicesInternal(invoices, 5);
@@ -47,9 +57,24 @@ namespace Core_API.Infrastructure.Services.Dashboard
 
                 // Get monthly trends
                 var monthlyTrend = GetMonthlyTrend(invoices);
-                var b2bTrend = GetTrendByType(invoices, "B2B");
-                var b2cTrend = GetTrendByType(invoices, "B2C");
-                var retailTrend = GetTrendByType(invoices, "Retail");
+
+                // For Super Admin, show trends by company or overall
+                List<MonthlyInvoiceTrendDto> b2bTrend, b2cTrend, retailTrend;
+
+                if (operationContext.IsSuperAdmin)
+                {
+                    // Super Admin can see B2B, B2C, Retail trends across all companies
+                    b2bTrend = GetTrendByType(invoices, "B2B");
+                    b2cTrend = GetTrendByType(invoices, "B2C");
+                    retailTrend = GetTrendByType(invoices, "Retail");
+                }
+                else
+                {
+                    // Company-specific trends
+                    b2bTrend = GetTrendByType(invoices, "B2B");
+                    b2cTrend = GetTrendByType(invoices, "B2C");
+                    retailTrend = GetTrendByType(invoices, "Retail");
+                }
 
                 var dashboard = new DashboardSummaryDto
                 {
@@ -77,19 +102,22 @@ namespace Core_API.Infrastructure.Services.Dashboard
         {
             try
             {
-                if (!operationContext.CustomerId.HasValue)
+                IQueryable<Domain.Entities.Invoice> query = _unitOfWork.Invoices.Query().Where(i => !i.IsDeleted);
+                // Customer sees only their own invoices
+                if (operationContext.CustomerId.HasValue)
+                {
+                    _logger.LogInformation($"Customer dashboard - showing invoices for customer {operationContext.CustomerId}");
+                    query = query.Where(i => i.CustomerId == operationContext.CustomerId.Value);
+                }
+                else
                 {
                     return OperationResult<DashboardSummaryDto>.FailureResult("Customer ID is required");
                 }
 
-                var customerId = operationContext.CustomerId.Value;
-
-                // Get invoices for the customer
-                var invoices = await _unitOfWork.Invoices.Query()
-                    .Where(i => i.CustomerId == customerId && !i.IsDeleted)
-                    .Include(i => i.Customer)
-                    .Include(i => i.InvoiceItems)
-                    .ToListAsync();
+                var invoices = await query
+                  .Include(i => i.Customer)
+                  .Include(i => i.InvoiceItems)
+                  .ToListAsync();
 
                 // Calculate stats
                 var stats = CalculateStats(invoices, null);
@@ -199,7 +227,7 @@ namespace Core_API.Infrastructure.Services.Dashboard
         }
 
         #region Private Helper Methods
-        private DashboardStatsDto CalculateStats(List<Invoice> invoices, int? companyId)
+        private DashboardStatsDto CalculateStats(List<Domain.Entities.Invoice> invoices, int? companyId)
         {
             var currentPeriodStart = DateTime.UtcNow.AddDays(-30);
             var previousPeriodStart = DateTime.UtcNow.AddDays(-60);
@@ -229,7 +257,7 @@ namespace Core_API.Infrastructure.Services.Dashboard
                 )
             };
         }
-        private List<RecentInvoiceDto> GetRecentInvoicesInternal(List<Invoice> invoices, int count)
+        private List<RecentInvoiceDto> GetRecentInvoicesInternal(List<Domain.Entities.Invoice> invoices, int count)
         {
             return invoices
                 .OrderByDescending(i => i.CreatedDate)
@@ -250,7 +278,7 @@ namespace Core_API.Infrastructure.Services.Dashboard
         /// <summary>
         /// Invoices with partial payments - shows payment progress
         /// </summary>
-        private List<InvoiceProgressDto> GetPaymentProgressInvoices(List<Invoice> invoices)
+        private List<InvoiceProgressDto> GetPaymentProgressInvoices(List<Domain.Entities.Invoice> invoices)
         {
             return invoices
                 .Where(i => i.PaymentStatus == PaymentStatus.PartiallyPaid)
@@ -263,7 +291,7 @@ namespace Core_API.Infrastructure.Services.Dashboard
         /// <summary>
         /// Invoices sent but not yet paid - shows what's pending
         /// </summary>
-        private List<InvoiceProgressDto> GetPendingPaymentsInvoices(List<Invoice> invoices)
+        private List<InvoiceProgressDto> GetPendingPaymentsInvoices(List<Domain.Entities.Invoice> invoices)
         {
             return invoices
                 .Where(i => i.PaymentStatus == PaymentStatus.Pending &&
@@ -277,7 +305,7 @@ namespace Core_API.Infrastructure.Services.Dashboard
         /// <summary>
         /// Overdue invoices - needs immediate attention/collections
         /// </summary>
-        private List<InvoiceProgressDto> GetOverduePaymentsInvoices(List<Invoice> invoices)
+        private List<InvoiceProgressDto> GetOverduePaymentsInvoices(List<Domain.Entities.Invoice> invoices)
         {
             return invoices
                 .Where(i => i.PaymentStatus == PaymentStatus.Overdue ||
@@ -291,7 +319,7 @@ namespace Core_API.Infrastructure.Services.Dashboard
         /// Recently paid invoices - shows completed transactions
         /// Industry standard: Show last 5 paid invoices with payment date
         /// </summary>
-        private List<RecentInvoiceDto> GetRecentPaidInvoices(List<Invoice> invoices)
+        private List<RecentInvoiceDto> GetRecentPaidInvoices(List<Domain.Entities.Invoice> invoices)
         {
             return invoices
              .Where(i => i.PaymentStatus == PaymentStatus.Paid && i.PaidDate.HasValue)
@@ -310,8 +338,7 @@ namespace Core_API.Infrastructure.Services.Dashboard
                     PaymentDate = invoice.PaidDate
                 }).ToList();
         }
-
-        private InvoiceProgressDto MapToProgressDto(Invoice invoice, bool isPending = false, bool isOverdue = false)
+        private InvoiceProgressDto MapToProgressDto(Domain.Entities.Invoice invoice, bool isPending = false, bool isOverdue = false)
         {
             var paidPercentage = invoice.TotalAmount > 0 ? (invoice.AmountPaid / invoice.TotalAmount) * 100 : 0;
             return new InvoiceProgressDto
@@ -329,7 +356,6 @@ namespace Core_API.Infrastructure.Services.Dashboard
                 ProgressColor = GetProgressColor(paidPercentage / 100),
             };
         }
-
         private string GetStatusColorForDisplay(bool isOverdue, bool isPending, PaymentStatus status)
         {
             if (isOverdue) return "#EF4444";     // Red - Urgent
@@ -348,8 +374,7 @@ namespace Core_API.Infrastructure.Services.Dashboard
             if (percentage >= 0.25m) return "#EF4444";  // Red - Just started
             return "#8B5CF6";                            // Purple - New
         }
-
-        private List<MonthlyInvoiceTrendDto> GetMonthlyTrend(List<Invoice> invoices)
+        private List<MonthlyInvoiceTrendDto> GetMonthlyTrend(List<Domain.Entities.Invoice> invoices)
         {
             var currentYear = DateTime.UtcNow.Year;
             var months = Enumerable.Range(1, 12);
@@ -363,7 +388,7 @@ namespace Core_API.Infrastructure.Services.Dashboard
                 Count = invoices.Count(i => i.IssueDate.Year == currentYear && i.IssueDate.Month == month)
             }).ToList();
         }
-        private List<MonthlyInvoiceTrendDto> GetTrendByType(List<Invoice> invoices, string type)
+        private List<MonthlyInvoiceTrendDto> GetTrendByType(List<Domain.Entities.Invoice> invoices, string type)
         {
             var currentYear = DateTime.UtcNow.Year;
             var months = Enumerable.Range(1, 12);

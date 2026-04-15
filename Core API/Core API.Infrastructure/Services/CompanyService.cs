@@ -1,8 +1,12 @@
-﻿using Core_API.Application.Contracts.Persistence;
+﻿using Core_API.Application.Common.Models;
+using Core_API.Application.Common.Results;
+using Core_API.Application.Contracts.Persistence;
 using Core_API.Application.Contracts.Services;
 using Core_API.Application.DTOs.Company.Request;
 using Core_API.Application.DTOs.Company.Response;
+using Core_API.Application.DTOs.User.Response;
 using Core_API.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace Core_API.Infrastructure.Services
@@ -102,6 +106,39 @@ namespace Core_API.Infrastructure.Services
 
             _logger.LogInformation("Company {CompanyId} soft-deleted", id);
             return true;
+        }
+
+        public async Task<OperationResult<List<CompanyDto>>> GetAllCompaniesAsync(OperationContext operationContext)
+        {
+            try
+            {
+                // Only Super Admin can access all companies
+                if (!operationContext.IsSuperAdmin)
+                {
+                    return OperationResult<List<CompanyDto>>.FailureResult("Only Super Admin can access all companies.");
+                }
+
+                var companies = await _unitOfWork.Companies
+                    .Query()
+                    .Where(c => !c.IsDeleted)
+                    .OrderBy(c => c.Name)
+                    .Select(c => new CompanyDto
+                    {
+                        Id = c.Id,
+                        Name = c.Name,
+                        Email = c.Email,
+                        PhoneNumber = c.PhoneNumber
+                    })
+                    .ToListAsync();
+
+                _logger.LogInformation("Super Admin retrieved {Count} companies", companies.Count);
+                return OperationResult<List<CompanyDto>>.SuccessResult(companies);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving all companies");
+                return OperationResult<List<CompanyDto>>.FailureResult("Failed to retrieve companies.");
+            }
         }
     }
 }

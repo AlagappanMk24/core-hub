@@ -5,9 +5,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Core_API.Infrastructure.Persistence.Repositories
 {
-    public class EmailSettingsRepository(CoreAPIDbContext context) : IEmailSettingsRepository
+    public class EmailSettingsRepository(CoreInvoiceDbContext context) : IEmailSettingsRepository
     {
-        private readonly CoreAPIDbContext _context = context ?? throw new ArgumentNullException(nameof(context));
+        private readonly CoreInvoiceDbContext _context = context ?? throw new ArgumentNullException(nameof(context));
         public async Task<EmailSettings> GetByCompanyIdAsync(int companyId)
         {
             return await _context.EmailSettings

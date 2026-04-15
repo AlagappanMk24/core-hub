@@ -6,9 +6,9 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Core_API.Infrastructure.Persistence.Repositories
 {
-    public class CompanyRequestRepository(CoreAPIDbContext context) : GenericRepository<CompanyRequest>(context), ICompanyRequestRepository
+    public class CompanyRequestRepository(CoreInvoiceDbContext context) : GenericRepository<CompanyRequest>(context), ICompanyRequestRepository
     {
-        private readonly CoreAPIDbContext _context = context;
+        private readonly CoreInvoiceDbContext _context = context;
 
         public async Task<CompanyRequest> GetRequestByIdAsync(int id)
         {

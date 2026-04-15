@@ -4,7 +4,7 @@ using Core_API.Infrastructure.Data.Context;
 
 namespace Core_API.Infrastructure.Persistence.Repositories.Invoice
 {
-    public class TaxTypeRepository(CoreAPIDbContext dbContext) : GenericRepository<TaxType>(dbContext), ITaxTypeRepository
+    public class TaxTypeRepository(CoreInvoiceDbContext dbContext) : GenericRepository<TaxType>(dbContext), ITaxTypeRepository
     {
     }
 }

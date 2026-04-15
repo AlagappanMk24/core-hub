@@ -13,9 +13,9 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 namespace Core_API.Infrastructure.Persistence
 {
-    public class UnitOfWork(CoreAPIDbContext dbContext, UserManager<ApplicationUser> userManager, IServiceProvider serviceProvider) : IUnitOfWork
+    public class UnitOfWork(CoreInvoiceDbContext dbContext, UserManager<ApplicationUser> userManager, IServiceProvider serviceProvider) : IUnitOfWork
     {
-        private readonly CoreAPIDbContext _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+        private readonly CoreInvoiceDbContext _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
         private readonly UserManager<ApplicationUser> _userManager = userManager ?? throw new ArgumentNullException(nameof(userManager));
         private readonly IServiceProvider _serviceProvider = serviceProvider ?? throw new ArgumentNullException(nameof(serviceProvider));
         private IDbContextTransaction? _currentTransaction;
@@ -38,6 +38,11 @@ namespace Core_API.Infrastructure.Persistence
         private IRecurringInvoiceRepository? _recurringInvoices;
         private IRecurringInvoiceInstanceRepository? _recurringInvoiceInstances;
         private IRecurringInvoiceAuditLogRepository? _recurringInvoiceAuditLogs;
+        private ITaskRepository? _taskItems;
+        private ITaskCommentRepository? _taskComments;
+        private ITaskAttachmentRepository? _taskAttachments;
+        private ITaskAuditLogRepository? _taskAuditLogs;
+
         public IAuthRepository AuthUsers => _authUsers ??= new AuthRepository(_dbContext, _userManager);
         public IUserRepository Users => _users ??= new UserRepository(_dbContext);
         public ICustomerRepository Customers => _customers ??= new CustomerRepository(_dbContext);
@@ -67,6 +72,10 @@ namespace Core_API.Infrastructure.Persistence
             _recurringInvoiceAuditLogs ??= new RecurringInvoiceAuditLogRepository(
                 _dbContext,
                 _serviceProvider.GetRequiredService<ILogger<RecurringInvoiceAuditLogRepository>>());
+        public ITaskRepository TaskItems => _taskItems ??= new TaskRepository(_dbContext);
+        public ITaskCommentRepository TaskComments => _taskComments ??= new TaskCommentRepository(_dbContext);
+        public ITaskAttachmentRepository TaskAttachments => _taskAttachments ??= new TaskAttachmentRepository(_dbContext);
+        public ITaskAuditLogRepository TaskAuditLogs => _taskAuditLogs ??= new TaskAuditLogRepository(_dbContext);
         public async Task SaveChangesAsync()
         {
             await _dbContext.SaveChangesAsync();

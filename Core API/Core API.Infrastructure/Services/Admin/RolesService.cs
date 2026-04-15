@@ -9,9 +9,9 @@ using Microsoft.Extensions.Logging;
 
 namespace Core_API.Infrastructure.Services.Admin
 {
-    public class RolesService( CoreAPIDbContext context, RoleManager<IdentityRole> roleManager, IPermissionService permissionService, ILogger<RolesService> logger) : IRolesService
+    public class RolesService( CoreInvoiceDbContext context, RoleManager<IdentityRole> roleManager, IPermissionService permissionService, ILogger<RolesService> logger) : IRolesService
     {
-        private readonly CoreAPIDbContext _context = context;
+        private readonly CoreInvoiceDbContext _context = context;
         private readonly RoleManager<IdentityRole> _roleManager = roleManager;
         private readonly IPermissionService _permissionService = permissionService;
         private readonly ILogger<RolesService> _logger = logger;

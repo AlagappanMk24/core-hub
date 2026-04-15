@@ -7,7 +7,7 @@ namespace Core_API.Application.Contracts.Persistence.Invoice
     public interface IInvoiceRepository : IGenericRepository<Core_API.Domain.Entities.Invoice>
     {
         Task<PaginatedResult<Core_API.Domain.Entities.Invoice>> GetPagedAsync(
-         int companyId,
+         int? companyId,
           InvoiceFilterRequestDto filter);
         Task<bool> InvoiceNumberExistsAsync(int companyId, string invoiceNumber, int? excludeInvoiceId = null);
     }

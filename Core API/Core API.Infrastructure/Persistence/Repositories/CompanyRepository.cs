@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Core_API.Infrastructure.Persistence.Repositories
 {
-    public class CompanyRepository(CoreAPIDbContext dbContext) : GenericRepository<Company>(dbContext), ICompanyRepository
+    public class CompanyRepository(CoreInvoiceDbContext dbContext) : GenericRepository<Company>(dbContext), ICompanyRepository
     {
         public async Task<Company> GetByIdAsync(int id, bool includeCustomers = false, bool includeInvoices = false)
         {

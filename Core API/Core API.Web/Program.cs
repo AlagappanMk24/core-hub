@@ -8,11 +8,12 @@ using Core_API.Domain.Entities.Identity;
 using Core_API.Infrastructure;
 using Core_API.Infrastructure.Data.Context;
 using Core_API.Infrastructure.Data.Initializers;
-using Core_API.Infrastructure.DI;
+using Core_API.Infrastructure.DependencyInjection;
 using Core_API.Infrastructure.RateLimiting;
 using Core_API.Infrastructure.Services.Background;
 using Core_API.Infrastructure.Shared;
 using Core_API.Web.Filters;
+using Core_API.Web.Services;
 using Core_API.Web.Utilities;
 using Microsoft.AspNetCore.Authentication.Google;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -109,6 +110,9 @@ void ConfigureServices(IServiceCollection services, IConfiguration configuration
 
     // Add HTTP context accessor
     services.AddHttpContextAccessor();
+
+    // Register OperationContext service
+    services.AddScoped<IOperationContextService, OperationContextService>();
 
     // Add SignalR
     services.AddSignalR(); 
@@ -221,7 +225,7 @@ void ConfigureDatabase(IServiceCollection services, IConfiguration configuration
     var connectionString = configuration.GetConnectionString("CoreAPIDbConnection");
 
     // Add DbContext with SQL Server
-    services.AddDbContext<CoreAPIDbContext>(options =>
+    services.AddDbContext<CoreInvoiceDbContext>(options =>
         options.UseSqlServer(connectionString));
 }
 
@@ -242,7 +246,7 @@ void ConfigureIdentity(IServiceCollection services)
         options.Password.RequireLowercase = false;
     })
      .AddRoles<IdentityRole>()
-     .AddEntityFrameworkStores<CoreAPIDbContext>()
+     .AddEntityFrameworkStores<CoreInvoiceDbContext>()
      .AddDefaultTokenProviders();
 }
 

@@ -1,4 +1,5 @@
-﻿using Core_API.Application.Common.Results;
+﻿using Core_API.Application.Common.Models;
+using Core_API.Application.Common.Results;
 using Core_API.Application.DTOs.User;
 using Core_API.Application.DTOs.User.Request;
 using Core_API.Domain.Entities.Identity;
@@ -18,5 +19,8 @@ namespace Core_API.Application.Contracts.Services
         //Task<UserUpsertVM> CreateUserUpsertVMAsync(UserDto userDto);
         Task<OperationResult<string>> ReleaseEmailAsync(string userId);
         Task CleanupSoftDeletedUsersAsync();
+        Task<IEnumerable<UserListDto>> GetUserListAsync(OperationContext context);
+        Task<IEnumerable<UserListDto>> GetUsersByCompanyAsync(int companyId, OperationContext context);
+        Task<IEnumerable<UserListDto>> GetUsersByRoleAsync(string role, OperationContext context);
     }
 }

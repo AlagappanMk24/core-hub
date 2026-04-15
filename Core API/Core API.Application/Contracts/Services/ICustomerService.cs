@@ -7,11 +7,11 @@ namespace Core_API.Application.Contracts.Services
 {
     public interface ICustomerService
     {
-        Task<OperationResult<CustomerStatsDto>> GetStatsAsync(int companyId);
-        Task<OperationResult<CustomerResponseDto>> CreateAsync(CustomerCreateDto dto, int companyId, string userId);
-        Task<OperationResult<CustomerResponseDto>> UpdateAsync(CustomerUpdateDto dto, int companyId, string userId);
-        Task<OperationResult<bool>> DeleteAsync(int id, int companyId, string userId);
-        Task<OperationResult<CustomerResponseDto>> GetByIdAsync(int id, int companyId);
-        Task<OperationResult<PaginatedResult<CustomerResponseDto>>> GetPagedAsync(OperationContext operationContext, CustomerFilterRequestDto filter);
+        Task<OperationResult<CustomerResponseDto>> CreateAsync(CustomerCreateDto dto, OperationContext context);
+        Task<OperationResult<CustomerResponseDto>> UpdateAsync(CustomerUpdateDto dto, OperationContext context);
+        Task<OperationResult<bool>> DeleteAsync(int id, OperationContext context);
+        Task<OperationResult<CustomerResponseDto>> GetByIdAsync(int id, OperationContext context);
+        Task<OperationResult<PaginatedResult<CustomerResponseDto>>> GetPagedAsync(OperationContext context, CustomerFilterRequestDto filter);
+        Task<OperationResult<CustomerStatsDto>> GetStatsAsync(OperationContext context);
     }
 }

@@ -7,14 +7,21 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Core_API.Infrastructure.Persistence.Repositories.Invoice
 {
-    public class InvoiceRepository(CoreAPIDbContext dbContext) : GenericRepository<Core_API.Domain.Entities.Invoice>(dbContext), IInvoiceRepository
+    public class InvoiceRepository(CoreInvoiceDbContext dbContext) : GenericRepository<Core_API.Domain.Entities.Invoice>(dbContext), IInvoiceRepository
     {
         public async Task<PaginatedResult<Core_API.Domain.Entities.Invoice>> GetPagedAsync(
-           int companyId,
+           int? companyId,
            InvoiceFilterRequestDto filter)
         {
-            IQueryable<Core_API.Domain.Entities.Invoice> query = dbset
-                .Where( i=> !i.IsDeleted)
+            IQueryable<Core_API.Domain.Entities.Invoice> query = dbset.Where(i => !i.IsDeleted);
+
+            // Filter by company ONLY if an ID is provided (Super Admin passes null)
+            if (companyId.HasValue)
+            {
+                query = query.Where(i => i.CompanyId == companyId.Value);
+            }
+
+            query = query
                 .Include(i => i.Customer)
                 .Include(i => i.InvoiceItems)
                 .Include(i => i.TaxDetails)
@@ -27,14 +34,41 @@ namespace Core_API.Infrastructure.Persistence.Repositories.Invoice
                 query = query.Where(i => i.InvoiceNumber.ToLower().Contains(filter.Search) || i.Customer.Name.ToLower().Contains(filter.Search));
             }
 
-            if (!string.IsNullOrEmpty(filter.InvoiceStatus) && Enum.TryParse<InvoiceStatus>(filter.InvoiceStatus, true, out var parsedInvoiceStatus))
+            if (!string.IsNullOrEmpty(filter.InvoiceStatus))
             {
-                query = query.Where(i => i.InvoiceStatus == parsedInvoiceStatus);
+                var invoiceStatusValue = filter.InvoiceStatus;
+
+                // Map common frontend values to backend enum
+                invoiceStatusValue = invoiceStatusValue switch
+                {
+                    "Cancelled" => "Void",      // Map "Cancelled" to "Void"
+                    "Approved" => "Sent",       // Map "Approved" to "Sent" (if needed)
+                    _ => invoiceStatusValue
+                };
+
+                if (Enum.TryParse<InvoiceStatus>(invoiceStatusValue, true, out var parsedInvoiceStatus))
+                {
+                    query = query.Where(i => i.InvoiceStatus == parsedInvoiceStatus);
+                }
             }
 
-            if (!string.IsNullOrEmpty(filter.PaymentStatus) && Enum.TryParse<PaymentStatus>(filter.PaymentStatus, true, out var parsedPaymentStatus))
+            // Complete fix for GetPagedAsync
+            if (!string.IsNullOrEmpty(filter.PaymentStatus))
             {
-                query = query.Where(i => i.PaymentStatus == parsedPaymentStatus);
+                var paymentStatusValue = filter.PaymentStatus;
+
+                // Map common frontend values to backend enum
+                paymentStatusValue = paymentStatusValue switch
+                {
+                    "Completed" => "Paid",
+                    "Processing" => "Pending",
+                    _ => paymentStatusValue
+                };
+
+                if (Enum.TryParse<PaymentStatus>(paymentStatusValue, true, out var parsedPaymentStatus))
+                {
+                    query = query.Where(i => i.PaymentStatus == parsedPaymentStatus);
+                }
             }
 
             if (filter.CustomerId.HasValue)

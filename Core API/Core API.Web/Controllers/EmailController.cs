@@ -10,44 +10,10 @@ namespace Core_API.Web.Controllers
     [Authorize]
     [Route("api/[controller]")]
     [ApiController]
-    public class EmailController(IEmailService emailService, ILogger<EmailController> logger) : ControllerBase
+    public class EmailController(IEmailService emailService, ILogger<EmailController> logger) : BaseApiController
     {
         private readonly IEmailService _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
         private readonly ILogger<EmailController> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        private OperationContext GetOperationContext()
-        {
-            var companyIdClaim = User.FindFirst("companyId")?.Value;
-            var customerIdClaim = User.FindFirst("customerId")?.Value;
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-            if (string.IsNullOrEmpty(userId))
-            {
-                _logger.LogError("User ID claim is missing.");
-                throw new UnauthorizedAccessException("User ID claim is missing.");
-            }
-
-            int? companyId = null;
-            if (!string.IsNullOrEmpty(companyIdClaim) && int.TryParse(companyIdClaim, out var parsedCompanyId) && parsedCompanyId > 0)
-            {
-                companyId = parsedCompanyId;
-            }
-            else if (!string.IsNullOrEmpty(companyIdClaim))
-            {
-                _logger.LogWarning("Invalid CompanyId claim: {CompanyIdClaim}", companyIdClaim);
-            }
-
-            int? customerId = null;
-            if (!string.IsNullOrEmpty(customerIdClaim) && int.TryParse(customerIdClaim, out var parsedCustomerId) && parsedCustomerId > 0)
-            {
-                customerId = parsedCustomerId;
-            }
-            else if (!string.IsNullOrEmpty(customerIdClaim))
-            {
-                _logger.LogWarning("Invalid CustomerId claim: {CustomerIdClaim}", customerIdClaim);
-            }
-
-            return new OperationContext(userId, companyId, customerId);
-        }
 
         [HttpGet("settings")]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -56,12 +22,12 @@ namespace Core_API.Web.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult<EmailSettingsDto>> GetEmailSettings()
         {
-            var operationContext = GetOperationContext();
+            var context = CurrentContext;
             try
             {
-                _logger.LogInformation("Retrieving email settings for company {CompanyId}", operationContext.CompanyId);
+                _logger.LogInformation("Retrieving email settings for company {CompanyId}", context.CompanyId);
 
-                var result = await _emailService.GetEmailSettingsAsync(operationContext);
+                var result = await _emailService.GetEmailSettingsAsync(context);
                 if (!result.IsSuccess)
                 {
                     _logger.LogWarning("Email settings retrieval failed: {ErrorMessage}", result.ErrorMessage);
@@ -82,7 +48,7 @@ namespace Core_API.Web.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving email settings for company {CompanyId}", operationContext.CompanyId);
+                _logger.LogError(ex, "Error retrieving email settings for company {CompanyId}", context.CompanyId);
                 return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
                 {
                     Title = "Internal Server Error",
@@ -98,7 +64,7 @@ namespace Core_API.Web.Controllers
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<ActionResult> SaveEmailSettings([FromBody] EmailSettingsDto emailSettingsDto)
         {
-            var operationContext = GetOperationContext();
+            var operationContext = CurrentContext;
             try
             {
                 if (!ModelState.IsValid)

@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Core_API.Infrastructure.Persistence.Repositories.Invoice
 {
-    public class InvoiceItemRepository(CoreAPIDbContext dbContext) : GenericRepository<InvoiceItem>(dbContext), IInvoiceItemRepository
+    public class InvoiceItemRepository(CoreInvoiceDbContext dbContext) : GenericRepository<InvoiceItem>(dbContext), IInvoiceItemRepository
     {
         public async Task<List<InvoiceItem>> GetByInvoiceIdAsync(int invoiceId)
         {

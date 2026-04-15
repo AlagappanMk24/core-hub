@@ -13,20 +13,20 @@ namespace Core_API.Infrastructure.Services
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly ILogger<CustomerService> _logger = logger;
-        public async Task<OperationResult<CustomerStatsDto>> GetStatsAsync(int companyId)
+        public async Task<OperationResult<CustomerStatsDto>> GetStatsAsync(OperationContext context)
         {
             try
             {
                 // Current counts
-                var allCount = await _unitOfWork.Customers.CountAsync(c => c.CompanyId == companyId);
-                var activeCount = await _unitOfWork.Customers.CountAsync(c => c.CompanyId == companyId && !c.IsDeleted);
-                var inactiveCount = await _unitOfWork.Customers.CountAsync(c => c.CompanyId == companyId && c.IsDeleted);
+                var allCount = await _unitOfWork.Customers.CountAsync(c => c.CompanyId == context.CompanyId);
+                var activeCount = await _unitOfWork.Customers.CountAsync(c => c.CompanyId == context.CompanyId && !c.IsDeleted);
+                var inactiveCount = await _unitOfWork.Customers.CountAsync(c => c.CompanyId == context.CompanyId && c.IsDeleted);
 
                 // Historical counts (e.g., 30 days ago)
                 var thirtyDaysAgo = DateTime.UtcNow.AddDays(-30);
-                var historicalAllCount = await _unitOfWork.Customers.CountAsync(c => c.CompanyId == companyId && c.CreatedDate <= thirtyDaysAgo);
-                var historicalActiveCount = await _unitOfWork.Customers.CountAsync(c => c.CompanyId == companyId && !c.IsDeleted && c.CreatedDate <= thirtyDaysAgo);
-                var historicalInactiveCount = await _unitOfWork.Customers.CountAsync(c => c.CompanyId == companyId && c.IsDeleted && c.CreatedDate <= thirtyDaysAgo);
+                var historicalAllCount = await _unitOfWork.Customers.CountAsync(c => c.CompanyId == context.CompanyId && c.CreatedDate <= thirtyDaysAgo);
+                var historicalActiveCount = await _unitOfWork.Customers.CountAsync(c => c.CompanyId == context.CompanyId && !c.IsDeleted && c.CreatedDate <= thirtyDaysAgo);
+                var historicalInactiveCount = await _unitOfWork.Customers.CountAsync(c => c.CompanyId == context.CompanyId && c.IsDeleted && c.CreatedDate <= thirtyDaysAgo);
 
                 // Calculate percentage changes
                 double allChange = historicalAllCount > 0 ? ((double)(allCount - historicalAllCount) / historicalAllCount * 100) : 0;
@@ -47,15 +47,15 @@ namespace Core_API.Infrastructure.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving customer stats for company {CompanyId}", companyId);
+                _logger.LogError(ex, "Error retrieving customer stats for company {CompanyId}", context.CompanyId);
                 return OperationResult<CustomerStatsDto>.FailureResult("Failed to retrieve customer statistics.");
             }
         }
-        public async Task<OperationResult<CustomerResponseDto>> CreateAsync(CustomerCreateDto dto, int companyId, string userId)
+        public async Task<OperationResult<CustomerResponseDto>> CreateAsync(CustomerCreateDto dto, OperationContext context)
         {
             try
             {
-                if (await _unitOfWork.Customers.ExistsAsync(companyId, dto.Email))
+                if (await _unitOfWork.Customers.ExistsAsync(context, dto.Email))
                 {
                     return OperationResult<CustomerResponseDto>.FailureResult("A customer with this email already exists.");
                 }
@@ -74,8 +74,8 @@ namespace Core_API.Infrastructure.Services
                         Country = dto.Country,
                         ZipCode = dto.ZipCode
                     },
-                    CompanyId = companyId,
-                    CreatedBy = userId,
+                    CompanyId = context.CompanyId,
+                    CreatedBy = context.UserId,
                     CreatedDate = DateTime.UtcNow
                 };
 
@@ -87,21 +87,21 @@ namespace Core_API.Infrastructure.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error creating customer for company {CompanyId}", companyId);
+                _logger.LogError(ex, "Error creating customer for company {CompanyId}", context.CompanyId);
                 return OperationResult<CustomerResponseDto>.FailureResult("Failed to create customer.");
             }
         }
-        public async Task<OperationResult<CustomerResponseDto>> UpdateAsync(CustomerUpdateDto dto, int companyId, string userId)
+        public async Task<OperationResult<CustomerResponseDto>> UpdateAsync(CustomerUpdateDto dto, OperationContext context)
         {
             try
             {
-                var customer = await _unitOfWork.Customers.GetAsync(c => c.Id == dto.Id && c.CompanyId == companyId && !c.IsDeleted);
+                var customer = await _unitOfWork.Customers.GetAsync(c => c.Id == dto.Id && c.CompanyId == context.CompanyId && !c.IsDeleted);
                 if (customer == null)
                 {
                     return OperationResult<CustomerResponseDto>.FailureResult("Customer not found or does not belong to your company.");
                 }
 
-                if (await _unitOfWork.Customers.ExistsAsync(companyId, dto.Email) && customer.Email != dto.Email)
+                if (await _unitOfWork.Customers.ExistsAsync(context, dto.Email) && customer.Email != dto.Email)
                 {
                     return OperationResult<CustomerResponseDto>.FailureResult("A customer with this email already exists.");
                 }
@@ -115,7 +115,7 @@ namespace Core_API.Infrastructure.Services
                 customer.Address.State = dto.State;
                 customer.Address.Country = dto.Country;
                 customer.Address.ZipCode = dto.ZipCode;
-                customer.UpdatedBy = userId;
+                customer.UpdatedBy = context.UserId;
                 customer.UpdatedDate = DateTime.UtcNow;
 
                 _unitOfWork.Customers.Update(customer);
@@ -126,15 +126,15 @@ namespace Core_API.Infrastructure.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating customer {CustomerId} for company {CompanyId}", dto.Id, companyId);
+                _logger.LogError(ex, "Error updating customer {CustomerId} for company {CompanyId}", dto.Id, context.CompanyId);
                 return OperationResult<CustomerResponseDto>.FailureResult("Failed to update customer.");
             }
         }
-        public async Task<OperationResult<bool>> DeleteAsync(int id, int companyId, string userId)
+        public async Task<OperationResult<bool>> DeleteAsync(int id, OperationContext context)
         {
             try
             {
-                var customer = await _unitOfWork.Customers.GetAsync(c => c.Id == id && c.CompanyId == companyId && !c.IsDeleted, "Invoices");
+                var customer = await _unitOfWork.Customers.GetAsync(c => c.Id == id && c.CompanyId == context.CompanyId && !c.IsDeleted, "Invoices");
                 if (customer == null)
                 {
                     return OperationResult<bool>.FailureResult("Customer not found or does not belong to your company.");
@@ -146,7 +146,7 @@ namespace Core_API.Infrastructure.Services
                 }
 
                 customer.IsDeleted = true;
-                customer.UpdatedBy = userId;
+                customer.UpdatedBy = context.UserId;
                 customer.UpdatedDate = DateTime.UtcNow;
 
                 _unitOfWork.Customers.Update(customer);
@@ -156,15 +156,15 @@ namespace Core_API.Infrastructure.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting customer {CustomerId} for company {CompanyId}", id, companyId);
+                _logger.LogError(ex, "Error deleting customer {CustomerId} for company {CompanyId}", id, context.CompanyId);
                 return OperationResult<bool>.FailureResult("Failed to delete customer.");
             }
         }
-        public async Task<OperationResult<CustomerResponseDto>> GetByIdAsync(int id, int companyId)
+        public async Task<OperationResult<CustomerResponseDto>> GetByIdAsync(int id, OperationContext context)
         {
             try
             {
-                var customer = await _unitOfWork.Customers.GetAsync(c => c.Id == id && c.CompanyId == companyId && !c.IsDeleted);
+                var customer = await _unitOfWork.Customers.GetAsync(c => c.Id == id && c.CompanyId == context.CompanyId && !c.IsDeleted);
                 if (customer == null)
                 {
                     return OperationResult<CustomerResponseDto>.FailureResult("Customer not found or does not belong to your company.");
@@ -175,7 +175,7 @@ namespace Core_API.Infrastructure.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving customer {CustomerId} for company {CompanyId}", id, companyId);
+                _logger.LogError(ex, "Error retrieving customer {CustomerId} for company {CompanyId}", id, context.CompanyId);
                 return OperationResult<CustomerResponseDto>.FailureResult("Failed to retrieve customer.");
             }
         }

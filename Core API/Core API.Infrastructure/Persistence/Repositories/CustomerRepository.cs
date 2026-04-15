@@ -1,4 +1,5 @@
-﻿using Core_API.Application.Common.Results;
+﻿using Core_API.Application.Common.Models;
+using Core_API.Application.Common.Results;
 using Core_API.Application.Contracts.Persistence;
 using Core_API.Application.DTOs.Customer.Request;
 using Core_API.Domain.Entities;
@@ -7,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Core_API.Infrastructure.Persistence.Repositories
 {
-    public class CustomerRepository(CoreAPIDbContext dbContext) : GenericRepository<Customer>(dbContext), ICustomerRepository
+    public class CustomerRepository(CoreInvoiceDbContext dbContext) : GenericRepository<Customer>(dbContext), ICustomerRepository
     {
         public async Task<PaginatedResult<Customer>> GetPagedAsync(int companyId, CustomerFilterRequestDto filter)
         {
@@ -45,9 +46,9 @@ namespace Core_API.Infrastructure.Persistence.Repositories
                 PageSize = filter.PageSize
             };
         }
-        public async Task<bool> ExistsAsync(int companyId, string email)
+        public async Task<bool> ExistsAsync(OperationContext context, string email)
         {
-            return await dbset.AnyAsync(c => c.CompanyId == companyId && c.Email.Equals(email, StringComparison.CurrentCultureIgnoreCase) && !c.IsDeleted);
+            return await dbset.AnyAsync(c => c.CompanyId == context.CompanyId && c.Email.Equals(email, StringComparison.CurrentCultureIgnoreCase) && !c.IsDeleted);
         }
     }
 }

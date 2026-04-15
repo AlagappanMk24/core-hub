@@ -8,9 +8,9 @@ namespace Core_API.Infrastructure.Persistence.Repositories
 {
     public class GenericRepository<T> : IGenericRepository<T> where T : class
     {
-        private readonly CoreAPIDbContext _dbContext;
+        private readonly CoreInvoiceDbContext _dbContext;
         internal DbSet<T> dbset;
-        public GenericRepository(CoreAPIDbContext dbContext)
+        public GenericRepository(CoreInvoiceDbContext dbContext)
         {
             _dbContext = dbContext;
             dbset = _dbContext.Set<T>();

@@ -11,11 +11,11 @@ using Microsoft.Extensions.Logging;
 using System.Text.Json;
 
 namespace Core_API.Infrastructure.Data.Initializers;
-public class DbInitializer(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, CoreAPIDbContext dbContext, IPermissionService permissionService, ILogger<DbInitializer> logger) : IDbInitializer
+public class DbInitializer(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, CoreInvoiceDbContext dbContext, IPermissionService permissionService, ILogger<DbInitializer> logger) : IDbInitializer
 {
     private readonly UserManager<ApplicationUser> _userManager = userManager;
     private readonly RoleManager<IdentityRole> _roleManager = roleManager;
-    private readonly CoreAPIDbContext _dbContext = dbContext;
+    private readonly CoreInvoiceDbContext _dbContext = dbContext;
     private readonly IPermissionService _permissionService = permissionService;
     private readonly ILogger<DbInitializer> _logger = logger;
     private readonly TimeSpan _operationTimeout = TimeSpan.FromMinutes(5); // Configurable timeout
@@ -624,9 +624,6 @@ public class DbInitializer(UserManager<ApplicationUser> userManager, RoleManager
             // Seed Users for customers
             await SeedCustomerUsersAsync(customerMap, companyMap, cancellationToken);
 
-            // Seed Invoice Settings with ALL fields
-            await SeedInvoiceSettingsAsync(companyMap, cancellationToken);
-
             // Seed Tax Types with ALL fields
             await SeedTaxTypesAsync(companyMap, cancellationToken);
 
@@ -729,38 +726,6 @@ public class DbInitializer(UserManager<ApplicationUser> userManager, RoleManager
             item.User.CustomerId = item.Customer;
             await _userManager.UpdateAsync(item.User);
         }
-    }
-    private async Task SeedInvoiceSettingsAsync(Dictionary<string, int> companyMap, CancellationToken cancellationToken)
-    {
-        var invoiceSettings = new List<InvoiceSettings>();
-
-        foreach (var kvp in companyMap)
-        {
-            invoiceSettings.Add(new InvoiceSettings
-            {
-                CompanyId = kvp.Value,
-                IsAutomated = true,
-                InvoicePrefix = "INV",
-                InvoiceStartingNumber = 1000,
-                CreatedBy = "system",
-                CreatedDate = DateTime.UtcNow,
-                IsDeleted = false
-            });
-        }
-
-        foreach (var setting in invoiceSettings)
-        {
-            var existing = await _dbContext.InvoiceSettings
-                .FirstOrDefaultAsync(s => s.CompanyId == setting.CompanyId, cancellationToken);
-
-            if (existing == null)
-            {
-                _dbContext.InvoiceSettings.Add(setting);
-            }
-        }
-
-        await _dbContext.SaveChangesAsync(cancellationToken);
-        _logger.LogInformation("Seeded invoice settings.");
     }
     private async Task SeedTaxTypesAsync(Dictionary<string, int> companyMap, CancellationToken cancellationToken)
     {
@@ -938,7 +903,9 @@ public class DbInitializer(UserManager<ApplicationUser> userManager, RoleManager
             };
         }
 
-        // Create invoices with ALL fields populated
+        // ============================================================
+        // INVOICE 1 - Paid Invoice (KL Infotech)
+        // ============================================================
         var invoice1 = CreateInvoice(
             invoiceNumber: "INV-2024-0001",
             customerEmail: "alagappanmk984@gmail.com",
@@ -951,12 +918,12 @@ public class DbInitializer(UserManager<ApplicationUser> userManager, RoleManager
             paymentStatus: PaymentStatus.Paid,
             type: InvoiceType.Standard,
             subtotal: 2950.00m,
-            taxTotal: 295.00m,
+            taxTotal: 531.00m,
             discountTotal: 150.00m,
             shippingAmount: 0,
             adjustmentAmount: 0,
-            adjustmentDescription: null,
-            amountPaid: 3095.00m,
+            adjustmentDescription: string.Empty,
+            amountPaid: 3331.00m,
             amountDue: 0,
             amountRefunded: 0,
             paymentGateway: "Stripe",
@@ -974,6 +941,9 @@ public class DbInitializer(UserManager<ApplicationUser> userManager, RoleManager
             currency: "USD"
         );
 
+        // ============================================================
+        // INVOICE 2 - Overdue Invoice (Tech Solutions Inc.)
+        // ============================================================
         var invoice2 = CreateInvoice(
             invoiceNumber: "INV-2024-0002",
             customerEmail: "sarah.j@example.com",
@@ -986,16 +956,16 @@ public class DbInitializer(UserManager<ApplicationUser> userManager, RoleManager
             paymentStatus: PaymentStatus.Overdue,
             type: InvoiceType.Standard,
             subtotal: 2850.00m,
-            taxTotal: 285.00m,
+            taxTotal: 228.00m,
             discountTotal: 313.50m,
             shippingAmount: 0,
             adjustmentAmount: 0,
-            adjustmentDescription: null,
+            adjustmentDescription: string.Empty,
             amountPaid: 0,
-            amountDue: 2821.50m,
+            amountDue: 2764.50m,
             amountRefunded: 0,
             paymentGateway: "Stripe",
-            paymentTransactionId: null,
+            paymentTransactionId: string.Empty,
             isAutomated: false,
             recurringInvoiceId: null,
             sourceSystem: "Manual",
@@ -1009,6 +979,9 @@ public class DbInitializer(UserManager<ApplicationUser> userManager, RoleManager
             currency: "USD"
         );
 
+        // ============================================================
+        // INVOICE 3 - Pending Invoice (KL Infotech - EUR)
+        // ============================================================
         var invoice3 = CreateInvoice(
             invoiceNumber: "INV-2024-0003",
             customerEmail: "billing@acmecorp.com",
@@ -1021,16 +994,16 @@ public class DbInitializer(UserManager<ApplicationUser> userManager, RoleManager
             paymentStatus: PaymentStatus.Pending,
             type: InvoiceType.Standard,
             subtotal: 2710.00m,
-            taxTotal: 271.00m,
+            taxTotal: 542.00m,
             discountTotal: 298.10m,
             shippingAmount: 0,
             adjustmentAmount: 0,
-            adjustmentDescription: null,
+            adjustmentDescription: string.Empty,
             amountPaid: 0,
-            amountDue: 2682.90m,
+            amountDue: 2953.90m,
             amountRefunded: 0,
             paymentGateway: "PayPal",
-            paymentTransactionId: null,
+            paymentTransactionId: string.Empty,
             isAutomated: false,
             recurringInvoiceId: null,
             sourceSystem: "Manual",
@@ -1045,6 +1018,9 @@ public class DbInitializer(UserManager<ApplicationUser> userManager, RoleManager
             currencyRate: 0.92m
         );
 
+        // ============================================================
+        // INVOICE 4 - Partially Paid Invoice (Tech Solutions Inc.)
+        // ============================================================
         var invoice4 = CreateInvoice(
             invoiceNumber: "INV-2024-0004",
             customerEmail: "accounts@techtrend.com",
@@ -1057,13 +1033,13 @@ public class DbInitializer(UserManager<ApplicationUser> userManager, RoleManager
             paymentStatus: PaymentStatus.PartiallyPaid,
             type: InvoiceType.Standard,
             subtotal: 2750.00m,
-            taxTotal: 275.00m,
+            taxTotal: 220.00m,
             discountTotal: 0,
             shippingAmount: 0,
             adjustmentAmount: 0,
             adjustmentDescription: null,
             amountPaid: 1500.00m,
-            amountDue: 1525.00m,
+            amountDue: 1470.00m,
             amountRefunded: 0,
             paymentGateway: "Stripe",
             paymentTransactionId: "pi_3Abcdef789012",
@@ -1090,20 +1066,20 @@ public class DbInitializer(UserManager<ApplicationUser> userManager, RoleManager
             paidDate: null,
             status: InvoiceStatus.Sent,
             paymentStatus: PaymentStatus.Overdue,
-            type: InvoiceType.Recurring,
+            type: InvoiceType.Standard,
             subtotal: 4050.00m,
-            taxTotal: 405.00m,
+            taxTotal: 810.00m,
             discountTotal: 0,
             shippingAmount: 0,
             adjustmentAmount: 0,
-            adjustmentDescription: null,
+            adjustmentDescription: string.Empty,
             amountPaid: 0,
-            amountDue: 4455.00m,
+            amountDue: 4860.00m,
             amountRefunded: 0,
             paymentGateway: "Stripe",
-            paymentTransactionId: null,
-            isAutomated: true,
-            recurringInvoiceId: null, // Will be set after recurring invoice creation
+            paymentTransactionId: string.Empty,
+            isAutomated: false,
+            recurringInvoiceId: null,
             sourceSystem: "Recurring",
             customerNotes: "Thank you for your continued business!",
             internalNotes: "Monthly Cloud Hosting Services - October",
@@ -1116,6 +1092,9 @@ public class DbInitializer(UserManager<ApplicationUser> userManager, RoleManager
             currencyRate: 0.79m
         );
 
+        // ============================================================
+        // INVOICE 6 - Pending Invoice (KL Infotech)
+        // ============================================================
         var invoice6 = CreateInvoice(
             invoiceNumber: "INV-2024-0006",
             customerEmail: "david.lee@example.com",
@@ -1128,16 +1107,16 @@ public class DbInitializer(UserManager<ApplicationUser> userManager, RoleManager
             paymentStatus: PaymentStatus.Pending,
             type: InvoiceType.Standard,
             subtotal: 7100.00m,
-            taxTotal: 710.00m,
+            taxTotal: 1278.00m,
             discountTotal: 0,
             shippingAmount: 0,
             adjustmentAmount: 0,
-            adjustmentDescription: null,
+            adjustmentDescription: string.Empty,
             amountPaid: 0,
-            amountDue: 7810.00m,
+            amountDue: 8378.00m,
             amountRefunded: 0,
             paymentGateway: "Razorpay",
-            paymentTransactionId: null,
+            paymentTransactionId: string.Empty,
             isAutomated: false,
             recurringInvoiceId: null,
             sourceSystem: "Manual",
@@ -1155,10 +1134,13 @@ public class DbInitializer(UserManager<ApplicationUser> userManager, RoleManager
         await _dbContext.Invoices.AddRangeAsync(invoices, cancellationToken);
         await _dbContext.SaveChangesAsync(cancellationToken);
 
-        // Create invoice items with ALL fields from LineItemBase + InvoiceItem specific fields
-        var items = new[]
+        // ============================================================
+        // INVOICE ITEMS - All invoices have line items
+        // ============================================================
+
+        // INVOICE 1 ITEMS (5 items)
+        invoiceItems.AddRange(new[]
         {
-            // Invoice 1 items
             new InvoiceItem {
                 InvoiceId = invoice1.Id,
                 Description = "Web Development Services",
@@ -1233,9 +1215,12 @@ public class DbInitializer(UserManager<ApplicationUser> userManager, RoleManager
                 CreatedBy = "system",
                 CreatedDate = DateTime.UtcNow.AddDays(-30),
                 IsDeleted = false
-            },
+            }
+        });
 
-            // Invoice 2 items
+        // INVOICE 2 ITEMS (6 items)
+        invoiceItems.AddRange(new[]
+        {
             new InvoiceItem {
                 InvoiceId = invoice2.Id,
                 Description = "Software License (Pro Version)",
@@ -1325,9 +1310,207 @@ public class DbInitializer(UserManager<ApplicationUser> userManager, RoleManager
                 CreatedBy = "system",
                 CreatedDate = DateTime.UtcNow.AddDays(-20),
                 IsDeleted = false
-            },
+            }
+        });
 
-            // Invoice 6 items
+        // INVOICE 3 ITEMS (4 items)
+        invoiceItems.AddRange(new[]
+        {
+            new InvoiceItem {
+                InvoiceId = invoice3.Id,
+                Description = "ERP Consultation",
+                Quantity = 10,
+                UnitPrice = 150.00m,
+                Amount = 1500.00m,
+                TaxType = "VAT",
+                TaxPercentage = 20.00m,
+                TaxAmount = 300.00m,
+                TotalAmount = 1800.00m,
+                IsTaxable = true,
+                CreatedBy = "system",
+                CreatedDate = DateTime.UtcNow.AddDays(-10),
+                IsDeleted = false
+            },
+            new InvoiceItem {
+                InvoiceId = invoice3.Id,
+                Description = "System Integration",
+                Quantity = 5,
+                UnitPrice = 200.00m,
+                Amount = 1000.00m,
+                TaxType = "VAT",
+                TaxPercentage = 20.00m,
+                TaxAmount = 200.00m,
+                TotalAmount = 1200.00m,
+                IsTaxable = true,
+                CreatedBy = "system",
+                CreatedDate = DateTime.UtcNow.AddDays(-10),
+                IsDeleted = false
+            },
+            new InvoiceItem {
+                InvoiceId = invoice3.Id,
+                Description = "Data Migration",
+                Quantity = 1,
+                UnitPrice = 120.00m,
+                Amount = 120.00m,
+                TaxType = "VAT",
+                TaxPercentage = 20.00m,
+                TaxAmount = 24.00m,
+                TotalAmount = 144.00m,
+                IsTaxable = true,
+                CreatedBy = "system",
+                CreatedDate = DateTime.UtcNow.AddDays(-10),
+                IsDeleted = false
+            },
+            new InvoiceItem {
+                InvoiceId = invoice3.Id,
+                Description = "Training Materials",
+                Quantity = 1,
+                UnitPrice = 90.00m,
+                Amount = 90.00m,
+                TaxType = "VAT",
+                TaxPercentage = 20.00m,
+                TaxAmount = 18.00m,
+                TotalAmount = 108.00m,
+                IsTaxable = true,
+                CreatedBy = "system",
+                CreatedDate = DateTime.UtcNow.AddDays(-10),
+                IsDeleted = false
+            }
+        });
+
+        // INVOICE 4 ITEMS (4 items)
+        invoiceItems.AddRange(new[]
+        {
+            new InvoiceItem {
+                InvoiceId = invoice4.Id,
+                Description = "Server Hardware",
+                Quantity = 2,
+                UnitPrice = 800.00m,
+                Amount = 1600.00m,
+                TaxType = "Sales Tax",
+                TaxPercentage = 8.00m,
+                TaxAmount = 128.00m,
+                TotalAmount = 1728.00m,
+                IsTaxable = true,
+                CreatedBy = "system",
+                CreatedDate = DateTime.UtcNow.AddDays(-25),
+                IsDeleted = false
+            },
+            new InvoiceItem {
+                InvoiceId = invoice4.Id,
+                Description = "Network Equipment",
+                Quantity = 3,
+                UnitPrice = 250.00m,
+                Amount = 750.00m,
+                TaxType = "Sales Tax",
+                TaxPercentage = 8.00m,
+                TaxAmount = 60.00m,
+                TotalAmount = 810.00m,
+                IsTaxable = true,
+                CreatedBy = "system",
+                CreatedDate = DateTime.UtcNow.AddDays(-25),
+                IsDeleted = false
+            },
+            new InvoiceItem {
+                InvoiceId = invoice4.Id,
+                Description = "Installation Services",
+                Quantity = 1,
+                UnitPrice = 200.00m,
+                Amount = 200.00m,
+                TaxType = "Sales Tax",
+                TaxPercentage = 8.00m,
+                TaxAmount = 16.00m,
+                TotalAmount = 216.00m,
+                IsTaxable = true,
+                CreatedBy = "system",
+                CreatedDate = DateTime.UtcNow.AddDays(-25),
+                IsDeleted = false
+            },
+            new InvoiceItem {
+                InvoiceId = invoice4.Id,
+                Description = "Configuration & Testing",
+                Quantity = 1,
+                UnitPrice = 200.00m,
+                Amount = 200.00m,
+                TaxType = "Sales Tax",
+                TaxPercentage = 8.00m,
+                TaxAmount = 16.00m,
+                TotalAmount = 216.00m,
+                IsTaxable = true,
+                CreatedBy = "system",
+                CreatedDate = DateTime.UtcNow.AddDays(-25),
+                IsDeleted = false
+            }
+        });
+
+        // INVOICE 5 ITEMS (4 items)
+        invoiceItems.AddRange(new[]
+        {
+            new InvoiceItem {
+                InvoiceId = invoice5.Id,
+                Description = "Cloud Hosting - Premium Plan",
+                Quantity = 1,
+                UnitPrice = 2000.00m,
+                Amount = 2000.00m,
+                TaxType = "VAT",
+                TaxPercentage = 20.00m,
+                TaxAmount = 400.00m,
+                TotalAmount = 2400.00m,
+                IsTaxable = true,
+                CreatedBy = "system",
+                CreatedDate = DateTime.UtcNow.AddDays(-15),
+                IsDeleted = false
+            },
+            new InvoiceItem {
+                InvoiceId = invoice5.Id,
+                Description = "Data Storage (500GB)",
+                Quantity = 1,
+                UnitPrice = 800.00m,
+                Amount = 800.00m,
+                TaxType = "VAT",
+                TaxPercentage = 20.00m,
+                TaxAmount = 160.00m,
+                TotalAmount = 960.00m,
+                IsTaxable = true,
+                CreatedBy = "system",
+                CreatedDate = DateTime.UtcNow.AddDays(-15),
+                IsDeleted = false
+            },
+            new InvoiceItem {
+                InvoiceId = invoice5.Id,
+                Description = "Bandwidth Usage",
+                Quantity = 1,
+                UnitPrice = 750.00m,
+                Amount = 750.00m,
+                TaxType = "VAT",
+                TaxPercentage = 20.00m,
+                TaxAmount = 150.00m,
+                TotalAmount = 900.00m,
+                IsTaxable = true,
+                CreatedBy = "system",
+                CreatedDate = DateTime.UtcNow.AddDays(-15),
+                IsDeleted = false
+            },
+            new InvoiceItem {
+                InvoiceId = invoice5.Id,
+                Description = "Technical Support",
+                Quantity = 1,
+                UnitPrice = 500.00m,
+                Amount = 500.00m,
+                TaxType = "VAT",
+                TaxPercentage = 20.00m,
+                TaxAmount = 100.00m,
+                TotalAmount = 600.00m,
+                IsTaxable = true,
+                CreatedBy = "system",
+                CreatedDate = DateTime.UtcNow.AddDays(-15),
+                IsDeleted = false
+            }
+        });
+
+        // INVOICE 6 ITEMS (4 items)
+        invoiceItems.AddRange(new[]
+        {
             new InvoiceItem {
                 InvoiceId = invoice6.Id,
                 Description = "Database Performance Audit",
@@ -1388,13 +1571,14 @@ public class DbInitializer(UserManager<ApplicationUser> userManager, RoleManager
                 CreatedDate = DateTime.UtcNow.AddDays(-4),
                 IsDeleted = false
             }
-        };
+        });
 
-        invoiceItems.AddRange(items);
         await _dbContext.InvoiceItems.AddRangeAsync(invoiceItems, cancellationToken);
 
-        // Create tax details with ALL fields from TaxDetailBase
-        var taxDetails = new[]
+        // ============================================================
+        // TAX DETAILS
+        // ============================================================
+        invoiceTaxDetails.AddRange(new[]
         {
             new InvoiceTaxDetail {
                 InvoiceId = invoice1.Id,
@@ -1409,7 +1593,7 @@ public class DbInitializer(UserManager<ApplicationUser> userManager, RoleManager
                 InvoiceId = invoice2.Id,
                 TaxName = "Sales Tax",
                 Rate = 8.00m,
-                TaxAmount = 228.00m,
+                TaxAmount = 204.00m,
                 CreatedBy = "system",
                 CreatedDate = DateTime.UtcNow.AddDays(-20),
                 IsDeleted = false
@@ -1450,13 +1634,13 @@ public class DbInitializer(UserManager<ApplicationUser> userManager, RoleManager
                 CreatedDate = DateTime.UtcNow.AddDays(-4),
                 IsDeleted = false
             }
-        };
-
-        invoiceTaxDetails.AddRange(taxDetails);
+        });
         await _dbContext.InvoiceTaxDetails.AddRangeAsync(invoiceTaxDetails, cancellationToken);
 
-        // Create discounts with ALL fields from DiscountBase
-        var discounts = new[]
+        // ============================================================
+        // DISCOUNTS
+        // ============================================================
+        invoiceDiscounts.AddRange(new[]
         {
             new InvoiceDiscount {
                 InvoiceId = invoice1.Id,
@@ -1485,30 +1669,31 @@ public class DbInitializer(UserManager<ApplicationUser> userManager, RoleManager
                 CreatedDate = DateTime.UtcNow.AddDays(-10),
                 IsDeleted = false
             }
-        };
+        });
 
-        invoiceDiscounts.AddRange(discounts);
         await _dbContext.InvoiceDiscounts.AddRangeAsync(invoiceDiscounts, cancellationToken);
 
-        // Create payments with ALL fields
-        var payments = new[]
+        // ============================================================
+        // PAYMENTS
+        // ============================================================
+        invoicePayments.AddRange(new[]
         {
             new InvoicePayment {
                 InvoiceId = invoice1.Id,
-                PaymentDate = DateTime.UtcNow.AddDays(-25),
-                Amount = 3095.00m,
+                PaymentDate = DateTime.UtcNow.AddDays(-20),
+                Amount = 3331.00m,
                 PaymentMethod = "Bank Transfer",
                 PaymentReference = "TRX-001-ABC-123",
                 PaymentStatus = "Completed",
                 BankAccountId = 1,
                 IsRefund = false,
                 CreatedBy = "system",
-                CreatedDate = DateTime.UtcNow.AddDays(-25),
+                CreatedDate = DateTime.UtcNow.AddDays(-20),
                 IsDeleted = false
             },
             new InvoicePayment {
                 InvoiceId = invoice4.Id,
-                PaymentDate = DateTime.UtcNow.AddDays(-20),
+                PaymentDate = DateTime.UtcNow.AddDays(-18),
                 Amount = 1500.00m,
                 PaymentMethod = "Bank Transfer",
                 PaymentReference = "TRX-002-DEF-456",
@@ -1516,16 +1701,16 @@ public class DbInitializer(UserManager<ApplicationUser> userManager, RoleManager
                 BankAccountId = 1,
                 IsRefund = false,
                 CreatedBy = "system",
-                CreatedDate = DateTime.UtcNow.AddDays(-20),
+                CreatedDate = DateTime.UtcNow.AddDays(-18),
                 IsDeleted = false
             }
-        };
-
-        invoicePayments.AddRange(payments);
+        });
         await _dbContext.InvoicePayments.AddRangeAsync(invoicePayments, cancellationToken);
 
-        // Create attachments with ALL fields
-        var attachments = new[]
+        // ============================================================
+        // ATTACHMENTS
+        // ============================================================
+        invoiceAttachments.AddRange(new[]
         {
             new InvoiceAttachment {
                 InvoiceId = invoice1.Id,
@@ -1533,7 +1718,7 @@ public class DbInitializer(UserManager<ApplicationUser> userManager, RoleManager
                 FilePath = "/uploads/invoices/INV-001/contract.pdf",
                 FileUrl = "https://storage.example.com/invoices/INV-001/contract.pdf",
                 ContentType = "application/pdf",
-                FileSize = FileSizeHelper.MB(1.5),
+                   FileSize = FileSizeHelper.MB(1.5),
                 Description = "Signed Service Contract",
                 IsPublic = false,
                 CreatedBy = "system",
@@ -1541,18 +1726,18 @@ public class DbInitializer(UserManager<ApplicationUser> userManager, RoleManager
                 IsDeleted = false
             },
             new InvoiceAttachment {
-                InvoiceId = invoice1.Id,
-                FileName = "INV-001_Receipt.pdf",
-                FilePath = "/uploads/invoices/INV-001/receipt.pdf",
-                FileUrl = "https://storage.example.com/invoices/INV-001/receipt.pdf",
-                ContentType = "application/pdf",
-                FileSize = FileSizeHelper.MB(1.2),
-                Description = "Payment Receipt",
-                IsPublic = true,
-                CreatedBy = "system",
-                CreatedDate = DateTime.UtcNow.AddDays(-25),
-                IsDeleted = false
-            },
+                    InvoiceId = invoice1.Id,
+                    FileName = "INV-001_Receipt.pdf",
+                    FilePath = "/uploads/invoices/INV-001/receipt.pdf",
+                    FileUrl = "https://storage.example.com/invoices/INV-001/receipt.pdf",
+                    ContentType = "application/pdf",
+                    FileSize = FileSizeHelper.MB(1.2),
+                    Description = "Payment Receipt",
+                    IsPublic = true,
+                    CreatedBy = "system",
+                    CreatedDate = DateTime.UtcNow.AddDays(-25),
+                    IsDeleted = false
+                },
             new InvoiceAttachment {
                 InvoiceId = invoice2.Id,
                 FileName = "INV-002_Design_Specs.pdf",
@@ -1572,7 +1757,7 @@ public class DbInitializer(UserManager<ApplicationUser> userManager, RoleManager
                 FilePath = "/uploads/invoices/INV-003/report.pdf",
                 FileUrl = "https://storage.example.com/invoices/INV-003/report.pdf",
                 ContentType = "application/pdf",
-                FileSize = FileSizeHelper.MB(1.8),
+             FileSize = FileSizeHelper.MB(1.8),
                 Description = "ERP Consultancy Report",
                 IsPublic = true,
                 CreatedBy = "system",
@@ -1592,13 +1777,13 @@ public class DbInitializer(UserManager<ApplicationUser> userManager, RoleManager
                 CreatedDate = DateTime.UtcNow.AddDays(-14),
                 IsDeleted = false
             }
-        };
-
-        invoiceAttachments.AddRange(attachments);
+        });
         await _dbContext.InvoiceAttachments.AddRangeAsync(invoiceAttachments, cancellationToken);
 
-        // Create audit logs with ALL fields
-        var auditLogs = new[]
+        // ============================================================
+        // AUDIT LOGS
+        // ============================================================
+        invoiceAuditLogs.AddRange(new[]
         {
             new InvoiceAuditLog {
                 InvoiceId = invoice1.Id,
@@ -1671,9 +1856,7 @@ public class DbInitializer(UserManager<ApplicationUser> userManager, RoleManager
                 CreatedDate = DateTime.UtcNow.AddDays(-5),
                 IsDeleted = false
             }
-        };
-
-        invoiceAuditLogs.AddRange(auditLogs);
+        });
         await _dbContext.InvoiceAuditLogs.AddRangeAsync(invoiceAuditLogs, cancellationToken);
 
         await _dbContext.SaveChangesAsync(cancellationToken);

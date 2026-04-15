@@ -1,20 +1,21 @@
 ﻿using AutoMapper;
+using Core_API.Application.Common.Models;
 using Core_API.Application.Common.Results;
 using Core_API.Application.Contracts.Persistence;
 using Core_API.Application.Contracts.Services;
+using Core_API.Application.DTOs.User;
+using Core_API.Application.DTOs.User.Request;
 using Core_API.Domain.Entities.Identity;
 using Core_API.Domain.Models.Email;
+using Core_API.Infrastructure.Data.Context;
+using Core_API.Infrastructure.Shared;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
-using Core_API.Infrastructure.Data.Context;
-using Microsoft.EntityFrameworkCore;
-using Core_API.Infrastructure.Shared;
-using Microsoft.Extensions.Configuration;
-using Core_API.Application.DTOs.User.Request;
-using Core_API.Application.DTOs.User;
 
 namespace Core_API.Infrastructure.Service
 {
@@ -24,7 +25,7 @@ namespace Core_API.Infrastructure.Service
        ILogger<UserService> logger, IMapper mapper,
        RoleManager<IdentityRole> roleManager,
        //ICompanyService companyService,
-       CoreAPIDbContext dbContext,
+       CoreInvoiceDbContext dbContext,
        IEmailSendingService emailService,
        IOptions<AdminSettings> adminSettings,
        IOptions<UserCleanupOptions> cleanupOptions,
@@ -37,7 +38,7 @@ namespace Core_API.Infrastructure.Service
         private readonly RoleManager<IdentityRole> _roleManager = roleManager;
         //private readonly ICompanyService _companyService = companyService;
         //private readonly IOptions<UserCleanupOptions> _cleanupOptions = cleanupOptions;
-        private readonly CoreAPIDbContext _dbContext = dbContext;
+        private readonly CoreInvoiceDbContext _dbContext = dbContext;
         private readonly IEmailSendingService _emailService = emailService;
         private readonly IConfiguration _configuration = configuration;
         private readonly string _fallbackEmail = adminSettings.Value.FallbackEmail;
@@ -607,6 +608,135 @@ namespace Core_API.Infrastructure.Service
         public Task<ApplicationUser> GetApplicationUser(string userId)
         {
             throw new NotImplementedException();
+        }
+
+        // Add these methods to your existing UserService class
+
+        public async Task<IEnumerable<UserListDto>> GetUserListAsync(OperationContext context)
+        {
+            try
+            {
+                var query = _userManager.Users
+                    .Where(u => !u.IsDeleted)
+                    .AsQueryable();
+
+                // Filter by company if not super admin
+                if (!context.IsSuperAdmin && context.CompanyId.HasValue)
+                {
+                    query = query.Where(u => u.CompanyId == context.CompanyId.Value);
+                }
+
+                var users = await query.ToListAsync();
+                var userDtos = new List<UserListDto>();
+
+                foreach (var user in users)
+                {
+                    var roles = await _userManager.GetRolesAsync(user);
+                    userDtos.Add(new UserListDto
+                    {
+                        Id = user.Id,
+                        UserName = user.UserName,
+                        Email = user.Email,
+                        FullName = user.FullName ?? user.UserName,
+                        Roles = roles.ToList(),
+                        CompanyId = user.CompanyId,
+                        CompanyName = user.Company?.Name
+                    });
+                }
+
+                return userDtos.OrderBy(u => u.FullName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting user list");
+                throw;
+            }
+        }
+
+        public async Task<IEnumerable<UserListDto>> GetUsersByCompanyAsync(int companyId, OperationContext context)
+        {
+            try
+            {
+                // Check permission
+                if (!context.IsSuperAdmin && context.CompanyId != companyId)
+                {
+                    _logger.LogWarning("User {UserId} attempted to access company {CompanyId} without permission",
+                        context.UserId, companyId);
+                    return Enumerable.Empty<UserListDto>();
+                }
+
+                var users = await _userManager.Users
+                    .Where(u => u.CompanyId == companyId && !u.IsDeleted)
+                    .Include(u => u.Company)
+                    .ToListAsync();
+
+                var userDtos = new List<UserListDto>();
+
+                foreach (var user in users)
+                {
+                    var roles = await _userManager.GetRolesAsync(user);
+                    userDtos.Add(new UserListDto
+                    {
+                        Id = user.Id,
+                        UserName = user.UserName,
+                        Email = user.Email,
+                        FullName = user.FullName ?? user.UserName,
+                        Roles = roles.ToList(),
+                        CompanyId = user.CompanyId,
+                        CompanyName = user.Company?.Name
+                    });
+                }
+
+                return userDtos.OrderBy(u => u.FullName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting users by company {CompanyId}", companyId);
+                throw;
+            }
+        }
+
+        public async Task<IEnumerable<UserListDto>> GetUsersByRoleAsync(string role, OperationContext context)
+        {
+            try
+            {
+                var usersInRole = await _userManager.GetUsersInRoleAsync(role);
+                var userIds = usersInRole.Select(u => u.Id).ToList();
+
+                var query = _userManager.Users
+                    .Where(u => userIds.Contains(u.Id) && !u.IsDeleted);
+
+                // Filter by company if not super admin
+                if (!context.IsSuperAdmin && context.CompanyId.HasValue)
+                {
+                    query = query.Where(u => u.CompanyId == context.CompanyId.Value);
+                }
+
+                var users = await query.Include(u => u.Company).ToListAsync();
+                var userDtos = new List<UserListDto>();
+
+                foreach (var user in users)
+                {
+                    var roles = await _userManager.GetRolesAsync(user);
+                    userDtos.Add(new UserListDto
+                    {
+                        Id = user.Id,
+                        UserName = user.UserName,
+                        Email = user.Email,
+                        FullName = user.FullName ?? user.UserName,
+                        Roles = roles.ToList(),
+                        CompanyId = user.CompanyId,
+                        CompanyName = user.Company?.Name
+                    });
+                }
+
+                return userDtos.OrderBy(u => u.FullName);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting users by role {Role}", role);
+                throw;
+            }
         }
     }
 }

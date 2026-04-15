@@ -8,9 +8,9 @@ using Microsoft.Extensions.Logging;
 
 namespace Core_API.Infrastructure.Persistence.Repositories.RecurringInvoice
 {
-    public class RecurringInvoiceRepository(CoreAPIDbContext dbContext, ILogger<RecurringInvoiceRepository> logger) : GenericRepository<Domain.Entities.RecurringInvoice>(dbContext), IRecurringInvoiceRepository
+    public class RecurringInvoiceRepository(CoreInvoiceDbContext dbContext, ILogger<RecurringInvoiceRepository> logger) : GenericRepository<Domain.Entities.RecurringInvoice>(dbContext), IRecurringInvoiceRepository
     {
-        private readonly CoreAPIDbContext _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+        private readonly CoreInvoiceDbContext _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
         private readonly ILogger<RecurringInvoiceRepository> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         public async Task<PaginatedResult<Domain.Entities.RecurringInvoice>> GetPagedAsync(
             int companyId,

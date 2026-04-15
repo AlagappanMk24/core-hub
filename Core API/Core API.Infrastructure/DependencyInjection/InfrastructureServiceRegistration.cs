@@ -4,6 +4,7 @@ using Core_API.Application.Contracts.Services;
 using Core_API.Application.Contracts.Services.Auth;
 using Core_API.Application.Contracts.Services.File.Excel;
 using Core_API.Application.Contracts.Services.File.Pdf;
+using Core_API.Application.Contracts.Services.Invoice;
 using Core_API.Infrastructure.BackgroundServices;
 using Core_API.Infrastructure.Data.Initializers;
 using Core_API.Infrastructure.Persistence;
@@ -15,60 +16,90 @@ using Core_API.Infrastructure.Services.Authorization;
 using Core_API.Infrastructure.Services.Dashboard;
 using Core_API.Infrastructure.Services.File.Excel;
 using Core_API.Infrastructure.Services.File.Pdf;
+using Core_API.Infrastructure.Services.Invoice;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace Core_API.Infrastructure.DI
+namespace Core_API.Infrastructure.DependencyInjection
 {
+    /// <summary>
+    /// Centralized registration for Infrastructure layer dependencies.
+    /// Organized by functional domain to ensure maintainability.
+    /// </summary>
     public static class InfrastructureServiceRegistration
     {
         public static IServiceCollection AddInfrastructureDependencies(this IServiceCollection services)
         {
-            // Register memory cache 
+            // Core .NET Services - Register memory cache 
             services.AddMemoryCache();
 
-            // Register foundational services
+            // Register by Functional Areas
+            services.AddPersistenceServices();
+            services.AddSecurityServices();
+            services.AddBusinessServices();
+            services.AddInvoiceModuleServices();
+            services.AddUtilityServices();
+            services.AddBackgroundServices();
+
+            return services;
+        }
+
+        private static void AddPersistenceServices(this IServiceCollection services)
+        {
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<IDbInitializer, DbInitializer>();
-
-            // Register security and authentication services
+        }
+        private static void AddSecurityServices(this IServiceCollection services)
+        {
             services.AddScoped<IAuthService, AuthService>();
             services.AddScoped<IJwtService, JwtService>();
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IRolesService, RolesService>();
             services.AddScoped<IPermissionService, PermissionService>();
-
+            services.AddScoped<IAuthStateService, AuthStateService>();
+        }
+        private static void AddBusinessServices(this IServiceCollection services)
+        {
             services.AddScoped<IDashboardService, DashboardService>();
-
-            // Register core business services
             services.AddScoped<ICompanyService, CompanyService>();
             services.AddScoped<IAccountService, AccountService>();
             services.AddScoped<ICustomerService, CustomerService>();
+            services.AddScoped<ICompanyRequestService, CompanyRequestService>();
+            services.AddScoped<ITaskService, TaskService>();
+        }
+
+        private static void AddInvoiceModuleServices(this IServiceCollection services)
+        {
             services.AddScoped<IInvoiceService, InvoiceService>();
+            services.AddScoped<IInvoiceNumberService, InvoiceNumberService>();
+            services.AddScoped<IInvoiceCalculationService, InvoiceCalculationService>();
+            services.AddScoped<IInvoiceEmailService, InvoiceEmailService>();
+            services.AddScoped<IInvoiceStatisticsService, InvoiceStatisticsService>();
+            services.AddScoped<IInvoiceDuplicationService, InvoiceDuplicationService>();
+            services.AddScoped<IInvoiceAttachmentService, InvoiceAttachmentService>();
             services.AddScoped<IRecurringInvoiceService, RecurringInvoiceService>();
             services.AddScoped<ITaxService, TaxService>();
-            services.AddScoped<ICompanyRequestService, CompanyRequestService>();
+            services.AddScoped<ICustomerInvoiceService, CustomerInvoiceService>();
+            services.AddScoped<IInvoiceSettingsService, InvoiceSettingsService>();
+        }
 
-            // Register utility and helper services
+        private static void AddUtilityServices(this IServiceCollection services)
+        {
+            // Email and Files
             services.AddScoped<IEmailSendingService, EmailSendingService>();
             services.AddScoped<IEmailService, EmailService>();
             services.AddScoped<IPdfService, PdfService>();
             services.AddScoped<IExcelService, ExcelService>();
+
+            // Integrations and Cache
             services.AddScoped<IContactUsService, ContactUsService>();
-
-            // Register state management services
-            services.AddScoped<IAuthStateService, AuthStateService>();
-
             services.AddScoped<IExchangeRateService, ExchangeRateService>();
-
-            // Cache Service
             services.AddScoped<ICacheService, MemoryCacheService>();
+        }
 
-            //services.AddScoped<IProductService, ProductService>();
-            //services.AddScoped<ICartService, CartService>();
-            //services.AddScoped<ISmsSender, TwilioService>();
+        private static void AddBackgroundServices(this IServiceCollection services)
+        {
+            // Hosted services are Singleton by nature
             services.AddHostedService<RecurringInvoiceBackgroundService>();
-
-            return services;
         }
     }
 }

@@ -9,16 +9,16 @@ namespace Core_API.Web.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
-    public class DashboardController(IDashboardService dashboardService, ILogger<DashboardController> logger) : ControllerBase
+    public class DashboardController(IDashboardService dashboardService, ILogger<DashboardController> logger) : BaseApiController
     {
         private readonly IDashboardService _dashboardService = dashboardService;
         private readonly ILogger<DashboardController> _logger = logger;
 
         [HttpGet("admin/summary")]
-        [Authorize(Roles = "Admin,User")]
+        [Authorize(Roles = "Admin,Super Admin")]
         public async Task<IActionResult> GetAdminDashboardSummary()
         {
-            var context = GetOperationContext();
+            var context = CurrentContext;
             var result = await _dashboardService.GetAdminDashboardAsync(context);
 
             if (!result.IsSuccess)
@@ -38,7 +38,7 @@ namespace Core_API.Web.Controllers
         [Authorize(Roles = "Customer")]
         public async Task<IActionResult> GetCustomerDashboardSummary()
         {
-            var context = GetOperationContext();
+            var context = CurrentContext;
             var result = await _dashboardService.GetCustomerDashboardAsync(context);
 
             if (!result.IsSuccess)
@@ -57,7 +57,7 @@ namespace Core_API.Web.Controllers
         [HttpGet("stats")]
         public async Task<IActionResult> GetStats()
         {
-            var context = GetOperationContext();
+            var context = CurrentContext;
             var result = await _dashboardService.GetStatsAsync(context);
 
             if (!result.IsSuccess)
@@ -76,7 +76,7 @@ namespace Core_API.Web.Controllers
         [HttpGet("recent-invoices")]
         public async Task<IActionResult> GetRecentInvoices([FromQuery] int count = 5)
         {
-            var context = GetOperationContext();
+            var context = CurrentContext;
             var result = await _dashboardService.GetRecentInvoicesAsync(context, count);
 
             if (!result.IsSuccess)
@@ -90,17 +90,6 @@ namespace Core_API.Web.Controllers
             }
 
             return Ok(result.Data);
-        }
-        private OperationContext GetOperationContext()
-        {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            var companyIdClaim = User.FindFirst("companyId")?.Value;
-            var customerIdClaim = User.FindFirst("customerId")?.Value;
-
-            int? companyId = int.TryParse(companyIdClaim, out var cId) ? cId : null;
-            int? customerId = int.TryParse(customerIdClaim, out var custId) ? custId : null;
-
-            return new OperationContext(userId, companyId, customerId);
         }
     }
 }

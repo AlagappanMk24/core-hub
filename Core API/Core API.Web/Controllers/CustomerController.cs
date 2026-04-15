@@ -20,52 +20,10 @@ namespace Core_API.Web.Controllers
     [Authorize]
     [Route("api/[controller]")]
     [ApiController]
-    public class CustomerController(ICustomerService customerService, ILogger<CustomerController> logger) : ControllerBase
+    public class CustomerController(ICustomerService customerService, ILogger<CustomerController> logger) : BaseApiController
     {
         private readonly ICustomerService _customerService = customerService ?? throw new ArgumentNullException(nameof(customerService));
         private readonly ILogger<CustomerController> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-
-        /// <summary>
-        /// Gets the company ID from the JWT token claims.
-        /// </summary>
-        /// <returns>The company ID.</returns>
-        /// <exception cref="UnauthorizedAccessException">Thrown when company ID is not found or invalid in the token.</exception>
-        private int GetCompanyId()
-        {
-            var companyIdClaim = User.FindFirst("companyId")?.Value;
-            if (string.IsNullOrEmpty(companyIdClaim) || !int.TryParse(companyIdClaim, out var companyId))
-            {
-                throw new UnauthorizedAccessException("Company ID not found or invalid in token.");
-            }
-            return companyId;
-        }
-
-        /// <summary>
-        /// Gets the user ID from the JWT token claims.
-        /// </summary>
-        /// <returns>The user ID.</returns>
-        /// <exception cref="UnauthorizedAccessException">Thrown when user ID is not found in the token.</exception>
-        private string GetUserId()
-        {
-            var userId = User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-            if (string.IsNullOrEmpty(userId))
-            {
-                throw new UnauthorizedAccessException("User ID not found in token.");
-            }
-            return userId;
-        }
-
-        /// <summary>
-        /// Creates an OperationContext with userId and companyId.
-        /// </summary>
-        /// <returns>An <see cref="OperationContext"/> instance.</returns>
-        private OperationContext GetOperationContext()
-        {
-            return new OperationContext(
-                userId: GetUserId(),
-                companyId: GetCompanyId()
-            );
-        }
 
         /// <summary>
         /// Creates a new customer for the authenticated user's company.
@@ -97,11 +55,16 @@ namespace Core_API.Web.Controllers
                     });
                 }
 
-                var companyId = GetCompanyId();
-                var userId = GetUserId();
-                _logger.LogInformation("Creating customer for company {CompanyId} by user {UserId}", companyId, userId);
+                var context = CurrentContext;
+                // Validate permissions using base controller helpers
+                if (!IsSuperAdmin && !context.CompanyId.HasValue)
+                {
+                    _logger.LogWarning("Unauthorized customer creation attempt - missing company context");
+                    return Forbid("Cannot create customer without company context");
+                }
 
-                var result = await _customerService.CreateAsync(dto, companyId, userId);
+                _logger.LogInformation("Creating customer for company {CompanyId} by user {UserId}", context.CompanyId, context.UserId);
+                var result = await _customerService.CreateAsync(dto, context);
                 if (!result.IsSuccess)
                 {
                     _logger.LogWarning("Customer creation failed: {ErrorMessage}", result.ErrorMessage);
@@ -122,7 +85,7 @@ namespace Core_API.Web.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error creating customer for company {CompanyId}", GetCompanyId());
+                _logger.LogError(ex, "Error creating customer");
                 return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
                 {
                     Title = "Internal Server Error",
@@ -162,11 +125,11 @@ namespace Core_API.Web.Controllers
                     });
                 }
 
-                var companyId = GetCompanyId();
-                var userId = GetUserId();
-                _logger.LogInformation("Updating customer {CustomerId} for company {CompanyId} by user {UserId}", id, companyId, userId);
+                var context = CurrentContext;
+                _logger.LogInformation("Updating customer {CustomerId} for company {CompanyId} by user {UserId}",
+                   id, context.CompanyId, context.UserId);
 
-                var result = await _customerService.UpdateAsync(dto, companyId, userId);
+                var result = await _customerService.UpdateAsync(dto, context);
                 if (!result.IsSuccess)
                 {
                     _logger.LogWarning("Customer update failed: {ErrorMessage}", result.ErrorMessage);
@@ -187,7 +150,7 @@ namespace Core_API.Web.Controllers
             }
             catch (DbUpdateException ex)
             {
-                _logger.LogError(ex, "Database error updating customer {CustomerId} for company {CompanyId}", id, GetCompanyId());
+                _logger.LogError(ex, "Database error updating customer {CustomerId}", id);
                 return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
                 {
                     Title = "Database Error",
@@ -196,7 +159,7 @@ namespace Core_API.Web.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error updating customer {CustomerId} for company {CompanyId}", id, GetCompanyId());
+                _logger.LogError(ex, "Error updating customer {CustomerId}", id);
                 return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
                 {
                     Title = "Internal Server Error",
@@ -223,11 +186,13 @@ namespace Core_API.Web.Controllers
         {
             try
             {
-                var companyId = GetCompanyId();
-                var userId = GetUserId();
-                _logger.LogInformation("Deleting customer {CustomerId} for company {CompanyId} by user {UserId}", id, companyId, userId);
+                var context = CurrentContext;
 
-                var result = await _customerService.DeleteAsync(id, companyId, userId);
+                _logger.LogInformation("Deleting customer {CustomerId} for company {CompanyId} by user {UserId}",
+                    id, context.CompanyId, context.UserId);
+
+                var result = await _customerService.DeleteAsync(id, context);
+
                 if (!result.IsSuccess)
                 {
                     _logger.LogWarning("Customer deletion failed: {ErrorMessage}", result.ErrorMessage);
@@ -248,7 +213,7 @@ namespace Core_API.Web.Controllers
             }
             catch (DbUpdateException ex)
             {
-                _logger.LogError(ex, "Database error deleting customer {CustomerId} for company {CompanyId}", id, GetCompanyId());
+                _logger.LogError(ex, "Database error deleting customer {CustomerId}", id);
                 return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
                 {
                     Title = "Database Error",
@@ -257,7 +222,7 @@ namespace Core_API.Web.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting customer {CustomerId} for company {CompanyId}", id, GetCompanyId());
+                _logger.LogError(ex, "Error deleting customer {CustomerId}", id);
                 return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
                 {
                     Title = "Internal Server Error",
@@ -284,10 +249,10 @@ namespace Core_API.Web.Controllers
         {
             try
             {
-                var companyId = GetCompanyId();
-                _logger.LogInformation("Retrieving customer {CustomerId} for company {CompanyId}", id, companyId);
+                var context = CurrentContext;
+                _logger.LogInformation("Retrieving customer {CustomerId} for company {CompanyId}", id, context.CompanyId);
 
-                var result = await _customerService.GetByIdAsync(id, companyId);
+                var result = await _customerService.GetByIdAsync(id, context);
                 if (!result.IsSuccess)
                 {
                     _logger.LogWarning("Customer retrieval failed: {ErrorMessage}", result.ErrorMessage);
@@ -308,7 +273,7 @@ namespace Core_API.Web.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving customer {CustomerId} for company {CompanyId}", id, GetCompanyId());
+                _logger.LogError(ex, "Error retrieving customer {CustomerId}", id);
                 return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
                 {
                     Title = "Internal Server Error",
@@ -347,11 +312,22 @@ namespace Core_API.Web.Controllers
                     });
                 }
 
-                var operationContext = GetOperationContext();
+                var context = CurrentContext;
+                // Validate company context
+                if (!IsSuperAdmin && !context.CompanyId.HasValue)
+                {
+                    _logger.LogWarning("Cannot retrieve customers - missing company context");
+                    return BadRequest(new ProblemDetails
+                    {
+                        Title = "Invalid Request",
+                        Detail = "Company context is missing.",
+                        Status = StatusCodes.Status400BadRequest
+                    });
+                }
                 _logger.LogInformation("Retrieving paged customers for company {CompanyId}, page {PageNumber}, size {PageSize}, search: {Search}, status: {Status}",
-                    operationContext.CompanyId, filter.PageNumber, filter.PageSize, filter.Search ?? "none", filter.Status ?? "none");
+                      context.CompanyId, filter.PageNumber, filter.PageSize, filter.Search ?? "none", filter.Status ?? "none");
 
-                var result = await _customerService.GetPagedAsync(operationContext, filter);
+                var result = await _customerService.GetPagedAsync(context, filter);
                 if (!result.IsSuccess)
                 {
                     _logger.LogWarning("Paged customers retrieval failed: {ErrorMessage}", result.ErrorMessage);
@@ -372,7 +348,7 @@ namespace Core_API.Web.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving paged customers for company {CompanyId}", GetCompanyId());
+                _logger.LogError(ex, "Error retrieving paged customers");
                 return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
                 {
                     Title = "Internal Server Error",
@@ -398,10 +374,10 @@ namespace Core_API.Web.Controllers
         {
             try
             {
-                var companyId = GetCompanyId();
-                _logger.LogInformation("Retrieving customer stats for company {CompanyId}", companyId);
+                var context = CurrentContext;
+                _logger.LogInformation("Retrieving customer stats for company {CompanyId}", context.CompanyId);
 
-                var result = await _customerService.GetStatsAsync(companyId);
+                var result = await _customerService.GetStatsAsync(context);
                 if (!result.IsSuccess)
                 {
                     _logger.LogWarning("Customer stats retrieval failed: {ErrorMessage}", result.ErrorMessage);
@@ -422,7 +398,7 @@ namespace Core_API.Web.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving customer stats for company {CompanyId}", GetCompanyId());
+                _logger.LogError(ex, "Error retrieving customer stats");
                 return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
                 {
                     Title = "Internal Server Error",
@@ -461,9 +437,9 @@ namespace Core_API.Web.Controllers
                     });
                 }
 
-                var operationContext = GetOperationContext();
+                var context = CurrentContext;
                 _logger.LogInformation("Exporting customers to Excel for company {CompanyId}, search: {Search}, status: {Status}",
-                    operationContext.CompanyId, filter.Search ?? "none", filter.Status ?? "none");
+                  context.CompanyId, filter.Search ?? "none", filter.Status ?? "none");
 
                 //var result = await _customerService.ExportExcelAsync(operationContext, filter);
                 //if (!result.IsSuccess)
@@ -487,7 +463,7 @@ namespace Core_API.Web.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error exporting customers to Excel for company {CompanyId}", GetCompanyId());
+                _logger.LogError(ex, "Error exporting customers to Excel");
                 return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
                 {
                     Title = "Internal Server Error",
@@ -526,9 +502,11 @@ namespace Core_API.Web.Controllers
                     });
                 }
 
-                var operationContext = GetOperationContext();
+                var context = CurrentContext;
+
                 _logger.LogInformation("Exporting customers to PDF for company {CompanyId}, search: {Search}, status: {Status}",
-                    operationContext.CompanyId, filter.Search ?? "none", filter.Status ?? "none");
+                 context.CompanyId, filter.Search ?? "none", filter.Status ?? "none");
+
 
                 //var result = await _customerService.ExportPdfAsync(operationContext, filter);
                 //if (!result.IsSuccess)
@@ -552,7 +530,7 @@ namespace Core_API.Web.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error exporting customers to PDF for company {CompanyId}", GetCompanyId());
+                _logger.LogError(ex, "Error exporting customers to PDF");
                 return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
                 {
                     Title = "Internal Server Error",

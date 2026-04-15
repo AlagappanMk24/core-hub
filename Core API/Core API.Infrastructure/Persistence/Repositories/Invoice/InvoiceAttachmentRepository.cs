@@ -6,9 +6,9 @@ using System.Linq.Expressions;
 
 namespace Core_API.Infrastructure.Persistence.Repositories.Invoice
 {
-    public class InvoiceAttachmentRepository(CoreAPIDbContext dbContext) : IInvoiceAttachmentRepository
+    public class InvoiceAttachmentRepository(CoreInvoiceDbContext dbContext) : IInvoiceAttachmentRepository
     {
-        private readonly CoreAPIDbContext _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+        private readonly CoreInvoiceDbContext _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
         public async Task<InvoiceAttachment> GetAsync(Expression<Func<InvoiceAttachment, bool>> predicate)
         {
             return await _dbContext.InvoiceAttachments
