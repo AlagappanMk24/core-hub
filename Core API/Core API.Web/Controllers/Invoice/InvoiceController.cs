@@ -1,8 +1,7 @@
-﻿using Core_API.Application.Contracts.Services;
-using Core_API.Application.Contracts.Services.File.Excel;
-using Core_API.Application.Contracts.Services.File.Pdf;
+﻿using Core_API.Application.Contracts.Services.Files;
 using Core_API.Application.Contracts.Services.Invoice;
-using Core_API.Application.DTOs.Email;
+using Core_API.Application.Contracts.Services.Invoices;
+using Core_API.Application.DTOs.Email.Requests;
 using Core_API.Application.DTOs.Invoice.Request;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -45,7 +44,7 @@ namespace Core_API.Web.Controllers.Invoice
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [Authorize(Roles = "Admin, User")]
-        public async Task<IActionResult> Create([FromForm] InvoiceCreateDto invoiceDto)
+        public async Task<IActionResult> Create([FromForm] CreateInvoiceDto invoiceDto)
         {
             var operationContext = CurrentContext;
             try
@@ -124,7 +123,7 @@ namespace Core_API.Web.Controllers.Invoice
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> Update(int id, [FromForm] InvoiceUpdateDto dto)
+        public async Task<IActionResult> Update(int id, [FromForm] UpdateInvoiceDto dto)
         {
             var operationContext = CurrentContext;
             try

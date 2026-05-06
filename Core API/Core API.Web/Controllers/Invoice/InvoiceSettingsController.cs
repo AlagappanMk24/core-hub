@@ -1,11 +1,6 @@
-﻿using Core_API.Application.Contracts.Services;
-using Core_API.Application.Contracts.Services.File.Excel;
-using Core_API.Application.Contracts.Services.File.Pdf;
-using Core_API.Application.Contracts.Services.Invoice;
+﻿using Core_API.Application.Contracts.Services.Invoice;
 using Core_API.Application.DTOs.Invoice.Request;
-using Core_API.Application.DTOs.User.Response;
-using Core_API.Domain.Entities;
-using Core_API.Infrastructure.Services.Invoice;
+using Core_API.Domain.Entities.Invoices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

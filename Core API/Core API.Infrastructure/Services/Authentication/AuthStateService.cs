@@ -1,6 +1,6 @@
 ﻿using Core_API.Application.Contracts.Services.Auth;
-using Core_API.Domain.Entities;
-using Core_API.Infrastructure.Data.Context;
+using Core_API.Domain.Entities.Identity;
+using Core_API.Infrastructure.Persistence.Context;
 using Microsoft.EntityFrameworkCore;
 
 namespace Core_API.Infrastructure.Services.Authentication
@@ -28,13 +28,13 @@ namespace Core_API.Infrastructure.Services.Authentication
             return await _context.AuthStates.FindAsync(authStateId);
         }
 
-        public async Task UpdateAuthStateAsync(AuthState authState)
+        public async System.Threading.Tasks.Task UpdateAuthStateAsync(AuthState authState)
         {
             _context.AuthStates.Update(authState);
             await _context.SaveChangesAsync();
         }
 
-        public async Task CleanupExpiredStatesAsync()
+        public async System.Threading.Tasks.Task CleanupExpiredStatesAsync()
         {
             var expiredStates = await _context.AuthStates
                  .Where(x => x.ExpiresAt < DateTime.UtcNow && x.UserId == null)

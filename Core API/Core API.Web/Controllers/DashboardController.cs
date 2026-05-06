@@ -1,5 +1,5 @@
 ﻿using Core_API.Application.Common.Models;
-using Core_API.Application.Contracts.Services;
+using Core_API.Application.Contracts.Services.Dashboard;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;

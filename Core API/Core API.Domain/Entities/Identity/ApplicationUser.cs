@@ -1,4 +1,6 @@
-﻿using Core_API.Domain.Entities.Common;
+﻿using Core_API.Domain.Common;
+using Core_API.Domain.Entities.Companies;
+using Core_API.Domain.Entities.Customers;
 using Microsoft.AspNetCore.Mvc.ModelBinding.Validation;
 using System.ComponentModel.DataAnnotations.Schema;
 

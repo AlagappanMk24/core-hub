@@ -1,12 +1,12 @@
 ﻿using Core_API.Application.Common.Constants;
-using Core_API.Application.Contracts.Services;
 using Core_API.Domain.Entities.Identity;
-using Core_API.Domain.Entities;
-using Core_API.Infrastructure.Data.Context;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Logging;
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
+using Core_API.Domain.Entities.Settings;
+using Core_API.Application.Contracts.Services.Auth;
+using Core_API.Infrastructure.Persistence.Context;
 
 namespace Core_API.Infrastructure.Services.Authorization
 {
@@ -124,7 +124,7 @@ namespace Core_API.Infrastructure.Services.Authorization
                 return new List<string>();
             }
         }
-        public async Task AddPermissionToRoleAsync(string roleName, string permission)
+        public async System.Threading.Tasks.Task AddPermissionToRoleAsync(string roleName, string permission)
         {
             var role = await _roleManager.FindByNameAsync(roleName);
             if (role == null)
@@ -171,7 +171,7 @@ namespace Core_API.Infrastructure.Services.Authorization
                 await _dbContext.SaveChangesAsync();
             }
         }
-        public async Task RemovePermissionFromRoleAsync(string roleName, string permission)
+        public async System.Threading.Tasks.Task RemovePermissionFromRoleAsync(string roleName, string permission)
         {
             var role = await _roleManager.FindByNameAsync(roleName);
             if (role == null)
@@ -203,7 +203,7 @@ namespace Core_API.Infrastructure.Services.Authorization
                 }
             }
         }
-        public async Task SeedDefaultPermissionsAsync()
+        public async System.Threading.Tasks.Task SeedDefaultPermissionsAsync()
         {
             try
             {

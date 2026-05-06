@@ -1,9 +1,8 @@
 ﻿using Core_API.Application.Common.Models;
 using Core_API.Application.Common.Results;
 using Core_API.Application.Contracts.Persistence;
-using Core_API.Application.Contracts.Services;
-using Core_API.Application.DTOs.Dashboard;
-using Core_API.Domain.Entities;
+using Core_API.Application.Contracts.Services.Dashboard;
+using Core_API.Application.DTOs.Dashboard.Responses;
 using Core_API.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
@@ -14,12 +13,11 @@ namespace Core_API.Infrastructure.Services.Dashboard
     {
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly ILogger<DashboardService> _logger = logger;
-
         public async Task<OperationResult<DashboardSummaryDto>> GetAdminDashboardAsync(OperationContext operationContext)
         {
             try
             {
-                IQueryable<Domain.Entities.Invoice> query = _unitOfWork.Invoices.Query().Where(i => !i.IsDeleted);
+                IQueryable<Domain.Entities.Invoices.Invoice> query = _unitOfWork.Invoices.Query().Where(i => !i.IsDeleted);
 
                 // Super Admin sees ALL invoices across all companies
                 if (operationContext.IsSuperAdmin)
@@ -102,7 +100,7 @@ namespace Core_API.Infrastructure.Services.Dashboard
         {
             try
             {
-                IQueryable<Domain.Entities.Invoice> query = _unitOfWork.Invoices.Query().Where(i => !i.IsDeleted);
+                IQueryable<Domain.Entities.Invoices.Invoice> query = _unitOfWork.Invoices.Query().Where(i => !i.IsDeleted);
                 // Customer sees only their own invoices
                 if (operationContext.CustomerId.HasValue)
                 {
@@ -183,7 +181,7 @@ namespace Core_API.Infrastructure.Services.Dashboard
                     Id = invoice.Id,
                     InvoiceNumber = invoice.InvoiceNumber,
                     CustomerName = invoice.Customer?.Name ?? "Unknown",
-                    CustomerEmail = invoice.Customer?.Email ?? "",
+                    CustomerEmail = invoice.Customer?.Email.Value ?? "",
                     Amount = invoice.TotalAmount,
                     Status = invoice.PaymentStatus.ToString(),
                     IssueDate = invoice.IssueDate,
@@ -227,7 +225,7 @@ namespace Core_API.Infrastructure.Services.Dashboard
         }
 
         #region Private Helper Methods
-        private DashboardStatsDto CalculateStats(List<Domain.Entities.Invoice> invoices, int? companyId)
+        private DashboardStatsDto CalculateStats(List<Domain.Entities.Invoices.Invoice> invoices, int? companyId)
         {
             var currentPeriodStart = DateTime.UtcNow.AddDays(-30);
             var previousPeriodStart = DateTime.UtcNow.AddDays(-60);
@@ -257,7 +255,7 @@ namespace Core_API.Infrastructure.Services.Dashboard
                 )
             };
         }
-        private List<RecentInvoiceDto> GetRecentInvoicesInternal(List<Domain.Entities.Invoice> invoices, int count)
+        private List<RecentInvoiceDto> GetRecentInvoicesInternal(List<Domain.Entities.Invoices.Invoice> invoices, int count)
         {
             return invoices
                 .OrderByDescending(i => i.CreatedDate)
@@ -267,7 +265,7 @@ namespace Core_API.Infrastructure.Services.Dashboard
                     Id = invoice.Id,
                     InvoiceNumber = invoice.InvoiceNumber,
                     CustomerName = invoice.Customer?.Name ?? "Unknown",
-                    CustomerEmail = invoice.Customer?.Email ?? "",
+                    CustomerEmail = invoice.Customer?.Email.Value ?? "",
                     Amount = invoice.TotalAmount,
                     Status = invoice.PaymentStatus.ToString(),
                     IssueDate = invoice.IssueDate,
@@ -278,7 +276,7 @@ namespace Core_API.Infrastructure.Services.Dashboard
         /// <summary>
         /// Invoices with partial payments - shows payment progress
         /// </summary>
-        private List<InvoiceProgressDto> GetPaymentProgressInvoices(List<Domain.Entities.Invoice> invoices)
+        private List<InvoiceProgressDto> GetPaymentProgressInvoices(List<Domain.Entities.Invoices.Invoice> invoices)
         {
             return invoices
                 .Where(i => i.PaymentStatus == PaymentStatus.PartiallyPaid)
@@ -291,7 +289,7 @@ namespace Core_API.Infrastructure.Services.Dashboard
         /// <summary>
         /// Invoices sent but not yet paid - shows what's pending
         /// </summary>
-        private List<InvoiceProgressDto> GetPendingPaymentsInvoices(List<Domain.Entities.Invoice> invoices)
+        private List<InvoiceProgressDto> GetPendingPaymentsInvoices(List<Domain.Entities.Invoices.Invoice> invoices)
         {
             return invoices
                 .Where(i => i.PaymentStatus == PaymentStatus.Pending &&
@@ -305,11 +303,11 @@ namespace Core_API.Infrastructure.Services.Dashboard
         /// <summary>
         /// Overdue invoices - needs immediate attention/collections
         /// </summary>
-        private List<InvoiceProgressDto> GetOverduePaymentsInvoices(List<Domain.Entities.Invoice> invoices)
+        private List<InvoiceProgressDto> GetOverduePaymentsInvoices(List<Domain.Entities.Invoices.Invoice> invoices)
         {
             return invoices
                 .Where(i => i.PaymentStatus == PaymentStatus.Overdue ||
-                           (i.PaymentStatus == PaymentStatus.Pending && i.DueDate < DateTime.UtcNow))
+                           i.PaymentStatus == PaymentStatus.Pending && i.DueDate < DateTime.UtcNow)
                 .OrderBy(i => i.DueDate)
                 .Take(5)
                 .Select(invoice => MapToProgressDto(invoice, isOverdue: true))
@@ -319,7 +317,7 @@ namespace Core_API.Infrastructure.Services.Dashboard
         /// Recently paid invoices - shows completed transactions
         /// Industry standard: Show last 5 paid invoices with payment date
         /// </summary>
-        private List<RecentInvoiceDto> GetRecentPaidInvoices(List<Domain.Entities.Invoice> invoices)
+        private List<RecentInvoiceDto> GetRecentPaidInvoices(List<Domain.Entities.Invoices.Invoice> invoices)
         {
             return invoices
              .Where(i => i.PaymentStatus == PaymentStatus.Paid && i.PaidDate.HasValue)
@@ -330,7 +328,7 @@ namespace Core_API.Infrastructure.Services.Dashboard
                     Id = invoice.Id,
                     InvoiceNumber = invoice.InvoiceNumber,
                     CustomerName = invoice.Customer?.Name ?? "Unknown",
-                    CustomerEmail = invoice.Customer?.Email ?? "",
+                    CustomerEmail = invoice.Customer?.Email.Value ?? "",
                     Amount = invoice.TotalAmount,
                     Status = "Paid",
                     IssueDate = invoice.IssueDate,
@@ -338,9 +336,9 @@ namespace Core_API.Infrastructure.Services.Dashboard
                     PaymentDate = invoice.PaidDate
                 }).ToList();
         }
-        private InvoiceProgressDto MapToProgressDto(Domain.Entities.Invoice invoice, bool isPending = false, bool isOverdue = false)
+        private InvoiceProgressDto MapToProgressDto(Domain.Entities.Invoices.Invoice invoice, bool isPending = false, bool isOverdue = false)
         {
-            var paidPercentage = invoice.TotalAmount > 0 ? (invoice.AmountPaid / invoice.TotalAmount) * 100 : 0;
+            var paidPercentage = invoice.TotalAmount > 0 ? invoice.AmountPaid / invoice.TotalAmount * 100 : 0;
             return new InvoiceProgressDto
             {
                 Id = invoice.Id,
@@ -351,7 +349,7 @@ namespace Core_API.Infrastructure.Services.Dashboard
                 AmountPaid = invoice.AmountPaid,
                 RemainingAmount = invoice.TotalAmount - invoice.AmountPaid,
                 PaidPercentage = paidPercentage,
-                Status = isOverdue ? "Overdue" : (isPending ? "Pending" : invoice.PaymentStatus.ToString()),
+                Status = isOverdue ? "Overdue" : isPending ? "Pending" : invoice.PaymentStatus.ToString(),
                 StatusColor = GetStatusColorForDisplay(isOverdue, isPending, invoice.PaymentStatus),
                 ProgressColor = GetProgressColor(paidPercentage / 100),
             };
@@ -374,7 +372,7 @@ namespace Core_API.Infrastructure.Services.Dashboard
             if (percentage >= 0.25m) return "#EF4444";  // Red - Just started
             return "#8B5CF6";                            // Purple - New
         }
-        private List<MonthlyInvoiceTrendDto> GetMonthlyTrend(List<Domain.Entities.Invoice> invoices)
+        private List<MonthlyInvoiceTrendDto> GetMonthlyTrend(List<Domain.Entities.Invoices.Invoice> invoices)
         {
             var currentYear = DateTime.UtcNow.Year;
             var months = Enumerable.Range(1, 12);
@@ -388,7 +386,7 @@ namespace Core_API.Infrastructure.Services.Dashboard
                 Count = invoices.Count(i => i.IssueDate.Year == currentYear && i.IssueDate.Month == month)
             }).ToList();
         }
-        private List<MonthlyInvoiceTrendDto> GetTrendByType(List<Domain.Entities.Invoice> invoices, string type)
+        private List<MonthlyInvoiceTrendDto> GetTrendByType(List<Domain.Entities.Invoices.Invoice> invoices, string type)
         {
             var currentYear = DateTime.UtcNow.Year;
             var months = Enumerable.Range(1, 12);
@@ -405,7 +403,7 @@ namespace Core_API.Infrastructure.Services.Dashboard
         private decimal CalculatePercentageChange(decimal previous, decimal current)
         {
             if (previous == 0) return current > 0 ? 100 : 0;
-            return Math.Round(((current - previous) / previous) * 100, 2);
+            return Math.Round((current - previous) / previous * 100, 2);
         }
         private decimal GetTypeMultiplier(string type)
         {

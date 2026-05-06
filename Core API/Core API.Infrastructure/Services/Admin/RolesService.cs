@@ -1,7 +1,9 @@
-﻿using Core_API.Application.Contracts.Services;
+﻿using Core_API.Application.Contracts.Services.Auth;
+using Core_API.Application.Contracts.Services.Users;
 using Core_API.Application.DTOs.Authorization.Request;
 using Core_API.Domain.Entities;
-using Core_API.Infrastructure.Data.Context;
+using Core_API.Domain.Entities.Settings;
+using Core_API.Infrastructure.Persistence.Context;
 using Core_API.Infrastructure.Services.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
@@ -46,7 +48,7 @@ namespace Core_API.Infrastructure.Services.Admin
                 })
                 .ToListAsync();
         }
-        public async Task SaveRoleMenuPermissionsAsync(List<RoleMenuPermissionDto> dtos)
+        public async System.Threading.Tasks.Task SaveRoleMenuPermissionsAsync(List<RoleMenuPermissionDto> dtos)
         {
             foreach (var dto in dtos)
             {

@@ -2,22 +2,17 @@
 using Core_API.Application.Common.Models;
 using Core_API.Application.Common.Results;
 using Core_API.Application.Contracts.Persistence;
-using Core_API.Application.Contracts.Services;
-using Core_API.Application.Contracts.Services.File.Pdf;
-using Core_API.Application.DTOs.Company.Response;
+using Core_API.Application.Contracts.Services.Companies;
+using Core_API.Application.Contracts.Services.Files;
+using Core_API.Application.DTOs.Companies.Responses;
 using Core_API.Application.DTOs.Customer.Response;
 using Core_API.Application.DTOs.Invoice.Request;
 using Core_API.Application.DTOs.Invoice.Response;
-using Core_API.Domain.Entities;
-using Core_API.Domain.Enums;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using PdfSharp.Drawing;
 using PdfSharp.Fonts;
 using PdfSharp.Pdf;
-using System.ComponentModel.Design;
-using System.Globalization;
 using System.Text;
 
 namespace Core_API.Infrastructure.Services.File.Pdf
@@ -47,7 +42,7 @@ namespace Core_API.Infrastructure.Services.File.Pdf
         {
             try
             {
-                IQueryable<Domain.Entities.Invoice> query = _unitOfWork.Invoices.Query()
+                IQueryable<Domain.Entities.Invoices.Invoice> query = _unitOfWork.Invoices.Query()
                          .Where(i => !i.IsDeleted);
 
                 // Super Admin can access any invoice
@@ -776,7 +771,7 @@ namespace Core_API.Infrastructure.Services.File.Pdf
         //            new XRect(sourceX, sourceY, 120, 12), XStringFormats.TopRight);
         //    }
         //}
-        private async Task<MemoryStream> GenerateInvoicePdf(Domain.Entities.Invoice invoice)
+        private async Task<MemoryStream> GenerateInvoicePdf(Domain.Entities.Invoices.Invoice invoice)
         {
             var document = new PdfDocument();
             var page = document.AddPage();
@@ -793,7 +788,7 @@ namespace Core_API.Infrastructure.Services.File.Pdf
             stream.Position = 0;
             return stream;
         }
-        private void DrawInvoice(XGraphics gfx, PdfPage page, Domain.Entities.Invoice invoice, CompanyResponseDto companyInfo)
+        private void DrawInvoice(XGraphics gfx, PdfPage page, Domain.Entities.Invoices.Invoice invoice, CompanyResponseDto companyInfo)
         {
             // Fonts
             var fontTitle = new XFont("Open Sans", 18, XFontStyleEx.Bold);
@@ -829,7 +824,7 @@ namespace Core_API.Infrastructure.Services.File.Pdf
 
             if (companyInfo?.Address != null)
             {
-                var address = $"{companyInfo.Address.Address1 ?? ""} {companyInfo.Address.Address2 ?? ""}".Trim();
+                var address = $"{companyInfo.Address.AddressLine1 ?? ""} {companyInfo.Address.AddressLine2 ?? ""}".Trim();
                 if (!string.IsNullOrEmpty(address))
                 {
                     gfx.DrawString(address, fontSmall, XBrushes.Gray,
@@ -845,9 +840,9 @@ namespace Core_API.Infrastructure.Services.File.Pdf
                     companyY += 15;
                 }
 
-                if (!string.IsNullOrEmpty(companyInfo.Address.Country))
+                if (!string.IsNullOrEmpty(companyInfo.Address.CountryCode))
                 {
-                    gfx.DrawString(companyInfo.Address.Country, fontSmall, XBrushes.Gray,
+                    gfx.DrawString(companyInfo.Address.CountryCode, fontSmall, XBrushes.Gray,
                         new XRect(margin, companyY, 250, 15), XStringFormats.TopLeft);
                     companyY += 15;
                 }
@@ -922,9 +917,9 @@ namespace Core_API.Infrastructure.Services.File.Pdf
             if (invoice.Customer?.Address != null)
             {
                 var addr = invoice.Customer.Address;
-                if (!string.IsNullOrEmpty(addr.Address1))
+                if (!string.IsNullOrEmpty(addr.AddressLine1))
                 {
-                    gfx.DrawString(addr.Address1, fontNormal, XBrushes.Black,
+                    gfx.DrawString(addr.AddressLine1, fontNormal, XBrushes.Black,
                         new XRect(margin, y, 250, 16), XStringFormats.TopLeft);
                     y += 16;
                 }
@@ -937,25 +932,25 @@ namespace Core_API.Infrastructure.Services.File.Pdf
                     y += 16;
                 }
 
-                if (!string.IsNullOrEmpty(addr.Country))
+                if (!string.IsNullOrEmpty(addr.CountryCode))
                 {
-                    gfx.DrawString(addr.Country, fontNormal, XBrushes.Black,
+                    gfx.DrawString(addr.CountryCode, fontNormal, XBrushes.Black,
                         new XRect(margin, y, 250, 16), XStringFormats.TopLeft);
                     y += 16;
                 }
             }
 
             // Customer Contact
-            if (!string.IsNullOrEmpty(invoice.Customer?.Email))
+            if (!string.IsNullOrEmpty(invoice.Customer?.Email?.Value))
             {
-                gfx.DrawString(invoice.Customer.Email, fontNormal, XBrushes.Black,
+                gfx.DrawString(invoice.Customer.Email.Value, fontNormal, XBrushes.Black,
                     new XRect(margin, y, 250, 16), XStringFormats.TopLeft);
                 y += 16;
             }
 
-            if (!string.IsNullOrEmpty(invoice.Customer?.PhoneNumber))
+            if (!string.IsNullOrEmpty(invoice.Customer?.PhoneNumber?.Value))
             {
-                gfx.DrawString(invoice.Customer.PhoneNumber, fontNormal, XBrushes.Black,
+                gfx.DrawString(invoice.Customer.PhoneNumber.Value, fontNormal, XBrushes.Black,
                     new XRect(margin, y, 250, 16), XStringFormats.TopLeft);
                 y += 16;
             }

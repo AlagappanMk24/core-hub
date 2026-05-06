@@ -1,6 +1,26 @@
 ﻿// Core_API.Web/Controllers/TaskController.cs
-using Core_API.Application.Contracts.Services;
+using Core_API.Application.Contracts.Services.Tasks;
 using Core_API.Application.DTOs.Tasks;
+using Core_API.Application.DTOs.Tasks.Requests;
+using Core_API.Application.Features.Tasks.Commands.AddTaskAttachment;
+using Core_API.Application.Features.Tasks.Commands.AddTaskComment;
+using Core_API.Application.Features.Tasks.Commands.AssignTask;
+using Core_API.Application.Features.Tasks.Commands.CompleteTask;
+using Core_API.Application.Features.Tasks.Commands.CreateTask;
+using Core_API.Application.Features.Tasks.Commands.DeleteTask;
+using Core_API.Application.Features.Tasks.Commands.DeleteTaskAttachment;
+using Core_API.Application.Features.Tasks.Commands.UpdateTask;
+using Core_API.Application.Features.Tasks.Commands.UpdateTaskStatus;
+using Core_API.Application.Features.Tasks.Queries.GetAllTasks;
+using Core_API.Application.Features.Tasks.Queries.GetMyTasks;
+using Core_API.Application.Features.Tasks.Queries.GetOverdueTasks;
+using Core_API.Application.Features.Tasks.Queries.GetTaskAttachments;
+using Core_API.Application.Features.Tasks.Queries.GetTaskById;
+using Core_API.Application.Features.Tasks.Queries.GetTaskComments;
+using Core_API.Application.Features.Tasks.Queries.GetTasksDueSoon;
+using Core_API.Application.Features.Tasks.Queries.GetTasksDueToday;
+using Core_API.Application.Features.Tasks.Queries.GetTaskStats;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TaskStatus = Core_API.Domain.Enums.TaskStatus;
@@ -10,13 +30,16 @@ namespace Core_API.Web.Controllers
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
-    public class TaskController(ITaskService taskService, ILogger<TaskController> logger) : BaseApiController
+    public class TaskController(IMediator mediator, ITaskService taskService, ILogger<TaskController> logger) : BaseApiController
     {
+        private readonly IMediator _mediator = mediator;
         private readonly ITaskService _taskService = taskService;
         private readonly ILogger<TaskController> _logger = logger;
 
+        #region Query Endpoints
+
         /// <summary>
-        /// Get all tasks with optional filtering
+        /// Get all tasks with optional filtering, sorting, and pagination
         /// </summary>
         [HttpGet]
         [ProducesResponseType(StatusCodes.Status200OK)]
@@ -25,16 +48,17 @@ namespace Core_API.Web.Controllers
         {
             try
             {
-                var context = CurrentContext;
-                if (context == null)
-                    return Unauthorized();
+                var query = new GetAllTasksQuery
+                {
+                    Filter = filter,
+                    Context = CurrentContext
+                };
 
-                var result = await _taskService.GetAllTasksAsync(context, filter);
+                var result = await _mediator.Send(query);
 
-                if (!result.IsSuccess)
-                    return BadRequest(result.ErrorMessage);
-
-                return Ok(result.Data);
+                return result.IsSuccess
+                  ? Ok(result.Data)
+                  : BadRequest(result.ErrorMessage);
             }
             catch (Exception ex)
             {
@@ -52,16 +76,20 @@ namespace Core_API.Web.Controllers
         {
             try
             {
-                var context = CurrentContext;
-                if (context == null)
-                    return Unauthorized();
+                var query = new GetMyTasksQuery
+                {
+                    Filter = filter,
+                    Context = CurrentContext
+                };
 
-                var result = await _taskService.GetMyTasksAsync(context, filter);
+                var result = await _mediator.Send(query);
 
                 if (!result.IsSuccess)
                     return BadRequest(result.ErrorMessage);
 
-                return Ok(result.Data);
+                return result.IsSuccess
+                    ? Ok(result.Data)
+                    : BadRequest(result.ErrorMessage);
             }
             catch (Exception ex)
             {
@@ -80,16 +108,17 @@ namespace Core_API.Web.Controllers
         {
             try
             {
-                var context = CurrentContext;
-                if (context == null)
-                    return Unauthorized();
+                var query = new GetTaskByIdQuery
+                {
+                    TaskId = id,
+                    Context = CurrentContext,
+                };
 
-                var result = await _taskService.GetTaskByIdAsync(id, context);
+                var result = await _mediator.Send(query);
 
-                if (!result.IsSuccess)
-                    return NotFound(result.ErrorMessage);
-
-                return Ok(result.Data);
+                return result.IsSuccess
+                    ? Ok(result.Data)
+                    : NotFound(result.ErrorMessage);
             }
             catch (Exception ex)
             {
@@ -97,6 +126,122 @@ namespace Core_API.Web.Controllers
                 return StatusCode(500, "An error occurred while retrieving the task");
             }
         }
+
+        /// <summary>
+        /// Get task statistics
+        /// </summary>
+        [HttpGet("stats")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetTaskStats()
+        {
+            try
+            {
+                var query = new GetTaskStatsQuery
+                {
+                    Context = CurrentContext
+                };
+
+                var result = await _mediator.Send(query);
+
+                return result.IsSuccess
+                  ? Ok(result.Data)
+                  : BadRequest(result.ErrorMessage);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving task stats");
+                return StatusCode(500, "An error occurred while retrieving task statistics");
+            }
+        }
+
+        /// <summary>
+        /// Get overdue tasks
+        /// </summary>
+        [HttpGet("overdue")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetOverdueTasks()
+        {
+            try
+            {
+                var query = new GetOverdueTasksQuery
+                {
+                    Context = CurrentContext
+                };
+
+                var result = await _mediator.Send(query);
+
+                if (!result.IsSuccess)
+                    return BadRequest(result.ErrorMessage);
+
+                return Ok(result.Data);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving overdue tasks");
+                return StatusCode(500, "An error occurred while retrieving overdue tasks");
+            }
+        }
+
+        /// <summary>
+        /// Get tasks due soon
+        /// </summary>
+        [HttpGet("due-soon")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetTasksDueSoon([FromQuery] int days = 3)
+        {
+            try
+            {
+                var query = new GetTasksDueSoonQuery
+                {
+                    Days = days,
+                    Context = CurrentContext
+                };
+
+                var result = await _mediator.Send(query);
+
+                if (!result.IsSuccess)
+                    return BadRequest(result.ErrorMessage);
+
+                return Ok(result.Data);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving tasks due soon");
+                return StatusCode(500, "An error occurred while retrieving tasks due soon");
+            }
+        }
+
+        /// <summary>
+        /// Get tasks due today
+        /// </summary>
+        [HttpGet("due-today")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetTasksDueToday()
+        {
+            try
+            {
+                var query = new GetTasksDueTodayQuery
+                {
+                    Context = CurrentContext
+                };
+
+                var result = await _mediator.Send(query);
+
+                if (!result.IsSuccess)
+                    return BadRequest(result.ErrorMessage);
+
+                return Ok(result.Data);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving tasks due today");
+                return StatusCode(500, "An error occurred while retrieving tasks due today");
+            }
+        }
+
+        #endregion
+
+        #region Command Endpoints
 
         /// <summary>
         /// Create a new task
@@ -108,16 +253,17 @@ namespace Core_API.Web.Controllers
         {
             try
             {
-                var context = CurrentContext;
-                if (context == null)
-                    return Unauthorized();
+                var command = new CreateTaskCommand
+                {
+                    CreateDto = createDto,
+                    Context = CurrentContext
+                };
 
-                var result = await _taskService.CreateTaskAsync(createDto, context);
+                var result = await _mediator.Send(command);
 
-                if (!result.IsSuccess)
-                    return BadRequest(result.ErrorMessage);
-
-                return CreatedAtAction(nameof(GetTaskById), new { id = result.Data.Id }, result.Data);
+                return result.IsSuccess
+                    ? CreatedAtAction(nameof(GetTaskById), new { id = result.Data.Id }, result.Data)
+                    : BadRequest(result.ErrorMessage);
             }
             catch (Exception ex)
             {
@@ -137,16 +283,18 @@ namespace Core_API.Web.Controllers
         {
             try
             {
-                var context = CurrentContext;
-                if (context == null)
-                    return Unauthorized();
+                var command = new UpdateTaskCommand
+                {
+                    TaskId = id,
+                    UpdateDto = updateDto,
+                    Context = CurrentContext
+                };
 
-                var result = await _taskService.UpdateTaskAsync(id, updateDto, context);
+                var result = await _mediator.Send(command);
 
-                if (!result.IsSuccess)
-                    return BadRequest(result.ErrorMessage);
-
-                return Ok(result.Data);
+                return result.IsSuccess
+                    ? Ok(result.Data)
+                    : BadRequest(result.ErrorMessage);
             }
             catch (Exception ex)
             {
@@ -165,16 +313,17 @@ namespace Core_API.Web.Controllers
         {
             try
             {
-                var context = CurrentContext;
-                if (context == null)
-                    return Unauthorized();
+                var command = new DeleteTaskCommand
+                {
+                    TaskId = id,
+                    Context = CurrentContext
+                };
 
-                var result = await _taskService.DeleteTaskAsync(id, context);
+                var result = await _mediator.Send(command);
 
-                if (!result.IsSuccess)
-                    return BadRequest(result.ErrorMessage);
-
-                return NoContent();
+                return result.IsSuccess
+                    ? NoContent()
+                    : BadRequest(result.ErrorMessage);
             }
             catch (Exception ex)
             {
@@ -193,16 +342,18 @@ namespace Core_API.Web.Controllers
         {
             try
             {
-                var context = CurrentContext;
-                if (context == null)
-                    return Unauthorized();
+                var command = new UpdateTaskStatusCommand
+                {
+                    TaskId = id,
+                    Status = status,
+                    Context = CurrentContext
+                };
 
-                var result = await _taskService.UpdateTaskStatusAsync(id, status, context);
+                var result = await _mediator.Send(command);
 
-                if (!result.IsSuccess)
-                    return BadRequest(result.ErrorMessage);
-
-                return Ok(result.Data);
+                return result.IsSuccess
+                    ? Ok(result.Data)
+                    : BadRequest(result.ErrorMessage);
             }
             catch (Exception ex)
             {
@@ -221,16 +372,17 @@ namespace Core_API.Web.Controllers
         {
             try
             {
-                var context = CurrentContext;
-                if (context == null)
-                    return Unauthorized();
+                var command = new CompleteTaskCommand
+                {
+                    TaskId = id,
+                    Context = CurrentContext
+                };
 
-                var result = await _taskService.CompleteTaskAsync(id, context);
+                var result = await _mediator.Send(command);
 
-                if (!result.IsSuccess)
-                    return BadRequest(result.ErrorMessage);
-
-                return Ok(new { message = "Task completed successfully" });
+                return result.IsSuccess
+                    ? Ok(new { message = "Task completed successfully" })
+                    : BadRequest(result.ErrorMessage);
             }
             catch (Exception ex)
             {
@@ -249,16 +401,18 @@ namespace Core_API.Web.Controllers
         {
             try
             {
-                var context = CurrentContext;
-                if (context == null)
-                    return Unauthorized();
+                var command = new AssignTaskCommand
+                {
+                    TaskId = id,
+                    UserId = userId,
+                    Context = CurrentContext
+                };
 
-                var result = await _taskService.AssignTaskAsync(id, userId, context);
+                var result = await _mediator.Send(command);
 
-                if (!result.IsSuccess)
-                    return BadRequest(result.ErrorMessage);
-
-                return Ok(result.Data);
+                return result.IsSuccess
+                    ? Ok(result.Data)
+                    : BadRequest(result.ErrorMessage);
             }
             catch (Exception ex)
             {
@@ -277,16 +431,18 @@ namespace Core_API.Web.Controllers
         {
             try
             {
-                var context = CurrentContext;
-                if (context == null)
-                    return Unauthorized();
+                var command = new AddTaskCommentCommand
+                {
+                    TaskId = id,
+                    CommentDto = commentDto,
+                    Context = CurrentContext
+                };
 
-                var result = await _taskService.AddCommentAsync(id, commentDto, context);
+                var result = await _mediator.Send(command);
 
-                if (!result.IsSuccess)
-                    return BadRequest(result.ErrorMessage);
-
-                return CreatedAtAction(nameof(GetComments), new { id = result.Data.TaskId }, result.Data);
+                return result.IsSuccess
+                    ? CreatedAtAction(nameof(GetComments), new { id = result.Data.TaskId }, result.Data)
+                    : BadRequest(result.ErrorMessage);
             }
             catch (Exception ex)
             {
@@ -305,11 +461,13 @@ namespace Core_API.Web.Controllers
         {
             try
             {
-                var context = CurrentContext;
-                if (context == null)
-                    return Unauthorized();
+                var query = new GetTaskCommentsQuery
+                {
+                    TaskId = id,
+                    Context = CurrentContext
+                };
 
-                var result = await _taskService.GetCommentsAsync(id, context);
+                var result = await _mediator.Send(query);
 
                 if (!result.IsSuccess)
                     return BadRequest(result.ErrorMessage);
@@ -334,16 +492,18 @@ namespace Core_API.Web.Controllers
         {
             try
             {
-                var context = CurrentContext;
-                if (context == null)
-                    return Unauthorized();
+                var command = new AddTaskAttachmentCommand
+                {
+                    TaskId = id,
+                    File = file,
+                    Context = CurrentContext
+                };
 
-                var result = await _taskService.AddAttachmentAsync(id, file, context);
+                var result = await _mediator.Send(command);
 
-                if (!result.IsSuccess)
-                    return BadRequest(result.ErrorMessage);
-
-                return CreatedAtAction(nameof(GetAttachments), new { id = result.Data.TaskId }, result.Data);
+                return result.IsSuccess
+                    ? CreatedAtAction(nameof(GetAttachments), new { id = result.Data.TaskId }, result.Data)
+                    : BadRequest(result.ErrorMessage);
             }
             catch (Exception ex)
             {
@@ -362,11 +522,13 @@ namespace Core_API.Web.Controllers
         {
             try
             {
-                var context = CurrentContext;
-                if (context == null)
-                    return Unauthorized();
+                var query = new GetTaskAttachmentsQuery
+                {
+                    TaskId = id,
+                    Context = CurrentContext
+                };
 
-                var result = await _taskService.GetAttachmentsAsync(id, context);
+                var result = await _mediator.Send(query);
 
                 if (!result.IsSuccess)
                     return BadRequest(result.ErrorMessage);
@@ -390,16 +552,18 @@ namespace Core_API.Web.Controllers
         {
             try
             {
-                var context = CurrentContext;
-                if (context == null)
-                    return Unauthorized();
+                var command = new DeleteTaskAttachmentCommand
+                {
+                    TaskId = taskId,
+                    AttachmentId = attachmentId,
+                    Context = CurrentContext
+                };
 
-                var result = await _taskService.DeleteAttachmentAsync(taskId, attachmentId, context);
+                var result = await _mediator.Send(command);
 
-                if (!result.IsSuccess)
-                    return BadRequest(result.ErrorMessage);
-
-                return NoContent();
+                return result.IsSuccess
+                    ? NoContent()
+                    : BadRequest(result.ErrorMessage);
             }
             catch (Exception ex)
             {
@@ -407,113 +571,6 @@ namespace Core_API.Web.Controllers
                 return StatusCode(500, "An error occurred while deleting attachment");
             }
         }
-
-        /// <summary>
-        /// Get task statistics
-        /// </summary>
-        [HttpGet("stats")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetTaskStats()
-        {
-            try
-            {
-                var context = CurrentContext;
-                if (context == null)
-                    return Unauthorized();
-
-                var result = await _taskService.GetTaskStatsAsync(context);
-
-                if (!result.IsSuccess)
-                    return BadRequest(result.ErrorMessage);
-
-                return Ok(result.Data);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving task stats");
-                return StatusCode(500, "An error occurred while retrieving task statistics");
-            }
-        }
-
-        /// <summary>
-        /// Get overdue tasks
-        /// </summary>
-        [HttpGet("overdue")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetOverdueTasks()
-        {
-            try
-            {
-                var context = CurrentContext;
-                if (context == null)
-                    return Unauthorized();
-
-                var result = await _taskService.GetOverdueTasksAsync(context);
-
-                if (!result.IsSuccess)
-                    return BadRequest(result.ErrorMessage);
-
-                return Ok(result.Data);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving overdue tasks");
-                return StatusCode(500, "An error occurred while retrieving overdue tasks");
-            }
-        }
-
-        /// <summary>
-        /// Get tasks due soon
-        /// </summary>
-        [HttpGet("due-soon")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetTasksDueSoon([FromQuery] int days = 3)
-        {
-            try
-            {
-                var context = CurrentContext;
-                if (context == null)
-                    return Unauthorized();
-
-                var result = await _taskService.GetTasksDueSoonAsync(context, days);
-
-                if (!result.IsSuccess)
-                    return BadRequest(result.ErrorMessage);
-
-                return Ok(result.Data);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving tasks due soon");
-                return StatusCode(500, "An error occurred while retrieving tasks due soon");
-            }
-        }
-
-        /// <summary>
-        /// Get tasks due today
-        /// </summary>
-        [HttpGet("due-today")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetTasksDueToday()
-        {
-            try
-            {
-                var context = CurrentContext;
-                if (context == null)
-                    return Unauthorized();
-
-                var result = await _taskService.GetTasksDueTodayAsync(context);
-
-                if (!result.IsSuccess)
-                    return BadRequest(result.ErrorMessage);
-
-                return Ok(result.Data);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving tasks due today");
-                return StatusCode(500, "An error occurred while retrieving tasks due today");
-            }
-        }
     }
+    #endregion
 }

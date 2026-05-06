@@ -1,16 +1,16 @@
 ﻿using AutoMapper;
+using Core_API.Application.Common.Models;
 using Core_API.Application.Contracts.Persistence;
-using Core_API.Application.Contracts.Service;
-using Core_API.Application.Contracts.Services;
+using Core_API.Application.Contracts.Services.Account;
 using Core_API.Application.Contracts.Services.Auth;
-using Core_API.Application.DTOs.Authentication.Request;
-using Core_API.Application.DTOs.Authentication.Response;
-using Core_API.Application.DTOs.Authentication.Response.GitHubResponse;
-using Core_API.Application.DTOs.Authentication.Response.MicrosoftResponse;
-using Core_API.Domain.Entities;
+using Core_API.Application.Contracts.Services.Email;
+using Core_API.Application.DTOs.Auth.Requests;
+using Core_API.Application.DTOs.Authentication.Responses;
+using Core_API.Application.DTOs.Authentication.Responses.GitHub;
+using Core_API.Application.DTOs.Authentication.Responses.Microsoft;
+using Core_API.Application.DTOs.Common;
 using Core_API.Domain.Entities.Identity;
-using Core_API.Infrastructure.Identity.OAuth;
-using Core_API.Infrastructure.Shared;
+using Core_API.Infrastructure.Configuration.Settings;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
@@ -23,12 +23,12 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 
-namespace Core_API.Infrastructure.Service
+namespace Core_API.Infrastructure.Services.Authentication
 {
     /// <summary>
     /// Provides authentication services including user registration, login, OTP handling, and external logins.
     /// </summary>
-    public class AuthService(IMapper mapper, IUnitOfWork unitOfWork, IOptions<JwtSettings> jwtSettings, IConfiguration configuration, HttpClient httpClient, ILogger<AuthService> logger, IAccountService accountService, IEmailSendingService emailService) : IAuthService
+    public class AuthService(IMapper mapper, IUnitOfWork unitOfWork, IOptions<JwtSettings> jwtSettings, IConfiguration configuration, HttpClient httpClient, ILogger<AuthService> logger, IAccountService accountService, IEmailServiceProvider emailServiceProvider) : IAuthService
     {
         /// <param name="mapper">AutoMapper instance for mapping DTOs to entities.</param>
         /// <param name="unitOfWork">Unit of work for database operations.</param>
@@ -45,7 +45,7 @@ namespace Core_API.Infrastructure.Service
         private readonly HttpClient _httpClient = httpClient;
         private readonly ILogger<AuthService> _logger = logger;
         private readonly IAccountService _accountService = accountService;
-        private readonly IEmailSendingService _emailService = emailService;
+        private readonly IEmailServiceProvider _emailServiceProvider = emailServiceProvider;
 
         /// <summary>
         /// Registers a new user with the provided details.
@@ -155,7 +155,7 @@ namespace Core_API.Infrastructure.Service
                 var otpToken = GenerateOtpToken(user);
 
                 // Send OTP via Email
-                await _emailService.SendOtpEmailAsync(user.Email, otp);
+                await _emailServiceProvider.SendOtpEmailAsync(user.Email, otp);
 
                 _logger.LogInformation("OTP sent to email: {Email}", user.Email);
 
@@ -164,7 +164,7 @@ namespace Core_API.Infrastructure.Service
                     StatusCode = 200,
                     IsSucceeded = true,
                     Message = "OTP has been sent to your email. Please verify to continue.",
-                    Model = new { OtpToken = otpToken, OtpIdentifier = otpIdentifier }
+                    Data = new { OtpToken = otpToken, OtpIdentifier = otpIdentifier }
                 };
             }
             catch (Exception ex)
@@ -273,7 +273,7 @@ namespace Core_API.Infrastructure.Service
                 {
                     StatusCode = 200,
                     IsSucceeded = true,
-                    Model = new LoginResponseDto
+                    Data = new LoginResponseDto
                     {
                         IsAuthenticated = true,
                         Token = new JwtSecurityTokenHandler().WriteToken(jwtToken),
@@ -324,7 +324,7 @@ namespace Core_API.Infrastructure.Service
                 await _unitOfWork.AuthUsers.UpdateAsync(user);
 
                 // Send OTP via email 
-                await _emailService.SendOtpEmailAsync(user.Email, newOtp);
+                await _emailServiceProvider.SendOtpEmailAsync(user.Email, newOtp);
 
                 _logger.LogInformation("New OTP sent for identifier: {OtpIdentifier}", dto.OtpIdentifier);
 
@@ -367,7 +367,7 @@ namespace Core_API.Infrastructure.Service
             var resetLink = $"http://localhost:4200/auth/reset-password?email={dto.Email}&token={encodedToken}";
 
             // Send reset link via email
-            await _emailService.SendResetPasswordEmailAsync(
+            await _emailServiceProvider.SendResetPasswordEmailAsync(
                    dto.Email,
                    "Reset Password",
                    $"Please reset your password by <a href='{resetLink}'>clicking here</a>.");

@@ -1,5 +1,11 @@
-﻿using Core_API.Application.Contracts.Persistence.Invoice;
+﻿using Core_API.Application.Contracts.Persistence.Auth;
+using Core_API.Application.Contracts.Persistence.Companies;
+using Core_API.Application.Contracts.Persistence.Customers;
+using Core_API.Application.Contracts.Persistence.Email;
+using Core_API.Application.Contracts.Persistence.Invoice;
 using Core_API.Application.Contracts.Persistence.RecurringInvoice;
+using Core_API.Application.Contracts.Persistence.Tasks;
+using Core_API.Application.Contracts.Persistence.Taxes;
 using Microsoft.EntityFrameworkCore.Storage;
 
 namespace Core_API.Application.Contracts.Persistence
@@ -28,6 +34,7 @@ namespace Core_API.Application.Contracts.Persistence
         ITaskAttachmentRepository TaskAttachments { get; }
         ITaskCommentRepository TaskComments { get; }
         ITaskAuditLogRepository TaskAuditLogs { get; }
+        ICustomerCommunicationRepository CustomerCommunications { get; }
         Task SaveChangesAsync();
         Task SaveChangesAsync(CancellationToken cancellationToken);
         Task<IDbContextTransaction> BeginTransactionAsync(); 

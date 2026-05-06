@@ -1,10 +1,9 @@
-﻿using Core_API.Application.Contracts.Services;
-using Core_API.Application.DTOs.Company.Request;
+﻿using Core_API.Application.Contracts.Services.Companies;
+using Core_API.Application.DTOs.Companies.Requests;
 using Core_API.Application.DTOs.User.Response;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
-using Microsoft.EntityFrameworkCore.Infrastructure.Internal;
 using System.Security.Claims;
 
 namespace Core_API.Web.Controllers;
@@ -112,7 +111,7 @@ public class CompanyController(ICompanyService companyService, ILogger<CompanyCo
     [HttpPost]
     [Authorize(Roles = "Admin")]
     [EnableRateLimiting("CompanyCreationPolicy")]
-    public async Task<IActionResult> CreateCompany([FromBody] CompanyCreateDto companyDto)
+    public async Task<IActionResult> CreateCompany([FromBody] CreateCompanyDto companyDto)
     {
         try
         {

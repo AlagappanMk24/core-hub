@@ -20,6 +20,6 @@ namespace Core_API.Application.Common.Results
         public static OperationResult<T> FailureResult(string errorMessage)
             => new OperationResult<T>(false, default, errorMessage);
         public static OperationResult<T> FailureResult(IEnumerable<IdentityError> errors, string errorMessage = null)
-        => new OperationResult<T>(false, default, errorMessage, errors);
+            => new OperationResult<T>(false, default, errorMessage, errors);
     }
 }

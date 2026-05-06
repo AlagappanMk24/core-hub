@@ -1,9 +1,8 @@
 ﻿using Core_API.Application.Common.Models;
 using Core_API.Application.Common.Results;
 using Core_API.Application.Contracts.Persistence;
-using Core_API.Application.Contracts.Services.File.Excel;
+using Core_API.Application.Contracts.Services.Files;
 using Core_API.Application.DTOs.Invoice.Request;
-using Core_API.Domain.Entities;
 using Core_API.Domain.Enums;
 using Microsoft.Extensions.Logging;
 using NPOI.HSSF.Util;
@@ -54,7 +53,7 @@ namespace Core_API.Infrastructure.Services.File.Excel
             }
         }
 
-        private byte[] GenerateExcelBytes(List<Domain.Entities.Invoice> invoices)
+        private byte[] GenerateExcelBytes(List<Domain.Entities.Invoices.Invoice> invoices)
         {
             using var workbook = new XSSFWorkbook();
 
@@ -73,7 +72,7 @@ namespace Core_API.Infrastructure.Services.File.Excel
             workbook.Write(memoryStream);
             return memoryStream.ToArray();
         }
-        private void CreateInvoiceSummarySheet(IWorkbook workbook, List<Domain.Entities.Invoice> invoices)
+        private void CreateInvoiceSummarySheet(IWorkbook workbook, List<Domain.Entities.Invoices.Invoice> invoices)
         {
             var sheet = workbook.CreateSheet("Invoice Summary");
 
@@ -240,7 +239,7 @@ namespace Core_API.Infrastructure.Services.File.Excel
             }
         }
 
-        private void CreateInvoiceDetailsSheet(IWorkbook workbook, List<Domain.Entities.Invoice> invoices)
+        private void CreateInvoiceDetailsSheet(IWorkbook workbook, List<Domain.Entities.Invoices.Invoice> invoices)
         {
             var sheet = workbook.CreateSheet("Invoice Details");
 
@@ -276,7 +275,7 @@ namespace Core_API.Infrastructure.Services.File.Excel
 
                 // Format address
                 var billingAddress = invoice.Customer?.Address != null
-                    ? $"{invoice.Customer.Address.Address1}, {invoice.Customer.Address.City}, {invoice.Customer.Address.State} {invoice.Customer.Address.ZipCode}, {invoice.Customer.Address.Country}"
+                    ? $"{invoice.Customer.Address.AddressLine1}, {invoice.Customer.Address.City}, {invoice.Customer.Address.State} {invoice.Customer.Address.ZipCode}, {invoice.Customer.Address.CountryCode}"
                     : string.Empty;
                 row.CreateCell(col++).SetCellValue(billingAddress);
                 row.CreateCell(col++).SetCellValue(string.Empty); // Shipping address placeholder
@@ -322,7 +321,7 @@ namespace Core_API.Infrastructure.Services.File.Excel
             }
         }
 
-        private void CreateInvoiceItemsSheet(IWorkbook workbook, List<Domain.Entities.Invoice> invoices)
+        private void CreateInvoiceItemsSheet(IWorkbook workbook, List<Domain.Entities.Invoices.Invoice> invoices)
         {
             var sheet = workbook.CreateSheet("Invoice Items");
 
@@ -391,7 +390,7 @@ namespace Core_API.Infrastructure.Services.File.Excel
             }
         }
 
-        private void CreateTaxDetailsSheet(IWorkbook workbook, List<Domain.Entities.Invoice> invoices)
+        private void CreateTaxDetailsSheet(IWorkbook workbook, List<Domain.Entities.Invoices.Invoice> invoices)
         {
             var sheet = workbook.CreateSheet("Tax Details");
 
@@ -439,7 +438,7 @@ namespace Core_API.Infrastructure.Services.File.Excel
             }
         }
 
-        private void CreateDiscountsSheet(IWorkbook workbook, List<Domain.Entities.Invoice> invoices)
+        private void CreateDiscountsSheet(IWorkbook workbook, List<Domain.Entities.Invoices.Invoice> invoices)
         {
             var sheet = workbook.CreateSheet("Discounts");
 
@@ -487,7 +486,7 @@ namespace Core_API.Infrastructure.Services.File.Excel
             }
         }
 
-        private void CreatePaymentsSheet(IWorkbook workbook, List<Domain.Entities.Invoice> invoices)
+        private void CreatePaymentsSheet(IWorkbook workbook, List<Domain.Entities.Invoices.Invoice> invoices)
         {
             var sheet = workbook.CreateSheet("Payments");
 
@@ -531,8 +530,8 @@ namespace Core_API.Infrastructure.Services.File.Excel
                     amountCell.CellStyle = currencyStyle;
 
                     row.CreateCell(col++).SetCellValue(payment.PaymentMethod ?? string.Empty);
-                    row.CreateCell(col++).SetCellValue(payment.PaymentReference ?? string.Empty);
-                    row.CreateCell(col++).SetCellValue(payment.PaymentStatus ?? string.Empty);
+                    row.CreateCell(col++).SetCellValue(payment.ReferenceNumber ?? string.Empty);
+                    row.CreateCell(col++).SetCellValue(payment.PaymentStatus.ToString() ?? string.Empty);
                     row.CreateCell(col++).SetCellValue(payment.BankAccountId?.ToString() ?? string.Empty);
                     row.CreateCell(col++).SetCellValue(payment.IsRefund ? "Yes" : "No");
                 }
@@ -544,7 +543,7 @@ namespace Core_API.Infrastructure.Services.File.Excel
             }
         }
 
-        private void CreateAuditLogsSheet(IWorkbook workbook, List<Domain.Entities.Invoice> invoices)
+        private void CreateAuditLogsSheet(IWorkbook workbook, List<Domain.Entities.Invoices.Invoice> invoices)
         {
             var sheet = workbook.CreateSheet("Audit Logs");
 
@@ -596,7 +595,7 @@ namespace Core_API.Infrastructure.Services.File.Excel
             }
         }
 
-        private void CreateAttachmentsSheet(IWorkbook workbook, List<Domain.Entities.Invoice> invoices)
+        private void CreateAttachmentsSheet(IWorkbook workbook, List<Domain.Entities.Invoices.Invoice> invoices)
         {
             var sheet = workbook.CreateSheet("Attachments");
 

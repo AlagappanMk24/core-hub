@@ -1,5 +1,5 @@
-﻿using Core_API.Application.DTOs.Authentication.Request;
-using Core_API.Application.DTOs.Authentication.Response;
+﻿using Core_API.Application.DTOs.Auth.Requests;
+using Core_API.Application.DTOs.Common;
 using Core_API.Domain.Entities.Identity;
 
 namespace Core_API.Application.Contracts.Services.Auth

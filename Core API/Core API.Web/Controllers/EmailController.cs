@@ -1,18 +1,16 @@
-﻿using Core_API.Application.Common.Models;
-using Core_API.Application.Contracts.Services;
-using Core_API.Application.DTOs.Email.EmailSettings;
+﻿using Core_API.Application.Contracts.Services.Email;
+using Core_API.Application.DTOs.Email.Requests;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 
 namespace Core_API.Web.Controllers
 {
     [Authorize]
     [Route("api/[controller]")]
     [ApiController]
-    public class EmailController(IEmailService emailService, ILogger<EmailController> logger) : BaseApiController
+    public class EmailController(IEmailServiceProvider emailServiceProvider, ILogger<EmailController> logger) : BaseApiController
     {
-        private readonly IEmailService _emailService = emailService ?? throw new ArgumentNullException(nameof(emailService));
+        private readonly IEmailServiceProvider _emailServiceProvider = emailServiceProvider ?? throw new ArgumentNullException(nameof(emailServiceProvider));
         private readonly ILogger<EmailController> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         [HttpGet("settings")]
@@ -27,7 +25,7 @@ namespace Core_API.Web.Controllers
             {
                 _logger.LogInformation("Retrieving email settings for company {CompanyId}", context.CompanyId);
 
-                var result = await _emailService.GetEmailSettingsAsync(context);
+                var result = await _emailServiceProvider.GetEmailSettingsAsync(context);
                 if (!result.IsSuccess)
                 {
                     _logger.LogWarning("Email settings retrieval failed: {ErrorMessage}", result.ErrorMessage);
@@ -81,7 +79,7 @@ namespace Core_API.Web.Controllers
 
                 _logger.LogInformation("Saving email settings for company {CompanyId} by user {UserId}", operationContext.CompanyId, operationContext.UserId);
 
-                var result = await _emailService.SaveEmailSettingsAsync(emailSettingsDto, operationContext);
+                var result = await _emailServiceProvider.SaveEmailSettingsAsync(emailSettingsDto, operationContext);
                 if (!result.IsSuccess)
                 {
                     _logger.LogWarning("Email settings save failed: {ErrorMessage}", result.ErrorMessage);
@@ -107,6 +105,66 @@ namespace Core_API.Web.Controllers
                 {
                     Title = "Internal Server Error",
                     Detail = "An unexpected error occurred while saving email settings."
+                });
+            }
+        }
+
+        /// <summary>
+        /// Sends a custom email to a customer
+        /// </summary>
+        /// <param name="request">The email request data</param>
+        /// <returns>Success response if email sent</returns>
+        [HttpPost("send-customer-email")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        public async Task<IActionResult> SendCustomerEmail([FromBody] SendCustomerEmailRequest request)
+        {
+            var operationContext = CurrentContext;
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(new ProblemDetails
+                    {
+                        Title = "Invalid Request",
+                        Detail = "Invalid email data provided.",
+                        Status = StatusCodes.Status400BadRequest,
+                        Extensions = { { "errors", ModelState } }
+                    });
+                }
+
+                _logger.LogInformation("Sending customer email to {ToEmail} for customer {CustomerId} by user {UserId}",
+                    request.To, request.CustomerId, operationContext.UserId);
+
+                var result = await _emailServiceProvider.SendCustomerEmailAsync(request, operationContext);
+
+                if (!result.IsSuccess)
+                {
+                    _logger.LogWarning("Customer email sending failed: {ErrorMessage}", result.ErrorMessage);
+                    return BadRequest(new ProblemDetails
+                    {
+                        Title = "Email Sending Failed",
+                        Detail = result.ErrorMessage,
+                        Status = StatusCodes.Status400BadRequest
+                    });
+                }
+
+                return Ok(new { Message = "Email sent successfully." });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning(ex, "Unauthorized access during email sending.");
+                return Unauthorized(new ProblemDetails { Title = "Unauthorized", Detail = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error sending customer email");
+                return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
+                {
+                    Title = "Internal Server Error",
+                    Detail = "An unexpected error occurred while sending the email."
                 });
             }
         }

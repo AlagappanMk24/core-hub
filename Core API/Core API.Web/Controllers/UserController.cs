@@ -1,4 +1,4 @@
-﻿using Core_API.Application.Contracts.Services;
+﻿using Core_API.Application.Contracts.Services.Users;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 

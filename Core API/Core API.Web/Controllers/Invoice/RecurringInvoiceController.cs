@@ -1,4 +1,4 @@
-﻿using Core_API.Application.Contracts.Services;
+﻿using Core_API.Application.Contracts.Services.RecurringInvoices;
 using Core_API.Application.DTOs.RecurringInvoice.Request;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Core_API.Web.Controllers.Invoice
 {
-    [Route("api/[controller]")]
+    [Route("api/recurring-invoices")]
     [ApiController]
     [Authorize(Roles = "Admin, User")]
     public class RecurringInvoiceController(
@@ -21,12 +21,12 @@ namespace Core_API.Web.Controllers.Invoice
         /// <summary>
         /// Creates a new recurring invoice template
         /// </summary>
-        [HttpPost]
+        [HttpPost]   // POST api/recurring-invoices
         [ProducesResponseType(StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> Create([FromBody] RecurringInvoiceCreateDto dto)
+        public async Task<IActionResult> Create([FromBody] CreateRecurringInvoiceDto dto)
         {
             var context = CurrentContext;
             try
@@ -88,13 +88,13 @@ namespace Core_API.Web.Controllers.Invoice
         /// <summary>
         /// Updates an existing recurring invoice template
         /// </summary>
-        [HttpPut("{id}")]
+        [HttpPut("{id}")]  // PUT api/recurring-invoices/5
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> Update(int id, [FromBody] RecurringInvoiceUpdateDto dto)
+        public async Task<IActionResult> Update(int id, [FromBody] UpdateRecurringInvoiceDto dto)
         {
             var context = CurrentContext;
             try
@@ -156,7 +156,7 @@ namespace Core_API.Web.Controllers.Invoice
         /// <summary>
         /// Deletes a recurring invoice template (soft delete)
         /// </summary>
-        [HttpDelete("{id}")]
+        [HttpDelete("{id}")]    // DELETE api/recurring-invoices/5
         [Authorize(Roles = "Admin")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -212,7 +212,7 @@ namespace Core_API.Web.Controllers.Invoice
         /// <summary>
         /// Retrieves a recurring invoice template by ID
         /// </summary>
-        [HttpGet("{id}")]
+        [HttpGet("{id}")]  // GET api/recurring-invoices/5
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -258,7 +258,7 @@ namespace Core_API.Web.Controllers.Invoice
         /// <summary>
         /// Retrieves a paged list of recurring invoice templates
         /// </summary>
-        [HttpGet]
+        [HttpGet] // GET api/recurring-invoices
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -372,7 +372,7 @@ namespace Core_API.Web.Controllers.Invoice
         /// <summary>
         /// Pauses an active recurring invoice template
         /// </summary>
-        [HttpPost("{id}/pause")]
+        [HttpPost("{id}/pause")]     // POST api/recurring-invoices/5/pause
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -418,7 +418,7 @@ namespace Core_API.Web.Controllers.Invoice
         /// <summary>
         /// Resumes a paused recurring invoice template
         /// </summary>
-        [HttpPost("{id}/resume")]
+        [HttpPost("{id}/resume")]    // POST api/recurring-invoices/5/resume
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -465,7 +465,7 @@ namespace Core_API.Web.Controllers.Invoice
         /// Cancels a recurring invoice template
         /// </summary>
         [HttpPost("{id}/cancel")]
-        [Authorize(Roles = "Admin")]
+        [Authorize(Roles = "Admin")]    // POST api/recurring-invoices/5/cancel
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
@@ -515,7 +515,7 @@ namespace Core_API.Web.Controllers.Invoice
         /// <summary>
         /// Manually generates an invoice from a recurring template
         /// </summary>
-        [HttpPost("generate")]
+        [HttpPost("{id:int}/generate-now")]   // POST api/recurring-invoices/5/generate-now
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]

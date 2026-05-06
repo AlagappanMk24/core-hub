@@ -5,6 +5,7 @@
         public string UserId { get; set; }
         public int? CompanyId { get; set; }
         public int? CustomerId { get; set; }
+        public bool IsAdmin { get; set; }
         public bool IsSuperAdmin { get; set; }  
         public List<string> Roles { get; set; }
 

@@ -1,4 +1,4 @@
-﻿using Core_API.Domain.Entities;
+﻿using Core_API.Domain.Entities.Identity;
 
 namespace Core_API.Application.Contracts.Services.Auth
 {

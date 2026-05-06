@@ -1,0 +1,17 @@
+﻿using Core_API.Application.DTOs.Auth.Requests;
+using Core_API.Application.DTOs.Common;
+using Core_API.Application.DTOs.User.Request;
+using Core_API.Domain.Entities.Identity;
+using Microsoft.AspNetCore.Identity;
+
+namespace Core_API.Application.Contracts.Services.Account
+{
+    public interface IAccountService
+    {
+        Task<ResponseDto> ChangePasswordAsync(PasswordSettingsDto dto);
+        Task<IdentityResult> CreateUserAsync(ApplicationUser user, string provider, string providerKey);
+        Task<ApplicationUser?> GetUserByEmailAsync(string email);
+        Task<ResponseDto> DeleteAccountAsync(LoginDto dto);
+        Task<ResponseDto> UpdateProfile(UserDto dto, string currentEmail);
+    }
+}

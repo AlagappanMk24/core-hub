@@ -1,8 +1,17 @@
-﻿using Core_API.Application.Contracts.Services;
-using Core_API.Application.Contracts.Services.Auth;
-using Core_API.Application.DTOs.Authentication.Request;
-using Core_API.Application.DTOs.Authentication.Request.CompanyRequest;
-using Core_API.Application.DTOs.Authentication.Response;
+﻿using Core_API.Application.Contracts.Services.Companies;
+using Core_API.Application.DTOs.Authentication.Responses;
+using Core_API.Application.DTOs.Common;
+using Core_API.Application.DTOs.Companies.Requests;
+using Core_API.Application.DTOs.Companies.Responses;
+using Core_API.Application.Features.Auth.Commands.ExternalLogin;
+using Core_API.Application.Features.Auth.Commands.ForgotPassword;
+using Core_API.Application.Features.Auth.Commands.Login;
+using Core_API.Application.Features.Auth.Commands.Register;
+using Core_API.Application.Features.Auth.Commands.ResendOtp;
+using Core_API.Application.Features.Auth.Commands.ResetPassword;
+using Core_API.Application.Features.Auth.Commands.ValidateOtp;
+using Core_API.Application.Features.Auth.Queries.GetExternalLoginUrl;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -19,12 +28,11 @@ namespace Core_API.Web.Controllers;
 [ApiController]
 [AllowAnonymous]
 [Produces("application/json")]
-public class AuthController(IAuthService authService, ICompanyRequestService companyRequestService, ILogger<AuthController> logger) : ControllerBase
+public class AuthController(IMediator mediator, ICompanyRequestService companyRequestService, ILogger<AuthController> logger) : ControllerBase
 {
-    /// <param name="authService">Service for handling authentication operations.</param>
     /// <param name="companyRequestService">Service for handling company requests.</param>
     /// <param name="logger">Logger for recording events and errors.</param>
-    private readonly IAuthService _authService = authService ?? throw new ArgumentNullException(nameof(authService));
+    private readonly IMediator _mediator = mediator;
     private readonly ICompanyRequestService _companyRequestService = companyRequestService ?? throw new ArgumentNullException(nameof(companyRequestService));
     private readonly ILogger<AuthController> _logger = logger;
 
@@ -42,7 +50,7 @@ public class AuthController(IAuthService authService, ICompanyRequestService com
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> Register(RegisterDto registerDto)
+    public async Task<IActionResult> Register([FromBody] RegisterCommand command)
     {
         if (!ModelState.IsValid)
         {
@@ -56,36 +64,36 @@ public class AuthController(IAuthService authService, ICompanyRequestService com
         }
         try
         {
-            _logger.LogInformation("Attempting to register user with email: {Email}", registerDto.Email);
-            var account = await _authService.RegisterAsync(registerDto);
-            if (account != null)
+            _logger.LogInformation("Attempting to register user with email: {Email}", command.Email);
+            var result = await _mediator.Send(command);
+            if (result != null)
             {
                 // Return success response if registration succeeded
-                if (account.IsSucceeded)
+                if (result.IsSucceeded)
                 {
-                    _logger.LogInformation("User registered successfully with email: {Email}", registerDto.Email);
-                    return Ok(account);
+                    _logger.LogInformation("User registered successfully with email: {Email}", command.Email);
+                    return Ok(result);
                 }
-                _logger.LogWarning("Registration failed for email {Email}: {Message}", registerDto.Email, account.Message);
+                _logger.LogWarning("Registration failed for email {Email}: {Message}", command.Email, result.Message);
 
-                return account.StatusCode switch
+                return result.StatusCode switch
                 {
                     409 => Conflict(new ProblemDetails
                     {
                         Title = "Email Already Exists",
-                        Detail = account.Message,
+                        Detail = result.Message,
                         Status = StatusCodes.Status409Conflict
                     }),
                     _ => BadRequest(new ProblemDetails
                     {
                         Title = "Registration Failed",
-                        Detail = account.Message,
+                        Detail = result.Message,
                         Status = StatusCodes.Status400BadRequest
                     })
                 };
 
             }
-            _logger.LogError("Registration returned null for email: {Email}", registerDto.Email);
+            _logger.LogError("Registration returned null for email: {Email}", command.Email);
             return StatusCode(500, new ProblemDetails
             {
                 Title = "Registration Failed",
@@ -95,7 +103,7 @@ public class AuthController(IAuthService authService, ICompanyRequestService com
         }
         catch (DbUpdateException ex)
         {
-            _logger.LogError(ex, "Database error during registration for email: {Email}", registerDto.Email);
+            _logger.LogError(ex, "Database error during registration for email: {Email}", command.Email);
             return StatusCode(500, new ProblemDetails
             {
                 Title = "Database Error",
@@ -105,7 +113,7 @@ public class AuthController(IAuthService authService, ICompanyRequestService com
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error during registration for email: {Email}", registerDto.Email);
+            _logger.LogError(ex, "Unexpected error during registration for email: {Email}", command.Email);
             return StatusCode(500, new ProblemDetails
             {
                 Title = "Internal Server Error",
@@ -132,7 +140,7 @@ public class AuthController(IAuthService authService, ICompanyRequestService com
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status429TooManyRequests)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> Login(LoginDto loginDto)
+    public async Task<IActionResult> Login(LoginCommand command)
     {
         if (!ModelState.IsValid)
         {
@@ -143,46 +151,46 @@ public class AuthController(IAuthService authService, ICompanyRequestService com
                 Status = StatusCodes.Status400BadRequest
             });
         }
-        _logger.LogInformation("User login attempt for email: {Email}", loginDto.Email);
+        _logger.LogInformation("User login attempt for email: {Email}", command.Email);
         try
         {
-            var response = await _authService.LoginAsync(loginDto);
-            if (!response.IsSucceeded)
+            var result = await _mediator.Send(command);
+            if (!result.IsSucceeded)
             {
-                _logger.LogWarning("Login failed for email: {Email}. {Message}", loginDto.Email, response.Message);
-                return response.StatusCode switch
+                _logger.LogWarning("Login failed for email: {Email}. {Message}", command.Email, result.Message);
+                return result.StatusCode switch
                 {
                     403 => StatusCode(403, new ProblemDetails
                     {
                         Title = "Authentication Failed",
-                        Detail = response.Message,
+                        Detail = result.Message,
                         Status = StatusCodes.Status403Forbidden
                     }),
                     429 => StatusCode(429, new ProblemDetails
                     {
                         Title = "Too Many Attempts",
-                        Detail = response.Message,
+                        Detail = result.Message,
                         Status = StatusCodes.Status429TooManyRequests
                     }),
                     _ => BadRequest(new ProblemDetails
                     {
                         Title = "Login Failed",
-                        Detail = response.Message,
+                        Detail = result.Message,
                         Status = StatusCodes.Status400BadRequest
                     })
                 };
             }
-            _logger.LogInformation("Login successful for email: {Email}, OTP sent", loginDto.Email);
+            _logger.LogInformation("Login successful for email: {Email}, OTP sent", command.Email);
             return Ok(new
             {
-                response.Message,
-                response.Model,
-                response.IsSucceeded
+                result.Message,
+                result.Data,
+                result.IsSucceeded
             });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error during login for email: {Email}", loginDto.Email);
+            _logger.LogError(ex, "Unexpected error during login for email: {Email}", command.Email);
             return StatusCode(500, new ProblemDetails
             {
                 Title = "Internal Server Error",
@@ -191,7 +199,6 @@ public class AuthController(IAuthService authService, ICompanyRequestService com
             });
         }
     }
-
 
     /// <summary>
     /// Validates a one-time password (OTP) to complete user authentication.
@@ -210,7 +217,7 @@ public class AuthController(IAuthService authService, ICompanyRequestService com
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status403Forbidden)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status429TooManyRequests)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> ValidateOtp([FromBody] ValidateOtpDto dto)
+    public async Task<IActionResult> ValidateOtp([FromBody] ValidateOtpCommand command)
     {
         if (!ModelState.IsValid)
         {
@@ -223,43 +230,43 @@ public class AuthController(IAuthService authService, ICompanyRequestService com
         }
         try
         {
-            _logger.LogInformation("OTP validation attempt for identifier: {OtpIdentifier}", dto.OtpIdentifier);
+            _logger.LogInformation("OTP validation attempt for identifier: {OtpIdentifier}", command.OtpIdentifier);
 
-            var response = await _authService.ValidateOtpAsync(dto);
+            var result = await _mediator.Send(command);
 
-            if (!response.IsSucceeded)
+            if (!result.IsSucceeded)
             {
                 _logger.LogWarning("OTP validation failed for identifier {OtpIdentifier}: {Message}",
-                    dto.OtpIdentifier, response.Message);
+                    command.OtpIdentifier, result.Message);
 
-                return response.StatusCode switch
+                return result.StatusCode switch
                 {
                     403 => StatusCode(403, new ProblemDetails
                     {
                         Title = "OTP Validation Failed",
-                        Detail = response.Message,
+                        Detail = result.Message,
                         Status = StatusCodes.Status403Forbidden
                     }),
                     429 => StatusCode(429, new ProblemDetails
                     {
                         Title = "Too Many Attempts",
-                        Detail = response.Message,
+                        Detail = result.Message,
                         Status = StatusCodes.Status429TooManyRequests
                     }),
                     _ => BadRequest(new ProblemDetails
                     {
                         Title = "OTP Validation Failed",
-                        Detail = response.Message,
+                        Detail = result.Message,
                         Status = StatusCodes.Status400BadRequest
                     })
                 };
             }
-            _logger.LogInformation("OTP validated successfully for identifier: {OtpIdentifier}", dto.OtpIdentifier);
-            return Ok(response.Model);
+            _logger.LogInformation("OTP validated successfully for identifier: {OtpIdentifier}", command.OtpIdentifier);
+            return Ok(result.Data);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error during OTP validation for identifier: {OtpIdentifier}", dto.OtpIdentifier);
+            _logger.LogError(ex, "Unexpected error during OTP validation for identifier: {OtpIdentifier}", command.OtpIdentifier);
             return StatusCode(500, new ProblemDetails
             {
                 Title = "Internal Server Error",
@@ -286,7 +293,7 @@ public class AuthController(IAuthService authService, ICompanyRequestService com
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status429TooManyRequests)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> ResendOtp([FromBody] ResendOtpDto dto)
+    public async Task<IActionResult> ResendOtp([FromBody] ResendOtpCommand command)
     {
         if (!ModelState.IsValid)
         {
@@ -299,29 +306,29 @@ public class AuthController(IAuthService authService, ICompanyRequestService com
         }
         try
         {
-            _logger.LogInformation("OTP resend attempt for identifier: {OtpIdentifier}", dto.OtpIdentifier);
+            _logger.LogInformation("OTP resend attempt for identifier: {OtpIdentifier}", command.OtpIdentifier);
 
-            var response = await _authService.ResendOtpAsync(dto);
+            var result = await _mediator.Send(command);
 
-            return response.StatusCode switch
+            return result.StatusCode switch
             {
-                200 => Ok(new { message = response.Message, isSucceeded = response.IsSucceeded }),
+                200 => Ok(new { message = result.Message, isSucceeded = result.IsSucceeded }),
                 404 => NotFound(new ProblemDetails
                 {
                     Title = "User Not Found",
-                    Detail = response.Message,
+                    Detail = result.Message,
                     Status = StatusCodes.Status404NotFound
                 }),
                 429 => StatusCode(429, new ProblemDetails
                 {
                     Title = "Too Many Requests",
-                    Detail = response.Message,
+                    Detail = result.Message,
                     Status = StatusCodes.Status429TooManyRequests
                 }),
                 _ => BadRequest(new ProblemDetails
                 {
                     Title = "OTP Resend Failed",
-                    Detail = response.Message,
+                    Detail = result.Message,
                     Status = StatusCodes.Status400BadRequest
                 })
             };
@@ -352,7 +359,7 @@ public class AuthController(IAuthService authService, ICompanyRequestService com
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> ForgotPassword(ForgotPasswordDto dto)
+    public async Task<IActionResult> ForgotPassword(ForgotPasswordCommand command)
     {
         if (!ModelState.IsValid)
         {
@@ -365,37 +372,37 @@ public class AuthController(IAuthService authService, ICompanyRequestService com
         }
         try
         {
-            _logger.LogInformation("Forgot password request for email: {Email}", dto.Email);
+            _logger.LogInformation("Forgot password request for email: {Email}", command.Email);
 
-            var response = await _authService.ForgotPasswordAsync(dto);
+            var result = await _mediator.Send(command);
 
-            if (!response.IsSucceeded)
+            if (!result.IsSucceeded)
             {
-                _logger.LogWarning("Forgot password failed for email {Email}: {Message}", dto.Email, response.Message);
+                _logger.LogWarning("Forgot password failed for email {Email}: {Message}", command.Email, result.Message);
 
-                return response.StatusCode switch
+                return result.StatusCode switch
                 {
                     404 => NotFound(new ProblemDetails
                     {
                         Title = "Email Not Found",
-                        Detail = response.Message,
+                        Detail = result.Message,
                         Status = StatusCodes.Status404NotFound
                     }),
                     _ => BadRequest(new ProblemDetails
                     {
                         Title = "Forgot Password Failed",
-                        Detail = response.Message,
+                        Detail = result.Message,
                         Status = StatusCodes.Status400BadRequest
                     })
                 };
             }
 
-            _logger.LogInformation("Password reset link sent to email: {Email}", dto.Email);
-            return Ok(response);
+            _logger.LogInformation("Password reset link sent to email: {Email}", command.Email);
+            return Ok(result);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error during forgot password for email: {Email}", dto.Email);
+            _logger.LogError(ex, "Unexpected error during forgot password for email: {Email}", command.Email);
             return StatusCode(500, new ProblemDetails
             {
                 Title = "Internal Server Error",
@@ -419,7 +426,7 @@ public class AuthController(IAuthService authService, ICompanyRequestService com
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> ResetPassword(ResetPasswordDto dto)
+    public async Task<IActionResult> ResetPassword(ResetPasswordCommand command)
     {
         if (!ModelState.IsValid)
         {
@@ -432,37 +439,37 @@ public class AuthController(IAuthService authService, ICompanyRequestService com
         }
         try
         {
-            _logger.LogInformation("Password reset attempt for email: {Email}", dto.Email);
+            _logger.LogInformation("Password reset attempt for email: {Email}", command.Email);
 
-            var response = await _authService.ResetPasswordAsync(dto);
+            var result = await _mediator.Send(command);
 
-            if (!response.IsSucceeded)
+            if (!result.IsSucceeded)
             {
-                _logger.LogWarning("Password reset failed for email {Email}: {Message}", dto.Email, response.Message);
+                _logger.LogWarning("Password reset failed for email {Email}: {Message}", command.Email, result.Message);
 
-                return response.StatusCode switch
+                return result.StatusCode switch
                 {
                     404 => NotFound(new ProblemDetails
                     {
                         Title = "Email Not Found",
-                        Detail = response.Message,
+                        Detail = result.Message,
                         Status = StatusCodes.Status404NotFound
                     }),
                     _ => BadRequest(new ProblemDetails
                     {
                         Title = "Password Reset Failed",
-                        Detail = response.Message,
+                        Detail = result.Message,
                         Status = StatusCodes.Status400BadRequest
                     })
                 };
             }
 
-            _logger.LogInformation("Password reset successful for email: {Email}", dto.Email);
-            return Ok(response);
+            _logger.LogInformation("Password reset successful for email: {Email}", command.Email);
+            return Ok(result);
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error during password reset for email: {Email}", dto.Email);
+            _logger.LogError(ex, "Unexpected error during password reset for email: {Email}", command.Email);
             return StatusCode(500, new ProblemDetails
             {
                 Title = "Internal Server Error",
@@ -484,7 +491,7 @@ public class AuthController(IAuthService authService, ICompanyRequestService com
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
-    public IActionResult GetExternalLoginUrl(string provider)
+    public async Task<IActionResult> GetExternalLoginUrl([FromQuery] string provider)
     {
         if (string.IsNullOrWhiteSpace(provider))
         {
@@ -499,10 +506,12 @@ public class AuthController(IAuthService authService, ICompanyRequestService com
         {
             _logger.LogInformation("Generating external login URL for provider: {Provider}", provider);
 
-            var authUrl = _authService.GetExternalLoginUrl(provider);
+            //var authUrl = _authService.GetExternalLoginUrl(provider);
+            var query = new GetExternalLoginUrlQuery { Provider = provider };
+            var response = await _mediator.Send(query);
 
             _logger.LogInformation("External login URL generated successfully for provider: {Provider}", provider);
-            return Ok(new { redirectUrl = authUrl });
+            return Ok(response);
         }
         catch (ArgumentException ex)
         {
@@ -539,7 +548,7 @@ public class AuthController(IAuthService authService, ICompanyRequestService com
     [ProducesResponseType(typeof(object), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> ExternalLogin([FromBody] ExternalLoginDto model)
+    public async Task<IActionResult> ExternalLogin([FromBody] ExternalLoginCommand command)
     {
         if (!ModelState.IsValid)
         {
@@ -552,16 +561,17 @@ public class AuthController(IAuthService authService, ICompanyRequestService com
         }
         try
         {
-            _logger.LogInformation("Processing external login for provider: {Provider}", model.Provider);
+            _logger.LogInformation("Processing external login for provider: {Provider}", command.Provider);
 
-            var token = await _authService.ExchangeAuthCodeForTokenAsync(model);
+            //var token = await _authService.ExchangeAuthCodeForTokenAsync(model);
+            var token = await _mediator.Send(command);
 
-            _logger.LogInformation("External login successful for provider: {Provider}", model.Provider);
+            _logger.LogInformation("External login successful for provider: {Provider}", command.Provider);
             return Ok(new { Token = token });
         }
         catch (ArgumentException ex)
         {
-            _logger.LogWarning(ex, "Invalid external login request for provider: {Provider}", model.Provider);
+            _logger.LogWarning(ex, "Invalid external login request for provider: {Provider}", command.Provider);
             return BadRequest(new ProblemDetails
             {
                 Title = "Invalid Request",
@@ -571,7 +581,7 @@ public class AuthController(IAuthService authService, ICompanyRequestService com
         }
         catch (HttpRequestException ex)
         {
-            _logger.LogError(ex, "HTTP error during external login for provider: {Provider}", model.Provider);
+            _logger.LogError(ex, "HTTP error during external login for provider: {Provider}", command.Provider);
             return StatusCode(500, new ProblemDetails
             {
                 Title = "External Service Error",
@@ -581,7 +591,7 @@ public class AuthController(IAuthService authService, ICompanyRequestService com
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Unexpected error during external login for provider: {Provider}", model.Provider);
+            _logger.LogError(ex, "Unexpected error during external login for provider: {Provider}", command.Provider);
             return StatusCode(500, new ProblemDetails
             {
                 Title = "Internal Server Error",
@@ -608,7 +618,7 @@ public class AuthController(IAuthService authService, ICompanyRequestService com
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status500InternalServerError)]
-    public async Task<IActionResult> UpdateCompany([FromBody] UpdateCompanyDto dto)
+    public async Task<IActionResult> UpdateCompany([FromBody] UpdateCompanyRequestDto dto)
     {
         if (!ModelState.IsValid)
         {

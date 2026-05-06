@@ -1,11 +1,19 @@
-﻿using Core_API.Application.Common.Models;
-using Core_API.Application.Contracts.Services;
+﻿using Core_API.Application.Contracts.Services.Customers;
 using Core_API.Application.DTOs.Customer.Request;
+using Core_API.Application.Features.Customers.Commands.CreateCustomer;
+using Core_API.Application.Features.Customers.Commands.DeleteCustomer;
+using Core_API.Application.Features.Customers.Commands.UpdateCustomer;
+using Core_API.Application.Features.Customers.Queries.GetCustomerActivities;
+using Core_API.Application.Features.Customers.Queries.GetCustomerById;
+using Core_API.Application.Features.Customers.Queries.GetCustomerInvoices;
+using Core_API.Application.Features.Customers.Queries.GetCustomerPayments;
+using Core_API.Application.Features.Customers.Queries.GetCustomers;
+using Core_API.Application.Features.Customers.Queries.GetCustomerSpendingTrend;
+using Core_API.Application.Features.Customers.Queries.GetCustomerStats;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
 
 namespace Core_API.Web.Controllers
 {
@@ -20,8 +28,9 @@ namespace Core_API.Web.Controllers
     [Authorize]
     [Route("api/[controller]")]
     [ApiController]
-    public class CustomerController(ICustomerService customerService, ILogger<CustomerController> logger) : BaseApiController
+    public class CustomerController(IMediator mediator, ICustomerService customerService, ILogger<CustomerController> logger) : BaseApiController
     {
+        private readonly IMediator _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
         private readonly ICustomerService _customerService = customerService ?? throw new ArgumentNullException(nameof(customerService));
         private readonly ILogger<CustomerController> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
@@ -39,13 +48,12 @@ namespace Core_API.Web.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> Create([FromBody] CustomerCreateDto dto)
+        public async Task<IActionResult> Create([FromBody] CreateCustomerCommand command)
         {
             try
             {
                 if (!ModelState.IsValid)
                 {
-                    _logger.LogWarning("Invalid model state for customer creation.");
                     return BadRequest(new ProblemDetails
                     {
                         Title = "Invalid Request",
@@ -54,17 +62,8 @@ namespace Core_API.Web.Controllers
                         Extensions = { { "errors", ModelState } }
                     });
                 }
+                var result = await _mediator.Send(command);
 
-                var context = CurrentContext;
-                // Validate permissions using base controller helpers
-                if (!IsSuperAdmin && !context.CompanyId.HasValue)
-                {
-                    _logger.LogWarning("Unauthorized customer creation attempt - missing company context");
-                    return Forbid("Cannot create customer without company context");
-                }
-
-                _logger.LogInformation("Creating customer for company {CompanyId} by user {UserId}", context.CompanyId, context.UserId);
-                var result = await _customerService.CreateAsync(dto, context);
                 if (!result.IsSuccess)
                 {
                     _logger.LogWarning("Customer creation failed: {ErrorMessage}", result.ErrorMessage);
@@ -86,13 +85,14 @@ namespace Core_API.Web.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error creating customer");
-                return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
+                return StatusCode(500, new ProblemDetails
                 {
                     Title = "Internal Server Error",
                     Detail = "An unexpected error occurred while creating the customer."
                 });
             }
         }
+
 
         /// <summary>
         /// Updates an existing customer.
@@ -109,17 +109,17 @@ namespace Core_API.Web.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> Update(int id, [FromBody] CustomerUpdateDto dto)
+        public async Task<IActionResult> Update(int id, [FromBody] UpdateCustomerCommand command)
         {
             try
             {
-                if (!ModelState.IsValid || id != dto.Id)
+                if (!ModelState.IsValid || id != command.Id)
                 {
-                    _logger.LogWarning("Invalid model state or ID mismatch for customer update. ID: {Id}, DTO ID: {DtoId}", id, dto.Id);
+                    _logger.LogWarning("Invalid model state or ID mismatch for customer update. ID: {Id}, DTO ID: {DtoId}", id, command.Id);
                     return BadRequest(new ProblemDetails
                     {
                         Title = "Invalid Request",
-                        Detail = id != dto.Id ? "ID in URL does not match DTO ID." : "Invalid customer data provided.",
+                        Detail = id != command.Id ? "ID in URL does not match DTO ID." : "Invalid customer data provided.",
                         Status = StatusCodes.Status400BadRequest,
                         Extensions = { { "errors", ModelState } }
                     });
@@ -129,7 +129,10 @@ namespace Core_API.Web.Controllers
                 _logger.LogInformation("Updating customer {CustomerId} for company {CompanyId} by user {UserId}",
                    id, context.CompanyId, context.UserId);
 
-                var result = await _customerService.UpdateAsync(dto, context);
+                command = command with { Context = context };
+
+                var result = await _mediator.Send(command);
+
                 if (!result.IsSuccess)
                 {
                     _logger.LogWarning("Customer update failed: {ErrorMessage}", result.ErrorMessage);
@@ -191,7 +194,9 @@ namespace Core_API.Web.Controllers
                 _logger.LogInformation("Deleting customer {CustomerId} for company {CompanyId} by user {UserId}",
                     id, context.CompanyId, context.UserId);
 
-                var result = await _customerService.DeleteAsync(id, context);
+                var command = new DeleteCustomerCommand { Id = id, Context = context };
+
+                var result = await _mediator.Send(command);
 
                 if (!result.IsSuccess)
                 {
@@ -250,9 +255,13 @@ namespace Core_API.Web.Controllers
             try
             {
                 var context = CurrentContext;
+
                 _logger.LogInformation("Retrieving customer {CustomerId} for company {CompanyId}", id, context.CompanyId);
 
-                var result = await _customerService.GetByIdAsync(id, context);
+                var query = new GetCustomerByIdQuery { Id = id, Context = context };
+
+                var result = await _mediator.Send(query);
+
                 if (!result.IsSuccess)
                 {
                     _logger.LogWarning("Customer retrieval failed: {ErrorMessage}", result.ErrorMessage);
@@ -274,7 +283,7 @@ namespace Core_API.Web.Controllers
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving customer {CustomerId}", id);
-                return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
+                return StatusCode(500, new ProblemDetails
                 {
                     Title = "Internal Server Error",
                     Detail = "An unexpected error occurred while retrieving the customer."
@@ -326,8 +335,17 @@ namespace Core_API.Web.Controllers
                 }
                 _logger.LogInformation("Retrieving paged customers for company {CompanyId}, page {PageNumber}, size {PageSize}, search: {Search}, status: {Status}",
                       context.CompanyId, filter.PageNumber, filter.PageSize, filter.Search ?? "none", filter.Status ?? "none");
+                var query = new GetCustomersQuery
+                {
+                    PageNumber = filter.PageNumber,
+                    PageSize = filter.PageSize,
+                    Search = filter.Search,
+                    Status = filter.Status,
+                    Context = context
+                };
 
-                var result = await _customerService.GetPagedAsync(context, filter);
+                var result = await _mediator.Send(query);
+
                 if (!result.IsSuccess)
                 {
                     _logger.LogWarning("Paged customers retrieval failed: {ErrorMessage}", result.ErrorMessage);
@@ -341,21 +359,17 @@ namespace Core_API.Web.Controllers
 
                 return Ok(result.Data);
             }
-            catch (UnauthorizedAccessException ex)
-            {
-                _logger.LogWarning(ex, "Unauthorized access during paged customer retrieval.");
-                return Unauthorized(new ProblemDetails { Title = "Unauthorized", Detail = ex.Message });
-            }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error retrieving paged customers");
-                return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
+                return StatusCode(500, new ProblemDetails
                 {
                     Title = "Internal Server Error",
                     Detail = "An unexpected error occurred while retrieving customers."
                 });
             }
         }
+
 
         /// <summary>
         /// Retrieves customer statistics for the authenticated user's company.
@@ -377,7 +391,10 @@ namespace Core_API.Web.Controllers
                 var context = CurrentContext;
                 _logger.LogInformation("Retrieving customer stats for company {CompanyId}", context.CompanyId);
 
-                var result = await _customerService.GetStatsAsync(context);
+                var query = new GetCustomerStatsQuery { Context = context };
+
+                var result = await _mediator.Send(query);
+
                 if (!result.IsSuccess)
                 {
                     _logger.LogWarning("Customer stats retrieval failed: {ErrorMessage}", result.ErrorMessage);
@@ -408,133 +425,189 @@ namespace Core_API.Web.Controllers
         }
 
         /// <summary>
-        /// Exports customers to Excel based on filter parameters.
+        /// Gets all invoices for a specific customer
         /// </summary>
-        /// <param name="filter">The filter parameters for exporting customers.</param>
-        /// <returns>An Excel file containing the filtered customers.</returns>
-        /// <response code="200">Excel file generated successfully.</response>
-        /// <response code="400">Invalid filter parameters or export failed.</response>
-        /// <response code="401">Unauthorized access due to invalid token.</response>
-        /// <response code="500">Internal server error.</response>
-        [HttpGet("export/excel")]
+        /// <param name="customerId">The customer ID</param>
+        /// <returns>List of customer invoices</returns>
+        [HttpGet("{customerId}/invoices")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> ExportExcel([FromQuery] CustomerFilterRequestDto filter)
+        public async Task<IActionResult> GetCustomerInvoices(int customerId)
         {
             try
             {
-                if (!filter.IsValid())
+                var context = CurrentContext;
+                _logger.LogInformation("Retrieving invoices for customer {CustomerId}", customerId);
+
+                var query = new GetCustomerInvoicesQuery
                 {
-                    _logger.LogWarning("Invalid filter parameters for Excel export: search={Search}, status={Status}",
-                        filter.Search ?? "none", filter.Status ?? "none");
-                    return BadRequest(new ProblemDetails
+                    CustomerId = customerId,
+                    Context = context
+                };
+
+                var result = await _mediator.Send(query);
+
+                if (!result.IsSuccess)
+                {
+                    return NotFound(new ProblemDetails
                     {
-                        Title = "Invalid Filter Parameters",
-                        Detail = "Invalid filter parameters for export.",
-                        Status = StatusCodes.Status400BadRequest
+                        Title = "Customer Not Found",
+                        Detail = result.ErrorMessage,
+                        Status = StatusCodes.Status404NotFound
                     });
                 }
 
-                var context = CurrentContext;
-                _logger.LogInformation("Exporting customers to Excel for company {CompanyId}, search: {Search}, status: {Status}",
-                  context.CompanyId, filter.Search ?? "none", filter.Status ?? "none");
-
-                //var result = await _customerService.ExportExcelAsync(operationContext, filter);
-                //if (!result.IsSuccess)
-                //{
-                //    _logger.LogWarning("Excel export failed: {ErrorMessage}", result.ErrorMessage);
-                //    return BadRequest(new ProblemDetails
-                //    {
-                //        Title = "Export Failed",
-                //        Detail = result.ErrorMessage,
-                //        Status = StatusCodes.Status400BadRequest
-                //    });
-                //}
-
-                //return File(result.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "customers.xlsx");
-                return Ok();
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                _logger.LogWarning(ex, "Unauthorized access during Excel export.");
-                return Unauthorized(new ProblemDetails { Title = "Unauthorized", Detail = ex.Message });
+                return Ok(result.Data);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error exporting customers to Excel");
-                return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
+                _logger.LogError(ex, "Error retrieving customer invoices for customer {CustomerId}", customerId);
+                return StatusCode(500, new ProblemDetails
                 {
                     Title = "Internal Server Error",
-                    Detail = "An unexpected error occurred while exporting customers."
+                    Detail = "An unexpected error occurred while retrieving customer invoices."
                 });
             }
         }
 
         /// <summary>
-        /// Exports customers to PDF based on filter parameters.
+        /// Gets all payments for a specific customer
         /// </summary>
-        /// <param name="filter">The filter parameters for exporting customers.</param>
-        /// <returns>A PDF file containing the filtered customers.</returns>
-        /// <response code="200">PDF file generated successfully.</response>
-        /// <response code="400">Invalid filter parameters or export failed.</response>
-        /// <response code="401">Unauthorized access due to invalid token.</response>
-        /// <response code="500">Internal server error.</response>
-        [HttpGet("export/pdf")]
+        /// <param name="customerId">The customer ID</param>
+        /// <returns>List of customer payments</returns>
+        [HttpGet("{customerId}/payments")]
         [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        public async Task<IActionResult> ExportPdf([FromQuery] CustomerFilterRequestDto filter)
+        public async Task<IActionResult> GetCustomerPayments(int customerId)
         {
             try
             {
-                if (!filter.IsValid())
+                var context = CurrentContext;
+                _logger.LogInformation("Retrieving payments for customer {CustomerId}", customerId);
+
+                var query = new GetCustomerPaymentsQuery
                 {
-                    _logger.LogWarning("Invalid filter parameters for PDF export: search={Search}, status={Status}",
-                        filter.Search ?? "none", filter.Status ?? "none");
-                    return BadRequest(new ProblemDetails
+                    CustomerId = customerId,
+                    Context = context
+                };
+
+                var result = await _mediator.Send(query);
+
+                if (!result.IsSuccess)
+                {
+                    return NotFound(new ProblemDetails
                     {
-                        Title = "Invalid Filter Parameters",
-                        Detail = "Invalid filter parameters for export.",
-                        Status = StatusCodes.Status400BadRequest
+                        Title = "Customer Not Found",
+                        Detail = result.ErrorMessage,
+                        Status = StatusCodes.Status404NotFound
                     });
                 }
 
-                var context = CurrentContext;
-
-                _logger.LogInformation("Exporting customers to PDF for company {CompanyId}, search: {Search}, status: {Status}",
-                 context.CompanyId, filter.Search ?? "none", filter.Status ?? "none");
-
-
-                //var result = await _customerService.ExportPdfAsync(operationContext, filter);
-                //if (!result.IsSuccess)
-                //{
-                //    _logger.LogWarning("PDF export failed: {ErrorMessage}", result.ErrorMessage);
-                //    return BadRequest(new ProblemDetails
-                //    {
-                //        Title = "Export Failed",
-                //        Detail = result.ErrorMessage,
-                //        Status = StatusCodes.Status400BadRequest
-                //    });
-                //}
-                //return File(result.Data, "application/pdf", "customers.pdf");
-                return Ok();
-               
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                _logger.LogWarning(ex, "Unauthorized access during PDF export.");
-                return Unauthorized(new ProblemDetails { Title = "Unauthorized", Detail = ex.Message });
+                return Ok(result.Data);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error exporting customers to PDF");
-                return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
+                _logger.LogError(ex, "Error retrieving customer payments for customer {CustomerId}", customerId);
+                return StatusCode(500, new ProblemDetails
                 {
                     Title = "Internal Server Error",
-                    Detail = "An unexpected error occurred while exporting customers."
+                    Detail = "An unexpected error occurred while retrieving customer payments."
+                });
+            }
+        }
+
+        /// <summary>
+        /// Gets recent activities for a specific customer
+        /// </summary>
+        /// <param name="customerId">The customer ID</param>
+        /// <returns>List of customer activities</returns>
+        [HttpGet("{customerId}/activities")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> GetCustomerActivities(int customerId)
+        {
+            try
+            {
+                var context = CurrentContext;
+                _logger.LogInformation("Retrieving activities for customer {CustomerId}", customerId);
+
+                var query = new GetCustomerActivitiesQuery
+                {
+                    CustomerId = customerId,
+                    Context = context
+                };
+
+                var result = await _mediator.Send(query);
+
+                if (!result.IsSuccess)
+                {
+                    return NotFound(new ProblemDetails
+                    {
+                        Title = "Customer Not Found",
+                        Detail = result.ErrorMessage,
+                        Status = StatusCodes.Status404NotFound
+                    });
+                }
+
+                return Ok(result.Data);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving customer activities for customer {CustomerId}", customerId);
+                return StatusCode(500, new ProblemDetails
+                {
+                    Title = "Internal Server Error",
+                    Detail = "An unexpected error occurred while retrieving customer activities."
+                });
+            }
+        }
+
+        /// <summary>
+        /// Gets spending trend for a specific customer
+        /// </summary>
+        /// <param name="customerId">The customer ID</param>
+        /// <returns>List of spending trend data</returns>
+        [HttpGet("{customerId}/spending-trend")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        public async Task<IActionResult> GetCustomerSpendingTrend(int customerId)
+        {
+            try
+            {
+                var context = CurrentContext;
+                _logger.LogInformation("Retrieving spending trend for customer {CustomerId}", customerId);
+
+                var query = new GetCustomerSpendingTrendQuery
+                {
+                    CustomerId = customerId,
+                    Context = context
+                };
+
+                var result = await _mediator.Send(query);
+
+                if (!result.IsSuccess)
+                {
+                    return NotFound(new ProblemDetails
+                    {
+                        Title = "Customer Not Found",
+                        Detail = result.ErrorMessage,
+                        Status = StatusCodes.Status404NotFound
+                    });
+                }
+
+                return Ok(result.Data);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error retrieving spending trend for customer {CustomerId}", customerId);
+                return StatusCode(500, new ProblemDetails
+                {
+                    Title = "Internal Server Error",
+                    Detail = "An unexpected error occurred while retrieving spending trend."
                 });
             }
         }
