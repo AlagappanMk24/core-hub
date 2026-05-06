@@ -1,0 +1,195 @@
+<div class="send-email-dialog" @dialogFadeIn>
+  <div class="dialog-header">
+    <h2>Send Email to {{ data.customerName }}</h2>
+    <button class="close-btn" (click)="onCancel()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+
+  <div class="dialog-content">
+    <!-- Email Preview Mode -->
+    <div class="email-preview" *ngIf="showPreview">
+      <div class="preview-header">
+        <h3>Email Preview</h3>
+        <button class="edit-btn" (click)="showPreview = false">
+          <mat-icon>edit</mat-icon> Edit
+        </button>
+      </div>
+      <div class="preview-body">
+        <div class="preview-field"><strong>To:</strong> {{ emailData.to }}</div>
+        <div class="preview-field" *ngIf="emailData.cc">
+          <strong>Cc:</strong> {{ emailData.cc }}
+        </div>
+        <div class="preview-field" *ngIf="emailData.bcc">
+          <strong>Bcc:</strong> {{ emailData.bcc }}
+        </div>
+        <div class="preview-field">
+          <strong>Subject:</strong> {{ emailData.subject }}
+        </div>
+        <div
+          class="preview-message"
+          [innerHTML]="emailData.message | nl2br"
+        ></div>
+        <div class="preview-attachments" *ngIf="emailData.attachPdf">
+          <mat-icon>attachment</mat-icon>
+          <span>1 attachment (PDF document)</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Mode -->
+    <div class="email-form" *ngIf="!showPreview">
+      <!-- Recipients Section -->
+      <div class="form-section">
+        <label class="section-label">Recipients</label>
+
+        <div class="form-field">
+          <label>To *</label>
+          <div class="input-with-icon">
+            <mat-icon class="input-icon">person</mat-icon>
+            <input
+              type="email"
+              class="form-input"
+              [(ngModel)]="emailData.to"
+              required
+            />
+          </div>
+        </div>
+
+        <div class="form-field" *ngIf="showCc">
+          <label>Cc</label>
+          <div class="input-with-icon">
+            <mat-icon class="input-icon">people</mat-icon>
+            <input type="text" class="form-input" [(ngModel)]="emailData.cc" />
+          </div>
+        </div>
+        <button
+          class="add-option-btn"
+          (click)="showCc = !showCc"
+          *ngIf="!showCc"
+        >
+          <mat-icon>add</mat-icon> Add Cc
+        </button>
+         <button
+          class="remove-option-btn"
+          (click)="showCc = false; emailData.cc = ''"
+          *ngIf="showCc"
+        >
+          <mat-icon>remove</mat-icon> Remove Cc
+        </button>
+
+        <div class="form-field" *ngIf="showBcc">
+          <label>Bcc</label>
+          <div class="input-with-icon">
+            <mat-icon class="input-icon">visibility_off</mat-icon>
+            <input type="text" class="form-input" [(ngModel)]="emailData.bcc" />
+          </div>
+        </div>
+        <button
+          class="add-option-btn"
+          (click)="showBcc = !showBcc"
+          *ngIf="!showBcc"
+        >
+          <mat-icon>add</mat-icon> Add Bcc
+        </button>
+          <button
+          class="remove-option-btn"
+          (click)="showBcc = false; emailData.bcc = ''"
+          *ngIf="showBcc"
+        >
+          <mat-icon>remove</mat-icon> Remove Bcc
+        </button>
+      </div>
+
+      <!-- Template Selection -->
+      <div class="form-section">
+        <label class="section-label">Quick Templates</label>
+        <div class="template-radio-group">
+          <label *ngFor="let template of templateKeys" class="radio-label">
+            <input
+              type="radio"
+              name="template"
+              [value]="template"
+              [(ngModel)]="selectedTemplate"
+              (change)="applyTemplate(template)"
+            />
+            <span class="radio-custom"></span>
+            <span class="radio-text">{{ getTemplateLabel(template) }}</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Subject Field -->
+      <div class="form-section">
+        <div class="form-field">
+          <label>Subject *</label>
+          <input
+            type="text"
+            class="form-input"
+            [(ngModel)]="emailData.subject"
+            required
+          />
+        </div>
+      </div>
+
+      <!-- Message Body -->
+      <div class="form-section">
+        <div class="form-field">
+          <label>Message *</label>
+          <textarea
+            class="form-textarea"
+            [(ngModel)]="emailData.message"
+            rows="8"
+            required
+          ></textarea>
+        </div>
+      </div>
+
+      <!-- Options Section -->
+      <div class="form-section">
+        <label class="section-label">Options</label>
+        <div class="checkbox-wrapper">
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="emailData.attachPdf" />
+            <span class="checkbox-custom"></span>
+            <span class="checkbox-text">Attach PDF document</span>
+          </label>
+          <p class="checkbox-description">
+            A PDF statement will be attached to the email
+          </p>
+        </div>
+        <div class="checkbox-wrapper">
+          <label class="checkbox-label">
+            <input type="checkbox" [(ngModel)]="emailData.sendCopyToSelf" />
+            <span class="checkbox-custom"></span>
+            <span class="checkbox-text">Send a copy to myself</span>
+          </label>
+          <p class="checkbox-description">
+            You will receive a BCC copy for your records
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="dialog-actions">
+    <button class="cancel-btn" (click)="onCancel()" [disabled]="isSending">
+      Cancel
+    </button>
+    <button class="preview-btn" (click)="togglePreview()" *ngIf="!showPreview">
+      <mat-icon>visibility</mat-icon> Preview
+    </button>
+    <button class="back-btn" (click)="showPreview = false" *ngIf="showPreview">
+      <mat-icon>arrow_back</mat-icon> Back
+    </button>
+    <button
+      class="send-btn"
+      (click)="sendEmail()"
+      [disabled]="!isFormValid() || isSending"
+    >
+      <mat-spinner *ngIf="isSending" diameter="20"></mat-spinner>
+      <mat-icon *ngIf="!isSending">send</mat-icon>
+      {{ isSending ? "Sending..." : "Send Email" }}
+    </button>
+  </div>
+</div>

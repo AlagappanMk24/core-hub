@@ -1,0 +1,807 @@
+<div class="customer-container">
+  <div class="content-wrapper" [class.blurred]="exportingFormat">
+    <!-- Header Section -->
+    <div class="header">
+      <div class="header-left">
+        <h1 class="title">Customers</h1>
+        <p class="subtitle">Manage and track all your customer relationships</p>
+      </div>
+      <!-- <div class="header-actions">
+        <button
+          *ngIf="isAdmin"
+          mat-stroked-button
+          class="action-btn export-btn"
+          [matMenuTriggerFor]="exportMenu"
+          [disabled]="exportingFormat"
+        >
+          <mat-icon>file_download</mat-icon> Export
+        </button>
+        <mat-menu #exportMenu="matMenu">
+          <button mat-menu-item (click)="onExport('excel')" [disabled]="exportingFormat">
+            <mat-icon>table_chart</mat-icon> Export as Excel
+          </button>
+          <button mat-menu-item (click)="onExport('pdf')" [disabled]="exportingFormat">
+            <mat-icon>picture_as_pdf</mat-icon> Export as PDF
+          </button>
+        </mat-menu>
+        <button
+          *ngIf="isAdmin"
+          mat-stroked-button
+          class="action-btn import-btn"
+          (click)="onImport()"
+          [disabled]="exportingFormat"
+        >
+          <mat-icon>file_upload</mat-icon> Import
+        </button>
+        <button
+          *ngIf="isAdmin || isUser"
+          mat-raised-button
+          color="primary"
+          class="action-btn create-btn"
+          (click)="onCreateCustomer()"
+          [disabled]="exportingFormat"
+        >
+          <mat-icon>add</mat-icon> Create Customer
+        </button>
+      </div> -->
+      <div class="header-actions">
+        <button
+          mat-icon-button
+          class="refresh-btn"
+          (click)="refreshData()"
+          matTooltip="Refresh Data"
+        >
+          <mat-icon>refresh</mat-icon>
+        </button>
+        <button
+          mat-icon-button
+          [matMenuTriggerFor]="columnsMenu"
+          matTooltip="Show/Hide Columns"
+        >
+          <mat-icon>view_column</mat-icon>
+        </button>
+        <mat-menu #columnsMenu="matMenu">
+          <div class="columns-menu">
+            <button
+              mat-menu-item
+              *ngFor="let col of columnOptions"
+              (click)="toggleColumn(col.key)"
+            >
+              <mat-icon>{{
+                visibleColumns[col.key]
+                  ? "check_box"
+                  : "check_box_outline_blank"
+              }}</mat-icon>
+              {{ col.label }}
+            </button>
+          </div>
+        </mat-menu>
+        <button
+          *ngIf="isAdmin"
+          mat-stroked-button
+          class="action-btn export-btn"
+          [matMenuTriggerFor]="exportMenu"
+          [disabled]="exportingFormat"
+        >
+          <mat-icon>file_download</mat-icon> Export
+        </button>
+        <mat-menu #exportMenu="matMenu">
+          <button
+            mat-menu-item
+            (click)="exportCustomers('excel')"
+            [disabled]="exportingFormat"
+          >
+            <mat-icon>table_chart</mat-icon> Export as Excel
+          </button>
+          <button
+            mat-menu-item
+            (click)="exportCustomers('pdf')"
+            [disabled]="exportingFormat"
+          >
+            <mat-icon>picture_as_pdf</mat-icon> Export as PDF
+          </button>
+          <button mat-menu-item (click)="printCustomerList()">
+            <mat-icon>print</mat-icon> Print List
+          </button>
+        </mat-menu>
+        <button
+          *ngIf="isAdmin || isUser"
+          mat-raised-button
+          color="primary"
+          class="action-btn create-btn"
+          (click)="onCreateCustomer()"
+          [disabled]="exportingFormat"
+        >
+          <mat-icon>add</mat-icon> Create Customer
+        </button>
+      </div>
+    </div>
+
+    <!-- Bulk Actions Toolbar -->
+    <div
+      class="bulk-actions-toolbar"
+      *ngIf="selectedCustomers.size > 0"
+      @slideIn
+    >
+      <div class="bulk-info">
+        <mat-icon>check_circle</mat-icon>
+        <span>{{ selectedCustomers.size }} customer(s) selected</span>
+      </div>
+      <div class="bulk-actions">
+        <button mat-stroked-button (click)="bulkExportSelected()">
+          <mat-icon>file_download</mat-icon> Export
+        </button>
+        <button mat-stroked-button color="warn" (click)="bulkDelete()">
+          <mat-icon>delete</mat-icon> Delete
+        </button>
+        <button mat-button (click)="selectedCustomers.clear()">
+          <mat-icon>close</mat-icon> Clear
+        </button>
+      </div>
+    </div>
+
+    <!-- Enhanced Stats Cards Section -->
+    <div class="stats-section">
+      <!-- All Customers Card -->
+      <div
+        class="stat-card all-card"
+        [class.active]="selectedStatus === 'All'"
+        (click)="onSelectStatus('All')"
+        @scaleIn
+      >
+        <div class="stat-card-bg"></div>
+        <div class="stat-card-content">
+          <div class="stat-header">
+            <div class="stat-icon-wrapper all-icon">
+              <mat-icon>people_alt</mat-icon>
+            </div>
+            <div class="stat-info">
+              <span class="stat-label">Total Customers</span>
+              <div class="stat-value-wrapper">
+                <span class="stat-value">{{ animateValue("allCount") }}</span>
+                <span
+                  class="stat-trend"
+                  [class.positive]="stats.allChange >= 0"
+                  [class.negative]="stats.allChange < 0"
+                >
+                  <mat-icon class="trend-icon">{{
+                    stats.allChange >= 0 ? "arrow_upward" : "arrow_downward"
+                  }}</mat-icon>
+                  {{ stats.allChange | number: "1.1-1" }}%
+                </span>
+              </div>
+            </div>
+          </div>
+          <div class="stat-footer">
+            <span class="stat-subtitle">vs last 30 days</span>
+          </div>
+        </div>
+        <div class="stat-card-overlay"></div>
+      </div>
+
+      <!-- Active Customers Card -->
+      <div
+        class="stat-card active-card"
+        [class.active]="selectedStatus === 'Active'"
+        (click)="onSelectStatus('Active')"
+        @scaleIn
+      >
+        <div class="stat-card-bg"></div>
+        <div class="stat-card-content">
+          <div class="stat-header">
+            <div class="stat-icon-wrapper active-icon">
+              <mat-icon>person_check</mat-icon>
+            </div>
+            <div class="stat-info">
+              <span class="stat-label">Active Customers</span>
+              <div class="stat-value-wrapper">
+                <span class="stat-value">{{ stats.activeCount }}</span>
+                <span
+                  class="stat-trend"
+                  [class.positive]="stats.activeChange >= 0"
+                  [class.negative]="stats.activeChange < 0"
+                >
+                  <mat-icon class="trend-icon">{{
+                    stats.activeChange >= 0 ? "arrow_upward" : "arrow_downward"
+                  }}</mat-icon>
+                  {{ stats.activeChange | number: "1.1-1" }}%
+                </span>
+              </div>
+            </div>
+          </div>
+          <div class="stat-footer">
+            <div class="progress-bar-container">
+              <div
+                class="progress-bar"
+                [style.width]="getActivePercentage() + '%'"
+              ></div>
+            </div>
+            <span class="stat-subtitle"
+              >{{ getActivePercentage() }}% of total</span
+            >
+          </div>
+        </div>
+        <div class="stat-card-overlay"></div>
+      </div>
+
+      <!-- Inactive Customers Card -->
+      <div
+        class="stat-card inactive-card"
+        [class.active]="selectedStatus === 'Inactive'"
+        (click)="onSelectStatus('Inactive')"
+        @scaleIn
+      >
+        <div class="stat-card-bg"></div>
+        <div class="stat-card-content">
+          <div class="stat-header">
+            <div class="stat-icon-wrapper inactive-icon">
+              <mat-icon>person_off</mat-icon>
+            </div>
+            <div class="stat-info">
+              <span class="stat-label">Inactive Customers</span>
+              <div class="stat-value-wrapper">
+                <span class="stat-value">{{ stats.inactiveCount }}</span>
+                <span
+                  class="stat-trend"
+                  [class.positive]="stats.inactiveChange >= 0"
+                  [class.negative]="stats.inactiveChange < 0"
+                >
+                  <mat-icon class="trend-icon">{{
+                    stats.inactiveChange >= 0
+                      ? "arrow_upward"
+                      : "arrow_downward"
+                  }}</mat-icon>
+                  {{ stats.inactiveChange | number: "1.1-1" }}%
+                </span>
+              </div>
+            </div>
+          </div>
+          <div class="stat-footer">
+            <div class="progress-bar-container">
+              <div
+                class="progress-bar bg-gray-400"
+                [style.width]="getInactivePercentage() + '%'"
+              ></div>
+            </div>
+            <span class="stat-subtitle"
+              >{{ getInactivePercentage() }}% of total</span
+            >
+          </div>
+        </div>
+        <div class="stat-card-overlay"></div>
+      </div>
+    </div>
+
+    <!-- Additional Metrics Row -->
+    <div class="metrics-section" @fadeIn>
+      <div class="metric-card">
+        <div class="metric-icon">
+          <mat-icon>attach_money</mat-icon>
+        </div>
+        <div class="metric-info">
+          <span class="metric-label">Total Lifetime Value</span>
+          <span class="metric-value"
+            >${{ getTotalLifetimeValue() | number: "1.2-2" }}</span
+          >
+        </div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon">
+          <mat-icon>shopping_cart</mat-icon>
+        </div>
+        <div class="metric-info">
+          <span class="metric-label">Avg Order Value</span>
+          <span class="metric-value"
+            >${{ getAverageOrderValue() | number: "1.2-2" }}</span
+          >
+        </div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon">
+          <mat-icon>trending_up</mat-icon>
+        </div>
+        <div class="metric-info">
+          <span class="metric-label">Customer Health</span>
+          <span
+            class="metric-value health-value"
+            [class.healthy]="getCustomerHealth() >= 70"
+            [class.warning]="
+              getCustomerHealth() >= 40 && getCustomerHealth() < 70
+            "
+            [class.critical]="getCustomerHealth() < 40"
+          >
+            {{ getCustomerHealth() }}%
+          </span>
+        </div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-icon">
+          <mat-icon>calendar_today</mat-icon>
+        </div>
+        <div class="metric-info">
+          <span class="metric-label">Avg Payment Days</span>
+          <span class="metric-value">{{ getAveragePaymentDays() }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="filters-section">
+      <div class="search-container">
+        <mat-icon class="search-icon">search</mat-icon>
+        <input
+          type="text"
+          class="search-input"
+          placeholder="Search by name, email, or phone..."
+          [(ngModel)]="searchTerm"
+          (ngModelChange)="onSearch($event)"
+          [disabled]="exportingFormat !== null"
+        />
+      </div>
+      <div class="filter-chips">
+        <button
+          class="filter-chip"
+          [class.active]="selectedStatus === 'All'"
+          (click)="onSelectStatus('All')"
+        >
+          <mat-icon>people</mat-icon>
+          All
+        </button>
+        <button
+          class="filter-chip"
+          [class.active]="selectedStatus === 'Active'"
+          (click)="onSelectStatus('Active')"
+        >
+          <mat-icon>check_circle</mat-icon>
+          Active
+        </button>
+        <button
+          class="filter-chip"
+          [class.active]="selectedStatus === 'Inactive'"
+          (click)="onSelectStatus('Inactive')"
+        >
+          <mat-icon>cancel</mat-icon>
+          Inactive
+        </button>
+        <button
+          class="filter-chip"
+          (click)="showAdvancedFilters = !showAdvancedFilters"
+        >
+          <mat-icon>tune</mat-icon>Filters
+        </button>
+      </div>
+      <div class="more-filters">
+        <button
+          *ngIf="isAdmin"
+          mat-stroked-button
+          class="filter-btn"
+          (click)="onMoreFilters()"
+          [disabled]="exportingFormat || isLoading"
+        >
+          <mat-icon>tune</mat-icon> More filters
+        </button>
+      </div>
+    </div>
+    <!-- Advanced Filters Panel -->
+    <div class="advanced-filters-panel" *ngIf="showAdvancedFilters" @fadeIn>
+      <div class="advanced-filters-grid">
+        <div class="filter-group">
+          <label>Total Purchases Range</label>
+          <div class="range-inputs">
+            <input
+              type="number"
+              placeholder="Min"
+              [(ngModel)]="advancedFilters.minTotalPurchases"
+            />
+            <span>-</span>
+            <input
+              type="number"
+              placeholder="Max"
+              [(ngModel)]="advancedFilters.maxTotalPurchases"
+            />
+          </div>
+        </div>
+        <div class="filter-group">
+          <label>Country</label>
+          <select [(ngModel)]="advancedFilters.country">
+            <option value="">All Countries</option>
+            <option *ngFor="let country of countries" [value]="country">
+              {{ country }}
+            </option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Customer Group</label>
+          <select [(ngModel)]="advancedFilters.customerGroup">
+            <option value="">All Groups</option>
+            <option *ngFor="let group of customerGroups" [value]="group">
+              {{ group }}
+            </option>
+          </select>
+        </div>
+        <div class="filter-group">
+          <label>Credit Limit Range</label>
+          <div class="range-inputs">
+            <input
+              type="number"
+              placeholder="Min"
+              [(ngModel)]="advancedFilters.minCreditLimit"
+            />
+            <span>-</span>
+            <input
+              type="number"
+              placeholder="Max"
+              [(ngModel)]="advancedFilters.maxCreditLimit"
+            />
+          </div>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <button class="apply-filters-btn" (click)="applyAdvancedFilters()">
+          Apply Filters</button
+        ><button class="reset-filters-btn" (click)="resetAdvancedFilters()">
+          Reset
+        </button>
+      </div>
+    </div>
+
+    <!-- Customer Table -->
+    <div class="table-container">
+      <table class="customer-table">
+        <thead>
+          <tr>
+            <th>
+              <mat-checkbox
+                [checked]="isAllSelected()"
+                [indeterminate]="isIndeterminate()"
+                (change)="toggleSelectAll()"
+              ></mat-checkbox>
+            </th>
+            <th
+              class="sortable"
+              *ngIf="visibleColumns.name"
+              (click)="sortBy('name')"
+            >
+              Name
+              <mat-icon *ngIf="sortField === 'name'" class="sort-icon">{{
+                sortDirection === "asc" ? "arrow_upward" : "arrow_downward"
+              }}</mat-icon>
+            </th>
+            <th *ngIf="isSuperAdmin && visibleColumns.company">Company</th>
+            <th *ngIf="visibleColumns.email">Email</th>
+            <th *ngIf="visibleColumns.phone">Phone</th>
+            <!-- <th *ngIf="visibleColumns.address">Address</th> -->
+            <th *ngIf="visibleColumns.status">Status</th>
+            <th
+              class="sortable"
+              *ngIf="visibleColumns.totalPurchases"
+              (click)="sortBy('totalPurchases')"
+            >
+              Total Purchases
+              <mat-icon
+                *ngIf="sortField === 'totalPurchases'"
+                class="sort-icon"
+                >{{
+                  sortDirection === "asc" ? "arrow_upward" : "arrow_downward"
+                }}</mat-icon
+              >
+            </th>
+            <!-- <th *ngIf="visibleColumns.creditLimit">Credit Limit</th>
+            <th *ngIf="visibleColumns.lastPurchase">Last Purchase</th> -->
+            <th *ngIf="visibleColumns.actions">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <ng-container *ngIf="isLoading; else customerData">
+            <tr class="skeleton-row" *ngFor="let _ of [1, 2, 3, 4, 5]">
+              <td><div class="skeleton skeleton-checkbox"></div></td>
+              <td><div class="skeleton skeleton-avatar"></div></td>
+              <td><div class="skeleton skeleton-text"></div></td>
+              <td><div class="skeleton skeleton-text"></div></td>
+              <td><div class="skeleton skeleton-text"></div></td>
+              <td><div class="skeleton skeleton-badge"></div></td>
+              <td><div class="skeleton skeleton-text"></div></td>
+              <td><div class="skeleton skeleton-actions"></div></td>
+            </tr>
+          </ng-container>
+          <ng-template #customerData>
+            <!-- <tr
+              *ngFor="let customer of customers; trackBy: trackByCustomer"
+              class="customer-row"
+              @fadeIn
+            >
+              <td class="customer-column">
+                <div class="customer-info">
+                  <div
+                    class="customer-avatar"
+                    [style.background]="getAvatarColor(customer.name)"
+                  >
+                    {{ getInitials(customer.name) }}
+                    <div
+                      class="avatar-status"
+                      [class.active]="customer.status === 'Active'"
+                    ></div>
+                  </div>
+                  <div class="customer-details">
+                    <span class="customer-name">{{ customer.name }}</span>
+                    <span class="customer-id">ID: #{{ customer.id }}</span>
+                  </div>
+                </div>
+              </td>
+              <td>
+                <div class="email-info">
+                  <mat-icon class="email-icon">email</mat-icon>
+                  <span>{{ customer.email }}</span>
+                </div>
+              </td>
+              <td>
+                <div class="phone-info">
+                  <mat-icon class="phone-icon">phone</mat-icon>
+                  <span>{{ customer.phoneNumber }}</span>
+                </div>
+              </td>
+              <td>
+                <div
+                  class="address-info"
+                  [matTooltip]="getFullAddress(customer)"
+                >
+                  <mat-icon class="address-icon">location_on</mat-icon>
+                  <span>{{ customer.city }}, {{ customer.countryCode }}</span>
+                </div>
+              </td>
+              <td>
+                <span
+                  class="status-badge"
+                  [class.active-status]="customer.status === 'Active'"
+                  [class.inactive-status]="customer.status !== 'Active'"
+                >
+                  <span class="status-dot"></span>
+                  {{ customer.status }}
+                </span>
+              </td>
+              <td class="amount-cell">
+                <span class="amount-value"
+                  >${{ customer.totalPurchases | number: "1.2-2" }}</span
+                >
+                <span class="amount-label">Lifetime</span>
+              </td>
+              <td class="actions">
+                <button
+                  *ngIf="isAdmin || isUser"
+                  mat-icon-button
+                  class="action-icon edit-btn"
+                  (click)="onEditCustomer(customer)"
+                  title="Edit Customer"
+                  [disabled]="exportingFormat || isLoading"
+                >
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button
+                  *ngIf="isAdmin"
+                  mat-icon-button
+                  class="action-icon delete-btn"
+                  (click)="onDeleteCustomer(customer)"
+                  title="Delete Customer"
+                  [disabled]="exportingFormat"
+                >
+                  <mat-icon>delete</mat-icon>
+                </button>
+                <button
+                  mat-icon-button
+                  class="action-icon more-btn"
+                  [matMenuTriggerFor]="customerMenu"
+                  title="More Actions"
+                >
+                  <mat-icon>more_vert</mat-icon>
+                </button>
+                <mat-menu #customerMenu="matMenu">
+                  <button mat-menu-item (click)="viewCustomerDetails(customer)">
+                    <mat-icon>visibility</mat-icon> View Details
+                  </button>
+                  <button mat-menu-item (click)="sendEmailToCustomer(customer)">
+                    <mat-icon>email</mat-icon> Send Email
+                  </button>
+                  <button
+                    mat-menu-item
+                    (click)="viewCustomerInvoices(customer)"
+                  >
+                    <mat-icon>receipt</mat-icon> View Invoices
+                  </button>
+                </mat-menu>
+              </td>
+            </tr> -->
+            <tr
+              *ngFor="let customer of customers; trackBy: trackByCustomer"
+              class="customer-row"
+              @fadeIn
+            >
+              <td>
+                <mat-checkbox
+                  [checked]="selectedCustomers.has(customer.id)"
+                  (change)="toggleSelectCustomer(customer.id)"
+                ></mat-checkbox>
+              </td>
+              <td class="customer-column" *ngIf="visibleColumns.name">
+                <div class="customer-info">
+                  <div
+                    class="customer-avatar"
+                    [style.background]="getAvatarColor(customer.name)"
+                  >
+                    {{ getInitials(customer.name) }}
+                    <div
+                      class="avatar-status"
+                      [class.active]="customer.status === 'Active'"
+                    ></div>
+                  </div>
+                  <div class="customer-details">
+                    <span class="customer-name">{{ customer.name }}</span
+                    ><span class="customer-id">ID: #{{ customer.id }}</span>
+                  </div>
+                </div>
+              </td>
+              <td *ngIf="isSuperAdmin && visibleColumns.company">
+                <div class="company-info">
+                  <mat-icon class="company-icon">business</mat-icon
+                  ><span>{{ customer.companyName || "N/A" }}</span>
+                </div>
+              </td>
+              <td *ngIf="visibleColumns.email">
+                <div class="email-info">
+                  <mat-icon class="email-icon">email</mat-icon
+                  ><span>{{ customer.email }}</span>
+                </div>
+              </td>
+              <td *ngIf="visibleColumns.phone">
+                <div class="phone-info">
+                  <mat-icon class="phone-icon">phone</mat-icon
+                  ><span>{{ customer.phoneNumber }}</span>
+                </div>
+              </td>
+              <!-- <td *ngIf="visibleColumns.address"><div class="address-info" [matTooltip]="customer.addressLine1 + ', ' + customer.city"><mat-icon class="address-icon">location_on</mat-icon><span>{{ customer.city }}, {{ customer.countryCode }}</span></div></td> -->
+              <td *ngIf="visibleColumns.status">
+                <span
+                  class="status-badge"
+                  [class.active-status]="customer.status === 'Active'"
+                  [class.inactive-status]="customer.status !== 'Active'"
+                  ><span class="status-dot"></span>{{ customer.status }}</span
+                >
+              </td>
+              <td class="amount-cell" *ngIf="visibleColumns.totalPurchases">
+                <span class="amount-value"
+                  >${{ customer.totalPurchases | number: "1.2-2" }}</span
+                ><span class="amount-label">Lifetime</span>
+              </td>
+              <!-- <td *ngIf="visibleColumns.creditLimit"><span class="credit-limit">${{ customer.creditLimit | number: "1.2-2" }}</span></td> -->
+              <!-- <td *ngIf="visibleColumns.lastPurchase"> <span class="last-purchase">{{ (customer.lastPurchaseDate | date: 'MMM d, y') || 'N/A' }}</span></td> -->
+              <td class="actions" *ngIf="visibleColumns.actions">
+                <button
+                  *ngIf="isAdmin || isUser"
+                  mat-icon-button
+                  class="action-icon edit-btn"
+                  (click)="onEditCustomer(customer)"
+                  title="Edit Customer"
+                >
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button
+                  *ngIf="isAdmin"
+                  mat-icon-button
+                  class="action-icon delete-btn"
+                  (click)="onDeleteCustomer(customer)"
+                  title="Delete Customer"
+                >
+                  <mat-icon>delete</mat-icon>
+                </button>
+                <button
+                  mat-icon-button
+                  class="action-icon more-btn"
+                  (click)="quickActions(customer)"
+                  title="Quick Actions"
+                >
+                  <mat-icon>bolt</mat-icon>
+                </button>
+                <button
+                  mat-icon-button
+                  class="action-icon view-btn"
+                  (click)="viewCustomerDetails(customer)"
+                  title="View Details"
+                >
+                  <mat-icon>visibility</mat-icon>
+                </button>
+              </td>
+            </tr>
+          </ng-template>
+        </tbody>
+      </table>
+
+      <!-- No Customers Message -->
+      <div class="no-customers" *ngIf="!isLoading && customers.length === 0">
+        <img
+          src="assets/no-user-found.jpg"
+          alt="No Customers"
+          class="no-customers-icon"
+        />
+        <ng-container
+          *ngIf="searchTerm || selectedStatus !== 'All'; else completelyEmpty"
+        >
+          <h2>No Results Found</h2>
+          <p>We couldn't find any customers matching your criteria.</p>
+          <button mat-stroked-button color="primary" (click)="clearFilters()">
+            Clear all filters
+          </button>
+        </ng-container>
+        <ng-template #completelyEmpty>
+          <h2>No Customers Found</h2>
+          <p>
+            Start by creating your first customer to manage your contacts
+            efficiently!
+          </p>
+          <button
+            *ngIf="isAdmin || isUser"
+            mat-raised-button
+            color="primary"
+            class="create-btn"
+            (click)="onCreateCustomer()"
+          >
+            <mat-icon>add</mat-icon> Create Your Customer
+          </button>
+        </ng-template>
+      </div>
+    </div>
+
+    <!-- Pagination Controls -->
+    <div class="pagination-container">
+      <div class="pagination-info">
+        <span
+          >Showing {{ (currentPage - 1) * itemsPerPage + 1 }} to
+          {{
+            currentPage * itemsPerPage > totalItems
+              ? totalItems
+              : currentPage * itemsPerPage
+          }}
+          of {{ totalItems }} entries</span
+        >
+      </div>
+      <div class="pagination-controls">
+        <button
+          mat-icon-button
+          class="pagination-btn"
+          [disabled]="currentPage === 1 || exportingFormat || isLoading"
+          (click)="previousPage()"
+        >
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+        <button
+          mat-button
+          class="pagination-btn page-number"
+          *ngFor="let page of getVisiblePages()"
+          [class.active]="page === currentPage"
+          (click)="goToPage(page)"
+          [disabled]="exportingFormat || isLoading"
+        >
+          {{ page }}
+        </button>
+        <button
+          mat-icon-button
+          class="pagination-btn"
+          [disabled]="
+            currentPage === totalPages || exportingFormat || isLoading
+          "
+          (click)="nextPage()"
+        >
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Export Progress -->
+  <div *ngIf="exportingFormat" class="progress-container" @fadeIn>
+    <mat-spinner diameter="32" color="accent"></mat-spinner>
+    <span>{{
+      exportingFormat === "excel"
+        ? "Exporting as Excel..."
+        : "Exporting as PDF..."
+    }}</span>
+  </div>
+</div>

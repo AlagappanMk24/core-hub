@@ -1,0 +1,264 @@
+<!-- src/app/modules/tasks/components/task-detail/task-detail.component.html -->
+<div class="task-detail-container">
+  <!-- Loading Spinner -->
+  <div *ngIf="loading" class="loading-container">
+    <mat-spinner diameter="40" color="accent"></mat-spinner>
+    <p>Loading task details...</p>
+  </div>
+
+  <div *ngIf="!loading && task" class="task-content">
+    <!-- Header Section -->
+    <div class="task-header">
+      <div class="header-left">
+        <button class="back-btn" (click)="goBack()">
+          <mat-icon>arrow_back</mat-icon>
+        </button>
+        <div class="task-title-section">
+          <h1>{{ task.title }}</h1>
+          <div class="task-badges">
+            <span [class]="'priority-badge ' + getPriorityClass(task.priority)">
+              <mat-icon class="priority-icon">{{ getPriorityIcon(task.priority) }}</mat-icon>
+              {{ getPriorityText(task.priority) }}
+            </span>
+            <span [class]="'status-badge ' + getStatusClass(task.status)">
+              {{ getStatusText(task.status) }}
+            </span>
+            <span *ngIf="task.isRecurring" class="recurring-badge">
+              <mat-icon>repeat</mat-icon>
+              Recurring
+            </span>
+          </div>
+        </div>
+      </div>
+      <div class="header-right">
+        <button mat-icon-button class="action-btn edit-btn" (click)="editTask()" title="Edit Task">
+          <mat-icon>edit</mat-icon>
+        </button>
+        <button mat-icon-button class="action-btn delete-btn" (click)="deleteTask()" title="Delete Task">
+          <mat-icon>delete</mat-icon>
+        </button>
+        <button mat-icon-button [matMenuTriggerFor]="moreMenu" class="action-btn more-btn" title="More Actions">
+          <mat-icon>more_vert</mat-icon>
+        </button>
+        <mat-menu #moreMenu="matMenu">
+          <button mat-menu-item (click)="duplicateTask()">
+            <mat-icon>content_copy</mat-icon>
+            Duplicate
+          </button>
+          <button mat-menu-item (click)="updateStatus(2)" *ngIf="task.status !== 2">
+            <mat-icon>check_circle</mat-icon>
+            Mark Complete
+          </button>
+        </mat-menu>
+      </div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="task-tabs">
+      <button [class.active]="activeTab === 'details'" (click)="setActiveTab('details')">
+        <mat-icon>info</mat-icon>
+        Details
+      </button>
+      <button [class.active]="activeTab === 'comments'" (click)="setActiveTab('comments')">
+        <mat-icon>chat</mat-icon>
+        Comments ({{ task.commentCount || 0 }})
+      </button>
+      <button [class.active]="activeTab === 'attachments'" (click)="setActiveTab('attachments')">
+        <mat-icon>attach_file</mat-icon>
+        Attachments ({{ task.attachmentCount || 0 }})
+      </button>
+      <button *ngIf="task.subtaskCount > 0" [class.active]="activeTab === 'subtasks'" (click)="setActiveTab('subtasks')">
+        <mat-icon>account_tree</mat-icon>
+        Subtasks ({{ task.subtaskCount }})
+      </button>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="tab-content">
+      <!-- Details Tab -->
+      <div *ngIf="activeTab === 'details'" class="details-tab">
+        <div class="info-grid">
+          <div class="info-card">
+            <h3><mat-icon>description</mat-icon> Description</h3>
+            <p>{{ task.description || 'No description provided.' }}</p>
+          </div>
+
+          <div class="info-card">
+            <h3><mat-icon>schedule</mat-icon> Timeline</h3>
+            <div class="info-row">
+              <span class="label">Created:</span>
+              <span class="value">{{ task.createdAt | date:'MMM d, yyyy h:mm a' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Due Date:</span>
+              <span class="value" [class.overdue]="isOverdue(task.dueDate)">
+                {{ task.dueDate | date:'MMM d, yyyy' }}
+                <span *ngIf="getDaysUntilDue(task.dueDate) === 0" class="due-today">(Today)</span>
+                <span *ngIf="getDaysUntilDue(task.dueDate) < 0" class="overdue-text">(Overdue)</span>
+              </span>
+            </div>
+            <div class="info-row" *ngIf="task.completedAt">
+              <span class="label">Completed:</span>
+              <span class="value">{{ task.completedAt | date:'MMM d, yyyy h:mm a' }}</span>
+            </div>
+            <div class="info-row" *ngIf="task.reminderDate">
+              <span class="label">Reminder:</span>
+              <span class="value">{{ task.reminderDate | date:'MMM d, yyyy h:mm a' }}</span>
+            </div>
+          </div>
+
+          <div class="info-card">
+            <h3><mat-icon>person</mat-icon> Assignment</h3>
+            <div class="info-row">
+              <span class="label">Assigned To:</span>
+              <span class="value">{{ task.assignedToUserName || 'Unassigned' }}</span>
+            </div>
+            <div class="info-row">
+              <span class="label">Created By:</span>
+              <span class="value">{{ task.createdByUserName || 'System' }}</span>
+            </div>
+          </div>
+
+          <div class="info-card" *ngIf="task.category || task.tag">
+            <h3><mat-icon>local_offer</mat-icon> Tags</h3>
+            <div class="info-row" *ngIf="task.category">
+              <span class="label">Category:</span>
+              <span class="value category-tag">{{ task.category }}</span>
+            </div>
+            <div class="info-row" *ngIf="task.tag">
+              <span class="label">Tag:</span>
+              <span class="value tag-tag">{{ task.tag }}</span>
+            </div>
+          </div>
+
+          <div class="info-card" *ngIf="task.estimatedHours || task.actualHours">
+            <h3><mat-icon>timer</mat-icon> Time Tracking</h3>
+            <div class="info-row" *ngIf="task.estimatedHours">
+              <span class="label">Estimated Hours:</span>
+              <span class="value">{{ task.estimatedHours }} hrs</span>
+            </div>
+            <div class="info-row" *ngIf="task.actualHours">
+              <span class="label">Actual Hours:</span>
+              <span class="value">{{ task.actualHours }} hrs</span>
+            </div>
+          </div>
+
+          <div class="info-card" *ngIf="task.isRecurring">
+            <h3><mat-icon>repeat</mat-icon> Recurrence</h3>
+            <div class="info-row">
+              <span class="label">Pattern:</span>
+              <span class="value">{{ task.recurrencePattern }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Comments Tab -->
+      <div *ngIf="activeTab === 'comments'" class="comments-tab">
+        <div class="add-comment">
+          <textarea
+            [(ngModel)]="newComment"
+            placeholder="Add a comment..."
+            rows="3"
+            class="comment-input"
+          ></textarea>
+          <button (click)="addComment()" [disabled]="!newComment.trim()" class="btn-primary">
+            Post Comment
+          </button>
+        </div>
+
+        <div class="comments-list">
+          <div *ngFor="let comment of task.comments" class="comment-item">
+            <div class="comment-avatar">
+              <div class="avatar">{{ (comment.userName || 'U') | slice:0:1 | uppercase }}</div>
+            </div>
+            <div class="comment-content">
+              <div class="comment-header">
+                <span class="comment-author">{{ comment.userName || 'Unknown User' }}</span>
+                <span class="comment-date">{{ comment.createdAt | date:'MMM d, yyyy h:mm a' }}</span>
+              </div>
+              <p class="comment-text">{{ comment.comment }}</p>
+            </div>
+          </div>
+          <div *ngIf="!task.comments?.length" class="no-data">
+            <mat-icon>chat_bubble_outline</mat-icon>
+            <p>No comments yet. Be the first to comment!</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Attachments Tab -->
+      <div *ngIf="activeTab === 'attachments'" class="attachments-tab">
+        <div class="upload-area">
+          <input
+            type="file"
+            #fileInput
+            (change)="onFileSelected($event)"
+            style="display: none"
+            accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.txt"
+          />
+          <button (click)="fileInput.click()" [disabled]="uploading" class="btn-primary">
+            <mat-icon>cloud_upload</mat-icon>
+            Upload File
+          </button>
+          <span class="upload-hint">Supported: Images, PDF, Documents (Max 10MB)</span>
+        </div>
+
+        <div class="attachments-list">
+          <div *ngFor="let attachment of task.attachments" class="attachment-item">
+            <div class="attachment-icon">
+              <mat-icon>insert_drive_file</mat-icon>
+            </div>
+            <div class="attachment-info">
+              <div class="attachment-name">{{ attachment.fileName }}</div>
+              <div class="attachment-meta">{{ formatFileSize(attachment.fileSize) }}</div>
+            </div>
+            <div class="attachment-actions">
+              <button mat-icon-button (click)="downloadAttachment(attachment.id, attachment.fileName)" title="Download">
+                <mat-icon>download</mat-icon>
+              </button>
+              <button mat-icon-button (click)="deleteAttachment(attachment.id, attachment.fileName)" title="Delete">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          </div>
+          <div *ngIf="!task.attachments?.length" class="no-data">
+            <mat-icon>attach_file</mat-icon>
+            <p>No attachments yet. Upload files to share with the team.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Subtasks Tab -->
+      <div *ngIf="activeTab === 'subtasks'" class="subtasks-tab">
+        <div class="subtasks-list">
+          <div *ngFor="let subtask of task.subtasks" class="subtask-item">
+            <div class="subtask-info">
+              <div class="subtask-title">{{ subtask.title }}</div>
+              <div class="subtask-meta">
+                <span [class]="'priority-badge small ' + getPriorityClass(subtask.priority)">
+                  {{ getPriorityText(subtask.priority) }}
+                </span>
+                <span [class]="'status-badge small ' + getStatusClass(subtask.status)">
+                  {{ getStatusText(subtask.status) }}
+                </span>
+                <span class="due-date" *ngIf="subtask.dueDate">
+                  Due: {{ subtask.dueDate | date:'MMM d, yyyy' }}
+                </span>
+              </div>
+            </div>
+            <div class="subtask-actions">
+              <button mat-icon-button (click)="loadTask(subtask.id)" title="View Subtask">
+                <mat-icon>visibility</mat-icon>
+              </button>
+            </div>
+          </div>
+          <div *ngIf="!task.subtasks?.length" class="no-data">
+            <mat-icon>account_tree</mat-icon>
+            <p>No subtasks found.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

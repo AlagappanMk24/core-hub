@@ -1,0 +1,797 @@
+<!-- customer-dashboard-stats.component.html -->
+<div class="p-6">
+  <!-- Welcome Header with Animation -->
+  <div class="flex justify-between items-center mb-6 fade-in-up">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-800">
+        Welcome Back, {{ getCustomerName() }}!
+      </h1>
+      <p class="text-gray-500 mt-1">Track your invoices and payments</p>
+    </div>
+    <div class="flex items-center gap-4">
+      <div class="text-right">
+        <p class="text-sm text-gray-500">Payment Health</p>
+        <div class="flex items-center gap-2">
+          <div class="w-24 h-2 bg-gray-200 rounded-full overflow-hidden">
+            <div
+              class="h-full rounded-full transition-all duration-1000"
+              [style.width]="getPaymentHealth() + '%'"
+              [class.bg-green-500]="getPaymentHealth() >= 80"
+              [class.bg-yellow-500]="
+                getPaymentHealth() >= 50 && getPaymentHealth() < 80
+              "
+              [class.bg-red-500]="getPaymentHealth() < 50"
+            ></div>
+          </div>
+          <span
+            class="text-sm font-semibold"
+            [class.text-green-600]="getPaymentHealth() >= 80"
+            [class.text-yellow-600]="
+              getPaymentHealth() >= 50 && getPaymentHealth() < 80
+            "
+            [class.text-red-600]="getPaymentHealth() < 50"
+          >
+            {{ getPaymentHealth() }}%
+          </span>
+        </div>
+      </div>
+      <span class="text-gray-500 flex items-center">
+        <i class="fas fa-chart-line mr-2"></i>
+        Your Financial Overview
+      </span>
+    </div>
+  </div>
+
+  <!-- Stats Cards Row with Professional Colors -->
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+    <!-- Total Invoiced Card -->
+    <div
+      class="stats-card total-invoiced text-white p-6 rounded-xl shadow-lg relative overflow-hidden fade-in-up delay-100"
+    >
+      <div class="flex justify-between items-start">
+        <div>
+          <h3
+            class="text-white text-opacity-90 text-sm font-medium uppercase tracking-wide"
+          >
+            Total Invoiced
+          </h3>
+          <p class="animated-number text-3xl font-bold mt-2">
+            ${{ animatedStats["totalInvoiced"] | number: "1.0-0" }}
+          </p>
+          <div class="flex items-center mt-3">
+            <i
+              class="fas"
+              [ngClass]="
+                stats.percentageChangeInvoiced >= 0
+                  ? 'fa-arrow-up'
+                  : 'fa-arrow-down'
+              "
+              class="text-sm mr-1"
+            ></i>
+            <span class="text-sm">
+              {{
+                stats.percentageChangeInvoiced >= 0 ? "Increased" : "Decreased"
+              }}
+              by
+              {{ Math.abs(stats.percentageChangeInvoiced) | number: "1.0-1" }}%
+            </span>
+          </div>
+        </div>
+        <div class="text-white text-opacity-70">
+          <i class="fas fa-file-invoice-dollar text-3xl"></i>
+        </div>
+      </div>
+      <div
+        class="absolute bottom-0 right-0 w-24 h-24 bg-white bg-opacity-10 rounded-full translate-x-8 translate-y-8"
+      ></div>
+    </div>
+
+    <!-- Total Paid Card -->
+    <div
+      class="stats-card total-paid text-white p-6 rounded-xl shadow-lg relative overflow-hidden fade-in-up delay-200"
+    >
+      <div class="flex justify-between items-start">
+        <div>
+          <h3
+            class="text-white text-opacity-90 text-sm font-medium uppercase tracking-wide"
+          >
+            Total Paid
+          </h3>
+          <p class="animated-number text-3xl font-bold mt-2">
+            ${{ animatedStats["totalPaid"] | number: "1.0-0" }}
+          </p>
+          <div class="flex items-center mt-3">
+            <i
+              class="fas"
+              [ngClass]="
+                stats.percentageChangePaid >= 0
+                  ? 'fa-arrow-up'
+                  : 'fa-arrow-down'
+              "
+              class="text-sm mr-1"
+            ></i>
+            <span class="text-sm">
+              {{ stats.percentageChangePaid >= 0 ? "Increased" : "Decreased" }}
+              by {{ Math.abs(stats.percentageChangePaid) | number: "1.0-1" }}%
+            </span>
+          </div>
+        </div>
+        <div class="text-white text-opacity-70">
+          <i class="fas fa-check-circle text-3xl"></i>
+        </div>
+      </div>
+      <div
+        class="absolute bottom-0 right-0 w-24 h-24 bg-white bg-opacity-10 rounded-full translate-x-8 translate-y-8"
+      ></div>
+    </div>
+
+    <!-- Total Due Card -->
+    <div
+      class="stats-card total-due text-white p-6 rounded-xl shadow-lg relative overflow-hidden fade-in-up delay-300"
+    >
+      <div class="flex justify-between items-start">
+        <div>
+          <h3
+            class="text-white text-opacity-90 text-sm font-medium uppercase tracking-wide"
+          >
+            Total Due
+          </h3>
+          <p class="animated-number text-3xl font-bold mt-2">
+            ${{ animatedStats["totalDue"] | number: "1.0-0" }}
+          </p>
+          <div class="flex items-center mt-3">
+            <i
+              class="fas"
+              [ngClass]="
+                stats.percentageChangeDue >= 0 ? 'fa-arrow-up' : 'fa-arrow-down'
+              "
+              class="text-sm mr-1"
+            ></i>
+            <span class="text-sm">
+              {{ stats.percentageChangeDue >= 0 ? "Increased" : "Decreased" }}
+              by {{ Math.abs(stats.percentageChangeDue) | number: "1.0-1" }}%
+            </span>
+          </div>
+        </div>
+        <div class="text-white text-opacity-70">
+          <i class="fas fa-hourglass-half text-3xl"></i>
+        </div>
+      </div>
+      <div
+        class="absolute bottom-0 right-0 w-24 h-24 bg-white bg-opacity-10 rounded-full translate-x-8 translate-y-8"
+      ></div>
+    </div>
+
+    <!-- Overdue Amount Card -->
+    <div
+      class="stats-card overdue text-white p-6 rounded-xl shadow-lg relative overflow-hidden fade-in-up delay-400"
+    >
+      <div class="flex justify-between items-start">
+        <div>
+          <h3
+            class="text-white text-opacity-90 text-sm font-medium uppercase tracking-wide"
+          >
+            Overdue Amount
+          </h3>
+          <p class="animated-number text-3xl font-bold mt-2">
+            ${{ animatedStats["overdueAmount"] | number: "1.0-0" }}
+          </p>
+          <div class="flex items-center mt-3">
+            <span class="text-sm"
+              >{{ stats.overdueCount }} invoice(s) overdue</span
+            >
+          </div>
+        </div>
+        <div class="text-white text-opacity-70">
+          <i class="fas fa-exclamation-triangle text-3xl"></i>
+        </div>
+      </div>
+      <div
+        class="absolute bottom-0 right-0 w-24 h-24 bg-white bg-opacity-10 rounded-full translate-x-8 translate-y-8"
+      ></div>
+    </div>
+  </div>
+
+  <!-- Charts Section -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+    <!-- Payment Trend Chart -->
+    <div class="bg-white p-6 rounded-xl shadow-lg chart-container">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-lg font-semibold text-gray-800">Payment Trend</h3>
+        <div class="flex space-x-4 text-sm">
+          <div class="flex items-center">
+            <div
+              class="w-3 h-3 bg-purple-500 rounded-full mr-2 animate-pulse"
+            ></div>
+            <span class="text-gray-600">Invoiced</span>
+          </div>
+          <div class="flex items-center">
+            <div
+              class="w-3 h-3 bg-green-500 rounded-full mr-2 animate-pulse"
+            ></div>
+            <span class="text-gray-600">Paid</span>
+          </div>
+        </div>
+      </div>
+      <div class="h-80">
+        <canvas id="customerPaymentTrendChart"></canvas>
+      </div>
+    </div>
+
+    <!-- Invoice Status Distribution -->
+    <!-- <div class="bg-white p-6 rounded-xl shadow-lg chart-container">
+      <div class="flex justify-between items-center mb-6">
+        <h3 class="text-lg font-semibold text-gray-800">Invoice Status</h3>
+        <div class="text-xs text-gray-400">
+          Total: {{ stats.invoiceCount }} invoices
+        </div>
+      </div>
+      <div class="h-64 flex items-center justify-center">
+        <div class="relative w-48 h-48">
+          <canvas id="customerStatusChart"></canvas>
+        </div>
+      </div>
+      <div class="grid grid-cols-2 gap-3 mt-4">
+        <div
+          class="flex justify-between items-center p-2 bg-green-50 rounded-lg hover:bg-green-100 transition cursor-pointer"
+        >
+          <div class="flex items-center">
+            <div class="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+            <span class="text-sm">Paid</span>
+          </div>
+          <span class="font-semibold">{{ stats.paidCount }}</span>
+        </div>
+        <div
+          class="flex justify-between items-center p-2 bg-yellow-50 rounded-lg hover:bg-yellow-100 transition cursor-pointer"
+        >
+          <div class="flex items-center">
+            <div class="w-3 h-3 bg-yellow-500 rounded-full mr-2"></div>
+            <span class="text-sm">Pending</span>
+          </div>
+          <span class="font-semibold">{{ stats.pendingCount }}</span>
+        </div>
+        <div
+          class="flex justify-between items-center p-2 bg-red-50 rounded-lg hover:bg-red-100 transition cursor-pointer"
+        >
+          <div class="flex items-center">
+            <div class="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
+            <span class="text-sm">Overdue</span>
+          </div>
+          <span class="font-semibold">{{ stats.overdueCount }}</span>
+        </div>
+        <div
+          class="flex justify-between items-center p-2 bg-purple-50 rounded-lg hover:bg-purple-100 transition cursor-pointer"
+        >
+          <div class="flex items-center">
+            <div class="w-3 h-3 bg-purple-500 rounded-full mr-2"></div>
+            <span class="text-sm">Partially Paid</span>
+          </div>
+          <span class="font-semibold">{{ paymentProgress.length }}</span>
+        </div>
+      </div>
+    </div> -->
+
+    <!-- Invoice Status Distribution - Clean Doughnut Chart without text labels below -->
+    <div class="bg-white p-6 rounded-xl shadow-lg chart-container">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-gray-800">Invoice Status</h3>
+        <div class="text-xs text-gray-400">
+          Total: {{ stats.invoiceCount }} invoices
+        </div>
+      </div>
+
+      <!-- Doughnut Chart - Centered and Attractive -->
+      <div class="flex flex-col items-center justify-center">
+        <div class="relative w-56 h-56">
+          <canvas id="customerStatusChart"></canvas>
+          <!-- Center text on doughnut chart -->
+          <div
+            class="absolute inset-0 flex flex-col items-center justify-center"
+          >
+            <span class="text-2xl font-bold text-gray-800">{{
+              stats.invoiceCount
+            }}</span>
+            <span class="text-xs text-gray-500">Total</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Status Count Boxes  -->
+      <div class="grid grid-cols-4 gap-3 mt-6">
+        <!-- Paid - Success/Teal Gradient -->
+        <div
+          class="status-box status-box-paid text-center p-3 rounded-xl transition-all hover:scale-105"
+        >
+          <p class="text-2xl font-bold text-white">{{ stats.paidCount }}</p>
+          <p class="text-xs text-white text-opacity-80">Paid</p>
+        </div>
+
+        <!-- Pending - Warning/Orange Gradient -->
+        <div
+          class="status-box status-box-pending text-center p-3 rounded-xl transition-all hover:scale-105"
+        >
+          <p class="text-2xl font-bold text-white">{{ stats.pendingCount }}</p>
+          <p class="text-xs text-white text-opacity-80">Pending</p>
+        </div>
+
+        <!-- Overdue - Danger/Red Gradient -->
+        <div
+          class="status-box status-box-overdue text-center p-3 rounded-xl transition-all hover:scale-105"
+        >
+          <p class="text-2xl font-bold text-white">{{ stats.overdueCount }}</p>
+          <p class="text-xs text-white text-opacity-80">Overdue</p>
+        </div>
+
+        <!-- Partially Paid - Info/Blue Gradient -->
+        <div
+          class="status-box status-box-partially-paid text-center p-3 rounded-xl transition-all hover:scale-105"
+        >
+          <p class="text-2xl font-bold text-white">
+            {{ paymentProgress.length }}
+          </p>
+          <p class="text-xs text-white text-opacity-80">Partially Paid</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Invoices Section -->
+  <div class="bg-white p-6 rounded-xl shadow-lg mb-8 fade-in-up delay-200">
+    <div class="flex justify-between items-center mb-6">
+      <h3 class="text-lg font-semibold text-gray-800">Recent Invoices</h3>
+      <button
+        (click)="router.navigate(['/invoices'])"
+        class="text-purple-600 hover:text-purple-700 text-sm flex items-center gap-1 transition-transform hover:translate-x-1"
+      >
+        View All <i class="fas fa-arrow-right"></i>
+      </button>
+    </div>
+    <div class="overflow-x-auto">
+      <table class="w-full">
+        <thead>
+          <tr class="border-b border-gray-200">
+            <th class="text-left py-3 px-4 font-medium text-gray-600">
+              Invoice #
+            </th>
+            <th class="text-left py-3 px-4 font-medium text-gray-600">
+              Amount
+            </th>
+            <th class="text-left py-3 px-4 font-medium text-gray-600">
+              Issue Date
+            </th>
+            <th class="text-left py-3 px-4 font-medium text-gray-600">
+              Due Date
+            </th>
+            <th class="text-left py-3 px-4 font-medium text-gray-600">
+              Status
+            </th>
+            <th class="text-left py-3 px-4 font-medium text-gray-600">
+              Actions
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngIf="recentInvoices.length === 0">
+            <td colspan="6" class="text-center py-8 text-gray-500">
+              No invoices found
+            </td>
+          </tr>
+          <tr
+            *ngFor="let invoice of recentInvoices"
+            class="border-b hover:bg-gray-50 transition-all duration-200"
+          >
+            <td class="py-3 px-4 font-medium text-gray-800">
+              {{ invoice.invoiceNumber }}
+            </td>
+            <td class="py-3 px-4 text-gray-800">
+              ${{ invoice.amount | number: "1.2-2" }}
+            </td>
+            <td class="py-3 px-4 text-gray-600">
+              {{ invoice.issueDate | date: "MMM d, y" }}
+            </td>
+            <td
+              class="py-3 px-4"
+              [class.text-red-500]="isOverdue(invoice.dueDate)"
+            >
+              {{ invoice.dueDate | date: "MMM d, y" }}
+              <span
+                *ngIf="
+                  getDaysUntilDue(invoice.dueDate) < 0 &&
+                  invoice.status !== 'Paid'
+                "
+                class="ml-1 text-xs text-red-500 animate-pulse"
+                >⚠️</span
+              >
+            </td>
+            <td class="py-3 px-4">
+              <span
+                class="status-badge px-2 py-1 text-xs font-medium rounded-full text-white inline-flex items-center gap-1"
+                [ngClass]="{
+                  'bg-green-500': invoice.status === 'Paid',
+                  'bg-blue-500': invoice.status === 'Pending',
+                  'bg-red-500': invoice.status === 'Overdue',
+                  'bg-yellow-500': invoice.status === 'PartiallyPaid',
+                  'bg-gray-500': invoice.status === 'Draft',
+                }"
+              >
+                <i
+                  class="fas text-xs"
+                  [class.fa-check-circle]="invoice.status === 'Paid'"
+                  [class.fa-clock]="invoice.status === 'Pending'"
+                  [class.fa-exclamation-triangle]="invoice.status === 'Overdue'"
+                  [class.fa-chart-line]="invoice.status === 'PartiallyPaid'"
+                ></i>
+                {{ invoice.status }}
+              </span>
+            </td>
+            <td class="py-3 px-4">
+              <button
+                (click)="viewInvoice(invoice.id)"
+                class="text-purple-600 hover:text-purple-800 mr-2 transition-transform hover:scale-110"
+                title="View Invoice"
+              >
+                <i class="fas fa-eye"></i>
+              </button>
+              <button
+                *ngIf="invoice.status !== 'Paid'"
+                (click)="payNow(invoice.id)"
+                class="text-green-600 hover:text-green-800 transition-transform hover:scale-110"
+                title="Pay Now"
+              >
+                <i class="fas fa-credit-card"></i>
+              </button>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Payment Progress and Pending Invoices -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 fade-in-up delay-300">
+    <!-- Payment Progress - Partially Paid Invoices -->
+    <div class="bg-white p-6 rounded-xl shadow-lg">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-gray-800">Payment Progress</h3>
+        <span
+          class="text-xs text-purple-500 bg-purple-50 px-2 py-1 rounded-full animate-pulse"
+          >In Progress</span
+        >
+      </div>
+      <div class="space-y-4 max-h-96 overflow-y-auto">
+        <div
+          *ngIf="paymentProgress.length === 0"
+          class="text-center text-gray-500 py-8"
+        >
+          <i class="fas fa-check-circle text-4xl mb-2 text-green-500"></i>
+          <p>No partially paid invoices</p>
+        </div>
+        <div
+          *ngFor="let progress of paymentProgress"
+          class="border-b pb-3 hover:bg-gray-50 -mx-2 px-2 rounded-lg transition"
+        >
+          <div class="flex justify-between items-start mb-2">
+            <div>
+              <p class="font-medium text-gray-800">
+                {{ progress.invoiceNumber }}
+              </p>
+              <p class="text-sm text-gray-500">
+                Due: {{ progress.dueDate | date: "MMM d, y" }}
+              </p>
+            </div>
+            <span class="text-sm font-medium"
+              >{{ progress.paidPercentage | number: "1.0-0" }}%</span
+            >
+          </div>
+          <div class="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
+            <div
+              class="progress-bar h-2 rounded-full transition-all duration-700 ease-out"
+              [style.width]="progress.paidPercentage + '%'"
+              [style.backgroundColor]="getPaymentProgressColor(progress)"
+            ></div>
+          </div>
+          <div class="flex justify-between text-xs text-gray-500 mt-1">
+            <span>Paid: {{ progress.amountPaid | currency }}</span>
+            <span>Remaining: {{ progress.remainingAmount | currency }}</span>
+          </div>
+          <button
+            (click)="payNow(progress.id)"
+            class="mt-2 text-sm text-purple-600 hover:text-purple-800 transition-all hover:translate-x-1"
+          >
+            Make Payment <i class="fas fa-arrow-right ml-1"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Pending Invoices -->
+    <div class="bg-white p-6 rounded-xl shadow-lg">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-gray-800">Pending Payments</h3>
+        <span
+          class="text-xs text-yellow-500 bg-yellow-50 px-2 py-1 rounded-full"
+          >Awaiting Payment</span
+        >
+      </div>
+      <div class="space-y-3 max-h-96 overflow-y-auto">
+        <div
+          *ngIf="pendingInvoices.length === 0"
+          class="text-center text-gray-500 py-8"
+        >
+          <i class="fas fa-smile-wink text-4xl mb-2 text-green-500"></i>
+          <p>No pending invoices</p>
+        </div>
+        <div
+          *ngFor="let pending of pendingInvoices"
+          class="border-b pb-3 hover:bg-gray-50 -mx-2 px-2 rounded-lg transition"
+        >
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="font-medium text-gray-800">
+                {{ pending.invoiceNumber }}
+              </p>
+              <p class="text-sm text-gray-500">
+                Due: {{ pending.dueDate | date: "MMM d, y" }}
+              </p>
+            </div>
+            <span class="text-sm font-semibold text-yellow-600">{{
+              pending.totalAmount | currency
+            }}</span>
+          </div>
+          <div class="flex justify-between text-xs text-gray-500 mt-1">
+            <span
+              [class.text-red-500]="getDaysUntilDue(pending.dueDate) < 0"
+              class="flex items-center gap-1"
+            >
+              <i
+                class="fas"
+                [class.fa-hourglass-end]="getDaysUntilDue(pending.dueDate) < 0"
+                [class.fa-hourglass-half]="getDaysUntilDue(pending.dueDate) > 0"
+              ></i>
+              {{
+                getDaysUntilDue(pending.dueDate) > 0
+                  ? getDaysUntilDue(pending.dueDate) + " days left"
+                  : getDaysUntilDue(pending.dueDate) === 0
+                    ? "Due today"
+                    : "Overdue by " +
+                      Math.abs(getDaysUntilDue(pending.dueDate)) +
+                      " days"
+              }}
+            </span>
+          </div>
+          <button
+            (click)="payNow(pending.id)"
+            class="mt-2 text-sm bg-yellow-500 text-white px-3 py-1 rounded-lg hover:bg-yellow-600 transition-all hover:scale-105"
+          >
+            Pay Now
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Overdue Invoices and Recent Payments -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8 fade-in-up delay-400">
+    <!-- Overdue Invoices -->
+    <div class="bg-white p-6 rounded-xl shadow-lg">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-gray-800">Overdue Invoices</h3>
+        <span
+          class="text-xs text-red-500 bg-red-50 px-2 py-1 rounded-full animate-pulse"
+          >Action Required</span
+        >
+      </div>
+      <div class="space-y-3 max-h-96 overflow-y-auto">
+        <div
+          *ngIf="overdueInvoices.length === 0"
+          class="text-center text-gray-500 py-8"
+        >
+          <i class="fas fa-trophy text-4xl mb-2 text-yellow-500"></i>
+          <p>No overdue invoices - Great job!</p>
+        </div>
+        <div
+          *ngFor="let overdue of overdueInvoices"
+          class="border-b pb-3 bg-red-50 -mx-6 px-6 rounded-lg transition-all hover:shadow-md"
+        >
+          <div class="flex justify-between items-start">
+            <div>
+              <p class="font-medium text-gray-800">
+                {{ overdue.invoiceNumber }}
+              </p>
+              <p class="text-sm text-red-600 flex items-center gap-1">
+                <i class="fas fa-exclamation-circle"></i>
+                Overdue by:
+                {{ Math.abs(getDaysUntilDue(overdue.dueDate)) }} days
+              </p>
+            </div>
+            <span class="text-sm font-semibold text-red-600">{{
+              overdue.totalAmount | currency
+            }}</span>
+          </div>
+          <button
+            (click)="payNow(overdue.id)"
+            class="mt-2 text-sm bg-red-500 text-white px-3 py-1 rounded-lg hover:bg-red-600 transition-all hover:scale-105"
+          >
+            Pay Now to Avoid Late Fees
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Recent Payments Activity -->
+    <div class="bg-white p-6 rounded-xl shadow-lg">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-lg font-semibold text-gray-800">Recent Payments</h3>
+        <span class="text-xs text-green-500 bg-green-50 px-2 py-1 rounded-full"
+          >Payment History</span
+        >
+      </div>
+      <div class="space-y-3 max-h-96 overflow-y-auto">
+        <div
+          *ngIf="recentPayments.length === 0"
+          class="text-center text-gray-500 py-8"
+        >
+          <i class="fas fa-receipt text-4xl mb-2 text-gray-400"></i>
+          <p>No recent payments</p>
+        </div>
+        <div
+          *ngFor="let payment of recentPayments"
+          class="border-b pb-3 flex items-center justify-between hover:bg-gray-50 -mx-2 px-2 rounded-lg transition"
+        >
+          <div class="flex items-center">
+            <div
+              class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center mr-3 transition-transform hover:scale-110"
+            >
+              <i class="fas fa-check-circle text-green-600"></i>
+            </div>
+            <div>
+              <p class="font-medium text-gray-800">
+                {{ payment.invoiceNumber }}
+              </p>
+              <p class="text-xs text-gray-500 flex items-center gap-1">
+                <i class="far fa-calendar-alt"></i>
+                {{ payment.paymentDate | date: "MMM d, y" }}
+              </p>
+            </div>
+          </div>
+          <div class="text-right">
+            <p class="font-semibold text-green-600">
+              {{ payment.amount | currency }}
+            </p>
+            <p class="text-xs text-gray-500">
+              <i
+                class="fas"
+                [class.fa-university]="
+                  payment.paymentMethod === 'Bank Transfer'
+                "
+                [class.fa-credit-card]="payment.paymentMethod === 'Credit Card'"
+                [class.fa-paypal]="payment.paymentMethod === 'PayPal'"
+              ></i>
+              {{ payment.paymentMethod }}
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Calendar and Quick Actions -->
+  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 fade-in-up delay-500">
+    <!-- Calendar -->
+    <div class="bg-white rounded-xl shadow-lg overflow-hidden">
+      <div
+        class="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 flex justify-between items-center"
+      >
+        <button
+          (click)="previousMonth()"
+          class="text-white hover:text-gray-200 transition-transform hover:scale-110"
+        >
+          <i class="fas fa-chevron-left"></i>
+        </button>
+        <h3 class="text-lg font-semibold">
+          {{ currentMonthName }} {{ currentYear }}
+        </h3>
+        <button
+          (click)="nextMonth()"
+          class="text-white hover:text-gray-200 transition-transform hover:scale-110"
+        >
+          <i class="fas fa-chevron-right"></i>
+        </button>
+      </div>
+      <div class="p-4">
+        <div class="grid grid-cols-7 gap-1 mb-2">
+          <div class="text-center text-xs font-medium text-gray-500 py-2">
+            Su
+          </div>
+          <div class="text-center text-xs font-medium text-gray-500 py-2">
+            Mo
+          </div>
+          <div class="text-center text-xs font-medium text-gray-500 py-2">
+            Tu
+          </div>
+          <div class="text-center text-xs font-medium text-gray-500 py-2">
+            We
+          </div>
+          <div class="text-center text-xs font-medium text-gray-500 py-2">
+            Th
+          </div>
+          <div class="text-center text-xs font-medium text-gray-500 py-2">
+            Fr
+          </div>
+          <div class="text-center text-xs font-medium text-gray-500 py-2">
+            Sa
+          </div>
+        </div>
+        <div class="grid grid-cols-7 gap-1">
+          <div
+            *ngFor="let day of calendarDays"
+            class="calendar-day text-center py-2 text-sm rounded-full cursor-pointer transition-all"
+            [class.today]="isToday(day) && day > 0"
+            [class.text-gray-400]="day === 0"
+            [class.text-gray-800]="day > 0 && !isToday(day)"
+          >
+            {{ day || "" }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Actions & Support -->
+    <div class="bg-white p-6 rounded-xl shadow-lg">
+      <h3 class="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
+      <div class="grid grid-cols-2 gap-4 mb-6">
+        <button
+          (click)="router.navigate(['/invoices'])"
+          class="p-4 bg-purple-50 rounded-xl text-center hover:bg-purple-100 transition-all hover:scale-105 group"
+        >
+          <i
+            class="fas fa-file-invoice text-purple-600 text-2xl mb-2 group-hover:scale-110 transition-transform"
+          ></i>
+          <p class="text-sm font-medium text-gray-700">View All Invoices</p>
+        </button>
+        <button
+          (click)="router.navigate(['/payments/history'])"
+          class="p-4 bg-green-50 rounded-xl text-center hover:bg-green-100 transition-all hover:scale-105 group"
+        >
+          <i
+            class="fas fa-history text-green-600 text-2xl mb-2 group-hover:scale-110 transition-transform"
+          ></i>
+          <p class="text-sm font-medium text-gray-700">Payment History</p>
+        </button>
+      </div>
+
+      <div class="border-t pt-4">
+        <h4 class="font-medium text-gray-800 mb-3 flex items-center gap-2">
+          <i class="fas fa-headset text-purple-600"></i>
+          Need Help?
+        </h4>
+        <div class="space-y-2">
+          <div
+            class="flex items-center text-sm text-gray-600 group cursor-pointer hover:text-purple-600 transition"
+          >
+            <i
+              class="fas fa-envelope text-purple-600 w-6 group-hover:scale-110 transition-transform"
+            ></i>
+            <span>support&#64;yourcompany.com</span>
+          </div>
+          <div
+            class="flex items-center text-sm text-gray-600 group cursor-pointer hover:text-purple-600 transition"
+          >
+            <i
+              class="fas fa-phone text-purple-600 w-6 group-hover:scale-110 transition-transform"
+            ></i>
+            <span>+1 (555) 123-4567</span>
+          </div>
+          <div
+            class="flex items-center text-sm text-gray-600 group cursor-pointer hover:text-purple-600 transition"
+          >
+            <i
+              class="fas fa-clock text-purple-600 w-6 group-hover:scale-110 transition-transform"
+            ></i>
+            <span>Mon-Fri, 9:00 AM - 6:00 PM</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

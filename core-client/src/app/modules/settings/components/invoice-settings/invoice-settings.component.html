@@ -1,0 +1,459 @@
+<!-- invoice-settings.component.html -->
+<div class="container mx-auto p-6 max-w-5xl">
+  <h1 class="text-2xl font-bold text-purple-800 mb-6">Invoice Settings</h1>
+
+  <!-- Company Selector for Super Admin -->
+  <div *ngIf="isSuperAdmin" class="mb-6">
+    <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
+      <label class="block text-sm font-medium text-blue-800 mb-2">
+        Select Company
+      </label>
+      <select
+        [(ngModel)]="selectedCompanyId"
+        (ngModelChange)="onCompanyChange()"
+        class="w-full md:w-96 p-2.5 text-xs border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition bg-white"
+        [disabled]="isLoading"
+      >
+        <option *ngFor="let company of companies" [value]="company.id">
+          {{ company.name }}
+        </option>
+      </select>
+      <p class="text-xs text-blue-600 mt-2">
+        As Super Admin, you can view and edit invoice settings for any company.
+      </p>
+    </div>
+  </div>
+
+  <!-- Tab Navigation -->
+  <div class="mb-6 border-b border-gray-200">
+    <nav class="flex space-x-8">
+      <button
+        (click)="setActiveTab('numbering')"
+        [class]="
+          activeTab === 'numbering'
+            ? 'py-2 px-1 border-b-2 border-purple-600 text-purple-600 font-medium'
+            : 'py-2 px-1 text-gray-500 hover:text-gray-700'
+        "
+      >
+       <mat-icon class="inline mr-2 text-sm !h-auto !w-auto leading-none">numbers</mat-icon>
+        Numbering Format
+      </button>
+      <button
+        (click)="setActiveTab('discounts')"
+        [class]="
+          activeTab === 'discounts'
+            ? 'py-2 px-1 border-b-2 border-purple-600 text-purple-600 font-medium'
+            : 'py-2 px-1 text-gray-500 hover:text-gray-700'
+        "
+      >
+        <mat-icon class="inline mr-2 text-sm !h-auto !w-auto leading-none">local_offer</mat-icon>
+        Discount Preferences
+      </button>
+    </nav>
+  </div>
+
+  <form class="bg-white p-6 rounded-lg shadow-lg border border-purple-200">
+    <!-- Loading State -->
+    <div *ngIf="isLoading" class="flex justify-center py-8">
+      <mat-spinner diameter="40"></mat-spinner>
+    </div>
+
+    <!-- Numbering Format Tab -->
+    <div *ngIf="!isLoading && activeTab === 'numbering'">
+      <!-- Automation Toggle -->
+      <div class="mb-6 pb-4 border-b border-gray-200">
+        <label class="flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            id="isAutomated"
+            [(ngModel)]="invoiceSettings.isAutomated"
+            name="isAutomated"
+            class="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+          />
+          <span class="ml-2 text-sm font-medium text-gray-700">
+            Enable automatic invoice number generation
+          </span>
+        </label>
+        <p class="text-xs text-gray-500 mt-1 ml-6">
+          When enabled, invoice numbers will be automatically generated based on
+          your settings
+        </p>
+      </div>
+
+      <!-- Numbering Format -->
+      <div class="mb-6">
+        <h3 class="text-md font-semibold text-gray-800 mb-4">
+          Numbering Format
+        </h3>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 mb-2"
+              for="invoicePrefix"
+            >
+              Invoice Prefix
+            </label>
+            <input
+              type="text"
+              id="invoicePrefix"
+              [(ngModel)]="invoiceSettings.invoicePrefix"
+              name="invoicePrefix"
+              class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition"
+              placeholder="e.g., INV"
+              maxlength="10"
+            />
+          </div>
+
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 mb-2"
+              for="separator"
+            >
+              Separator
+            </label>
+            <input
+              type="text"
+              id="separator"
+              [(ngModel)]="invoiceSettings.separator"
+              name="separator"
+              class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition"
+              placeholder="Leave blank for none (e.g., INV0001)"
+              maxlength="5"
+            />
+          </div>
+
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 mb-2"
+              for="numberPadding"
+            >
+              Number Padding
+            </label>
+            <select
+              id="numberPadding"
+              [(ngModel)]="invoiceSettings.numberPadding"
+              name="numberPadding"
+              class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition"
+            >
+              <option [value]="3">3 digits (001, 002...)</option>
+              <option [value]="4">4 digits (0001, 0002...)</option>
+              <option [value]="5">5 digits (00001, 00002...)</option>
+              <option [value]="6">6 digits (000001, 000002...)</option>
+            </select>
+          </div>
+
+          <div>
+            <label
+              class="block text-sm font-medium text-gray-700 mb-2"
+              for="invoiceStartingNumber"
+            >
+              Starting Number
+            </label>
+            <input
+              type="number"
+              id="invoiceStartingNumber"
+              [(ngModel)]="invoiceSettings.invoiceStartingNumber"
+              name="invoiceStartingNumber"
+              class="w-full p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition"
+              placeholder="e.g., 1"
+              min="1"
+            />
+          </div>
+        </div>
+      </div>
+
+      <!-- Include Year -->
+      <div class="mb-6 p-4 bg-gray-50 rounded-lg">
+        <label class="flex items-center cursor-pointer">
+          <input
+            type="checkbox"
+            id="includeYear"
+            [(ngModel)]="invoiceSettings.includeYear"
+            name="includeYear"
+            class="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+          />
+          <span class="ml-2 text-sm font-medium text-gray-700">
+            Include Year in Invoice Number
+          </span>
+        </label>
+        <p class="text-xs text-gray-500 mt-1 ml-6">
+          Adds the current year (e.g., 2026) to the invoice number format
+        </p>
+      </div>
+      
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+        <div
+          class="p-4 bg-purple-50 rounded-lg border border-purple-200 flex flex-col justify-between"
+        >
+          <div>
+            <h4 class="text-sm font-semibold text-purple-800 mb-2">
+              📋 Preview
+            </h4>
+            <div class="bg-white rounded-lg p-3 border border-purple-200">
+              <p class="text-xs text-gray-600 mb-1">Next invoice number:</p>
+              <p class="text-xl font-mono font-bold text-purple-700 break-all">
+                {{ getPreviewInvoiceNumber() }}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <h4 class="text-sm font-semibold text-gray-700 mb-2">
+            💡 Example Formats
+          </h4>
+          <div class="space-y-1 text-xs text-gray-600">
+            <div class="flex justify-between">
+              <span>INV-2026-0001</span>
+              <span class="text-gray-400"
+                >Prefix: INV, Separator: -, Year: Yes</span
+              >
+            </div>
+            <div class="flex justify-between">
+              <span>BILL/2026/001</span>
+              <span class="text-gray-400"
+                >Prefix: BILL, Separator: /, Year: Yes</span
+              >
+            </div>
+            <div class="flex justify-between">
+              <span>PO-1001</span>
+              <span class="text-gray-400"
+                >Prefix: PO, Separator: -, Year: No</span
+              >
+            </div>
+            <div class="flex justify-between">
+              <span>#001</span>
+              <span class="text-gray-400"
+                >Prefix: #, Separator: (none), Year: No</span
+              >
+            </div>
+            <div class="flex justify-between">
+              <span>FACT_2026_00001</span>
+              <span class="text-gray-400"
+                >Prefix: FACT, Separator: _, Year: Yes</span
+              >
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Discount Preferences Tab -->
+    <div *ngIf="!isLoading && activeTab === 'discounts'">
+      <!-- Enable Discounts Section -->
+      <div class="space-y-6">
+        <!-- Item Level Discounts -->
+        <div class="p-4 border border-gray-200 rounded-lg">
+          <label class="flex items-center cursor-pointer mb-3">
+            <input
+              type="checkbox"
+              [(ngModel)]="
+                invoiceSettings.discountSettings.enableItemLevelDiscounts
+              "
+              name="enableItemLevelDiscounts"
+              class="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+            />
+            <span class="ml-2 text-sm font-medium text-gray-700">
+              Enable Item-Level Discounts
+            </span>
+          </label>
+          <p class="text-xs text-gray-500 ml-6">
+            Allow applying discounts to individual line items. Each item can
+            have its own discount percentage or fixed amount.
+          </p>
+        </div>
+
+        <!-- Overall Discounts -->
+        <div class="p-4 border border-gray-200 rounded-lg">
+          <label class="flex items-center cursor-pointer mb-3">
+            <input
+              type="checkbox"
+              [(ngModel)]="
+                invoiceSettings.discountSettings.enableOverallDiscounts
+              "
+              name="enableOverallDiscounts"
+              class="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+            />
+            <span class="ml-2 text-sm font-medium text-gray-700">
+              Enable Overall Invoice Discounts
+            </span>
+          </label>
+          <p class="text-xs text-gray-500 ml-6">
+            Allow applying discounts at the invoice level (applies to the entire
+            invoice after item discounts).
+          </p>
+        </div>
+
+        <!-- Default Discount Type -->
+        <div class="p-4 border border-gray-200 rounded-lg">
+          <label class="block text-sm font-medium text-gray-700 mb-2">
+            Default Discount Type
+          </label>
+          <select
+            [(ngModel)]="invoiceSettings.discountSettings.defaultDiscountType"
+            name="defaultDiscountType"
+            class="w-full md:w-64 p-2.5 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition"
+          >
+            <option value="Percentage">Percentage (%)</option>
+            <option value="Fixed">Fixed Amount</option>
+          </select>
+          <p class="text-xs text-gray-500 mt-1">
+            Default discount type when adding a new discount
+          </p>
+        </div>
+
+        <!-- Discount Limits -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div class="p-4 border border-gray-200 rounded-lg">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Maximum Discount Percentage
+            </label>
+            <div class="flex items-center gap-2">
+              <input
+                type="number"
+                [(ngModel)]="
+                  invoiceSettings.discountSettings.maxDiscountPercentage
+                "
+                name="maxDiscountPercentage"
+                class="w-32 p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition"
+                min="0"
+                max="100"
+                step="1"
+              />
+              <span class="text-gray-500">%</span>
+            </div>
+            <p class="text-xs text-gray-500 mt-1">
+              Maximum allowed discount percentage (0-100%)
+            </p>
+          </div>
+
+          <div class="p-4 border border-gray-200 rounded-lg">
+            <label class="block text-sm font-medium text-gray-700 mb-2">
+              Maximum Discount Amount
+            </label>
+            <div class="flex items-center gap-2">
+              <span class="text-gray-500">{{ getCurrencySymbol() }}</span>
+              <input
+                type="number"
+                [(ngModel)]="invoiceSettings.discountSettings.maxDiscountAmount"
+                name="maxDiscountAmount"
+                class="flex-1 p-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 transition"
+                min="0"
+                step="100"
+              />
+            </div>
+            <p class="text-xs text-gray-500 mt-1">
+              Maximum allowed discount amount per discount
+            </p>
+          </div>
+        </div>
+
+        <!-- Multiple Discounts -->
+        <div class="p-4 border border-gray-200 rounded-lg">
+          <label class="flex items-center cursor-pointer mb-3">
+            <input
+              type="checkbox"
+              [(ngModel)]="
+                invoiceSettings.discountSettings.allowMultipleDiscounts
+              "
+              name="allowMultipleDiscounts"
+              class="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+            />
+            <span class="ml-2 text-sm font-medium text-gray-700">
+              Allow Multiple Discounts
+            </span>
+          </label>
+          <p class="text-xs text-gray-500 ml-6">
+            Allow applying multiple discounts to a single invoice (both
+            item-level and overall)
+          </p>
+        </div>
+
+        <!-- Discount Application Order -->
+        <div class="p-4 border border-gray-200 rounded-lg">
+          <label class="flex items-center cursor-pointer mb-3">
+            <input
+              type="checkbox"
+              [(ngModel)]="
+                invoiceSettings.discountSettings.applyDiscountBeforeTax
+              "
+              name="applyDiscountBeforeTax"
+              class="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+            />
+            <span class="ml-2 text-sm font-medium text-gray-700">
+              Apply Discount Before Tax
+            </span>
+          </label>
+          <p class="text-xs text-gray-500 ml-6">
+            Apply discounts before calculating tax (industry standard). When
+            unchecked, tax is calculated on the original amount.
+          </p>
+        </div>
+
+        <!-- Discount Column Position -->
+        <div class="p-4 border border-gray-200 rounded-lg">
+          <label class="flex items-center cursor-pointer mb-3">
+            <input
+              type="checkbox"
+              [(ngModel)]="
+                invoiceSettings.discountSettings.showDiscountColumnOnInvoice
+              "
+              name="showDiscountColumnAfterTax"
+              class="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+            />
+            <span class="ml-2 text-sm font-medium text-gray-700">
+              Show Discount Column After Tax
+            </span>
+          </label>
+          <p class="text-xs text-gray-500 ml-6">
+            Display discount column after tax amount in the invoice items table
+            (industry standard). When unchecked, discount appears before tax.
+          </p>
+        </div>
+      </div>
+
+      <!-- Info Box -->
+      <div class="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+        <div class="flex items-start gap-3">
+          <mat-icon class="text-blue-600 text-sm">info</mat-icon>
+          <div>
+            <h4 class="text-sm font-semibold text-blue-800 mb-1">
+              Discount Calculation Flow (Industry Standard)
+            </h4>
+            <p class="text-xs text-blue-700">
+              1. Item Subtotal (Qty × Unit Price)<br />
+              2. Apply Item-Level Discount → Net Amount<br />
+              3. Calculate Tax on Net Amount<br />
+              4. Apply Overall Invoice Discounts<br />
+              5. Add Shipping & Adjustments<br />
+              6. Final Total
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
+      <button
+        type="button"
+        (click)="cancel()"
+        class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition disabled:opacity-50 disabled:cursor-not-allowed"
+        [disabled]="isSaving"
+      >
+        Cancel
+      </button>
+      <button
+        type="button"
+        (click)="saveSettings()"
+        class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed min-w-[120px]"
+        [disabled]="isSaving"
+      >
+        <mat-spinner *ngIf="isSaving" [diameter]="20"></mat-spinner>
+        <span *ngIf="!isSaving">Save Settings</span>
+        <span *ngIf="isSaving">Saving...</span>
+      </button>
+    </div>
+  </form>
+</div>

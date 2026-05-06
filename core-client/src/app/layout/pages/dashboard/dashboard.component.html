@@ -1,0 +1,8 @@
+<!-- dashboard.component.html -->
+<div class="min-h-screen bg-gray-100">
+  <ng-container [ngSwitch]="userRole">
+    <app-admin-dashboard-stats *ngSwitchCase="'admin'"></app-admin-dashboard-stats>
+    <app-user-dashboard-stats *ngSwitchCase="'user'"></app-user-dashboard-stats>
+    <app-customer-dashboard-stats *ngSwitchCase="'customer'"></app-customer-dashboard-stats>
+  </ng-container>
+</div>

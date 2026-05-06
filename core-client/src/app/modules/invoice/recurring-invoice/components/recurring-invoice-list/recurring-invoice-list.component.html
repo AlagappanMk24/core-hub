@@ -1,0 +1,402 @@
+<!-- recurring-invoice-list.component.html -->
+<div class="recurring-invoice-container">
+  <div class="content-wrapper" [class.blurred]="exportingFormat">
+    <!-- Header Section -->
+    <div class="header">
+      <h1 class="title">Recurring Invoices</h1>
+      <div class="header-actions">
+        <button
+          *ngIf="isAdmin"
+          mat-stroked-button
+          class="action-btn export-btn"
+          [matMenuTriggerFor]="exportMenu"
+          [disabled]="exportingFormat"
+        >
+          <mat-icon>file_download</mat-icon> Export
+        </button>
+        <mat-menu #exportMenu="matMenu">
+          <button mat-menu-item (click)="onExport('excel')" [disabled]="exportingFormat">
+            <mat-icon>table_chart</mat-icon> Export as Excel
+          </button>
+          <button mat-menu-item (click)="onExport('pdf')" [disabled]="exportingFormat">
+            <mat-icon>picture_as_pdf</mat-icon> Export as PDF
+          </button>
+        </mat-menu>
+        <button
+          *ngIf="isAdmin || isUser"
+          mat-raised-button
+          color="primary"
+          class="action-btn create-btn"
+          (click)="onCreateRecurringInvoice()"
+          [disabled]="exportingFormat"
+        >
+          <mat-icon>add</mat-icon> Create Recurring Invoice
+        </button>
+      </div>
+    </div>
+
+    <!-- Stats Cards Section -->
+    <div class="stats-section">
+      <!-- Draft Card -->
+      <div
+        class="stat-card draft"
+        [class.active]="selectedStatus === 'Draft'"
+        (click)="onSelectStatus('Draft')"
+        @scaleIn
+      >
+        <div class="stat-header">
+          <mat-icon class="stat-icon">edit_note</mat-icon>
+          <span class="stat-label">Draft ({{ stats.draft.count }})</span>
+        </div>
+        <div class="stat-amount">{{ stats.draft.amount | currency }}</div>
+        <div class="stat-change" [ngClass]="getStatsChangeClass(stats.draft)">
+          {{ getFormattedChange(stats.draft) }}
+          <mat-icon class="change-icon">{{ getStatsIcon(stats.draft) }}</mat-icon>
+        </div>
+      </div>
+
+      <!-- Active Card -->
+      <div
+        class="stat-card active"
+        [class.active]="selectedStatus === 'Active'"
+        (click)="onSelectStatus('Active')"
+        @scaleIn
+      >
+        <div class="stat-header">
+          <mat-icon class="stat-icon">play_circle</mat-icon>
+          <span class="stat-label">Active ({{ stats.active.count }})</span>
+        </div>
+        <div class="stat-amount">{{ stats.active.amount | currency }}</div>
+        <div class="stat-change" [ngClass]="getStatsChangeClass(stats.active)">
+          {{ getFormattedChange(stats.active) }}
+          <mat-icon class="change-icon">{{ getStatsIcon(stats.active) }}</mat-icon>
+        </div>
+      </div>
+
+      <!-- Paused Card -->
+      <div
+        class="stat-card paused"
+        [class.active]="selectedStatus === 'Paused'"
+        (click)="onSelectStatus('Paused')"
+        @scaleIn
+      >
+        <div class="stat-header">
+          <mat-icon class="stat-icon">pause_circle</mat-icon>
+          <span class="stat-label">Paused ({{ stats.paused.count }})</span>
+        </div>
+        <div class="stat-amount">{{ stats.paused.amount | currency }}</div>
+        <div class="stat-change" [ngClass]="getStatsChangeClass(stats.paused)">
+          {{ getFormattedChange(stats.paused) }}
+          <mat-icon class="change-icon">{{ getStatsIcon(stats.paused) }}</mat-icon>
+        </div>
+      </div>
+
+      <!-- Completed Card -->
+      <div
+        class="stat-card completed"
+        [class.active]="selectedStatus === 'Completed'"
+        (click)="onSelectStatus('Completed')"
+        @scaleIn
+      >
+        <div class="stat-header">
+          <mat-icon class="stat-icon">check_circle</mat-icon>
+          <span class="stat-label">Completed ({{ stats.completed.count }})</span>
+        </div>
+        <div class="stat-amount">{{ stats.completed.amount | currency }}</div>
+        <div class="stat-change" [ngClass]="getStatsChangeClass(stats.completed)">
+          {{ getFormattedChange(stats.completed) }}
+          <mat-icon class="change-icon">{{ getStatsIcon(stats.completed) }}</mat-icon>
+        </div>
+      </div>
+
+      <!-- Cancelled Card -->
+      <div
+        class="stat-card cancelled"
+        [class.active]="selectedStatus === 'Cancelled'"
+        (click)="onSelectStatus('Cancelled')"
+        @scaleIn
+      >
+        <div class="stat-header">
+          <mat-icon class="stat-icon">cancel</mat-icon>
+          <span class="stat-label">Cancelled ({{ stats.cancelled.count }})</span>
+        </div>
+        <div class="stat-amount">{{ stats.cancelled.amount | currency }}</div>
+        <div class="stat-change" [ngClass]="getStatsChangeClass(stats.cancelled)">
+          {{ getFormattedChange(stats.cancelled) }}
+          <mat-icon class="change-icon">{{ getStatsIcon(stats.cancelled) }}</mat-icon>
+        </div>
+      </div>
+
+      <!-- Expired Card -->
+      <div
+        class="stat-card expired"
+        [class.active]="selectedStatus === 'Expired'"
+        (click)="onSelectStatus('Expired')"
+        @scaleIn
+      >
+        <div class="stat-header">
+          <mat-icon class="stat-icon">hourglass_empty</mat-icon>
+          <span class="stat-label">Expired ({{ stats.expired.count }})</span>
+        </div>
+        <div class="stat-amount">{{ stats.expired.amount | currency }}</div>
+        <div class="stat-change" [ngClass]="getStatsChangeClass(stats.expired)">
+          {{ getFormattedChange(stats.expired) }}
+          <mat-icon class="change-icon">{{ getStatsIcon(stats.expired) }}</mat-icon>
+        </div>
+      </div>
+    </div>
+
+    <!-- MRR/ARR Summary -->
+    <div class="summary-section">
+      <div class="summary-card">
+        <div class="summary-label">Total Active Amount</div>
+        <div class="summary-value">{{ stats.totalActiveAmount | currency }}</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Monthly Recurring Revenue (MRR)</div>
+        <div class="summary-value">{{ stats.totalMonthlyRecurring | currency }}</div>
+      </div>
+      <div class="summary-card">
+        <div class="summary-label">Yearly Recurring Revenue (ARR)</div>
+        <div class="summary-value">{{ stats.totalYearlyRecurring | currency }}</div>
+      </div>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="filters-section">
+      <div class="search-container">
+        <mat-icon class="search-icon">search</mat-icon>
+        <input
+          type="text"
+          class="search-input"
+          placeholder="Search by name, description or invoice number..."
+          [(ngModel)]="searchTerm"
+          (ngModelChange)="onSearch($event)"
+          [disabled]="exportingFormat !== null"
+        />
+      </div>
+      <div class="more-filters">
+        <button
+          *ngIf="isAdmin"
+          mat-stroked-button
+          class="filter-btn"
+          (click)="onMoreFilters()"
+          [disabled]="exportingFormat || isLoading"
+        >
+          <mat-icon>tune</mat-icon> More filters
+        </button>
+      </div>
+    </div>
+
+    <!-- Recurring Invoice Table -->
+    <div class="table-container">
+      <table class="recurring-invoice-table">
+        <thead>
+          <tr>
+            <th>Customer</th>
+            <th>Name</th>
+            <th>Frequency</th>
+            <th>Status</th>
+            <th>Amount</th>
+            <th>Next Invoice</th>
+            <th>Generated</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <ng-container *ngIf="isFirstLoad || (isLoading && recurringInvoices.length === 0); else invoiceData">
+            <tr class="skeleton-row" *ngFor="let _ of [1, 2, 3, 4, 5, 6]">
+              <td><div class="skeleton skeleton-avatar"></div></td>
+              <td><div class="skeleton skeleton-text"></div></td>
+              <td><div class="skeleton skeleton-badge"></div></td>
+              <td><div class="skeleton skeleton-badge"></div></td>
+              <td><div class="skeleton skeleton-text"></div></td>
+              <td><div class="skeleton skeleton-text"></div></td>
+              <td><div class="skeleton skeleton-text"></div></td>
+              <td><div class="skeleton skeleton-actions"></div></td>
+            </tr>
+          </ng-container>
+          <ng-template #invoiceData>
+            <tr
+              *ngFor="let invoice of recurringInvoices; trackBy: trackByRecurringInvoice"
+              class="invoice-row"
+            >
+              <td class="customer-column">
+                <div class="customer-info">
+                  <div
+                    class="customer-avatar"
+                    [style.background]="getAvatarColor(invoice.customerName)"
+                  >
+                    {{ getInitials(invoice.customerName) }}
+                  </div>
+                  <span class="customer-name">{{ invoice.customerName }}</span>
+                </div>
+              </td>
+              <td class="name-column">
+                <div class="name-info">
+                  <span class="invoice-name">{{ invoice.name }}</span>
+                  <span *ngIf="invoice.description" class="invoice-description">{{ invoice.description }}</span>
+                </div>
+              </td>
+              <td>
+                <span class="frequency-badge">
+                  <mat-icon class="frequency-icon">{{ getFrequencyIcon(invoice.frequency) }}</mat-icon>
+                  {{ getFrequencyLabel(invoice.frequency) }}
+                  <span *ngIf="invoice.frequencyInterval > 1">(Every {{ invoice.frequencyInterval }} {{ getFrequencyLabel(invoice.frequency).toLowerCase() }})</span>
+                </span>
+              </td>
+              <td>
+                <span class="status-badge" [ngClass]="getStatusClass(invoice.status)">
+                  {{ getStatusText(invoice.status) }}
+                </span>
+              </td>
+              <td class="amount">{{ invoice.totalAmount | currency }}</td>
+              <td class="date">{{ invoice.nextInvoiceDate | date: 'dd MMM yyyy' }}</td>
+              <td class="date">
+                {{ invoice.occurrencesGenerated }} / {{ invoice.maxOccurrences || '∞' }}
+              </td>
+              <td class="actions">
+                <button
+                  mat-icon-button
+                  class="action-icon view-btn"
+                  (click)="onViewRecurringInvoice(invoice)"
+                  title="View Details"
+                  [disabled]="exportingFormat || isLoading"
+                >
+                  <mat-icon>visibility</mat-icon>
+                </button>
+                <button
+                  *ngIf="isAdmin || isUser"
+                  mat-icon-button
+                  class="action-icon edit-btn"
+                  (click)="onEditRecurringInvoice(invoice)"
+                  title="Edit Template"
+                  [disabled]="exportingFormat || isLoading"
+                >
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button
+                  mat-icon-button
+                  class="action-icon more-btn"
+                  [matMenuTriggerFor]="actionMenu"
+                  title="More Actions"
+                  [disabled]="exportingFormat || isLoading"
+                >
+                  <mat-icon>more_vert</mat-icon>
+                </button>
+                <mat-menu #actionMenu="matMenu">
+                  <button
+                    *ngIf="invoice.status === 'Active'"
+                    mat-menu-item
+                    class="pause-menu-item"
+                    (click)="onPauseRecurringInvoice(invoice)"
+                  >
+                    <mat-icon>pause</mat-icon>
+                    Pause Schedule
+                  </button>
+                  <button
+                    *ngIf="invoice.status === 'Paused'"
+                    mat-menu-item
+                    class="resume-menu-item"
+                    (click)="onResumeRecurringInvoice(invoice)"
+                  >
+                    <mat-icon>play_arrow</mat-icon>
+                    Resume Schedule
+                  </button>
+                  <button
+                    *ngIf="invoice.status !== 'Cancelled' && invoice.status !== 'Completed'"
+                    mat-menu-item
+                    class="generate-menu-item"
+                    (click)="onGenerateNow(invoice)"
+                  >
+                    <mat-icon>bolt</mat-icon>
+                    Generate Now
+                  </button>
+                  <button
+                    *ngIf="invoice.status !== 'Cancelled' && invoice.status !== 'Completed'"
+                    mat-menu-item
+                    class="cancel-menu-item"
+                    (click)="onCancelRecurringInvoice(invoice)"
+                  >
+                    <mat-icon>cancel</mat-icon>
+                    Cancel Schedule
+                  </button>
+                  <button
+                    *ngIf="isAdmin"
+                    mat-menu-item
+                    class="delete-menu-item"
+                    (click)="onDeleteRecurringInvoice(invoice)"
+                  >
+                    <mat-icon>delete</mat-icon>
+                    Delete Template
+                  </button>
+                </mat-menu>
+              </td>
+            </tr>
+          </ng-template>
+        </tbody>
+      </table>
+
+      <!-- No Invoices Message -->
+      <div class="no-invoices" *ngIf="!isLoading && recurringInvoices.length === 0">
+        <img src="assets/no-recurring-invoices.png" alt="No Recurring Invoices" class="no-invoices-icon" />
+        <h2>No Recurring Invoices Found</h2>
+        <p>Create a recurring invoice template to automate your billing process!</p>
+        <button
+          *ngIf="isAdmin || isUser"
+          mat-raised-button
+          color="primary"
+          class="create-btn"
+          (click)="onCreateRecurringInvoice()"
+        >
+          <mat-icon>add</mat-icon> Create Recurring Invoice
+        </button>
+      </div>
+    </div>
+
+    <!-- Pagination Controls -->
+    <div class="pagination-container">
+      <div class="pagination-info">
+        <span>
+          Showing {{ (currentPage - 1) * itemsPerPage + 1 }} to
+          {{ currentPage * itemsPerPage > totalItems ? totalItems : currentPage * itemsPerPage }}
+          of {{ totalItems }} entries
+        </span>
+      </div>
+      <div class="pagination-controls">
+        <button
+          mat-icon-button
+          class="pagination-btn"
+          [disabled]="currentPage === 1 || exportingFormat || isLoading"
+          (click)="previousPage()"
+        >
+          <mat-icon>chevron_left</mat-icon>
+        </button>
+        <button
+          mat-button
+          class="pagination-btn page-number"
+          *ngFor="let page of getVisiblePages()"
+          [class.active]="page === currentPage"
+          (click)="goToPage(page)"
+          [disabled]="exportingFormat || isLoading"
+        >
+          {{ page }}
+        </button>
+        <button
+          mat-icon-button
+          class="pagination-btn"
+          [disabled]="currentPage === totalPages || exportingFormat || isLoading"
+          (click)="nextPage()"
+        >
+          <mat-icon>chevron_right</mat-icon>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Loading Overlay -->
+  <div *ngIf="exportingFormat" class="progress-container" @fadeIn>
+    <mat-spinner diameter="32" color="accent"></mat-spinner>
+    <span>{{ exportingFormat === 'excel' ? 'Exporting as Excel...' : 'Exporting as PDF...' }}</span>
+  </div>
+</div>

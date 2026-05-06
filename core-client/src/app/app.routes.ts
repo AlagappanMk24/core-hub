@@ -1,49 +1,110 @@
-// app.routes.ts
+/**
+ * Application Routes Configuration
+ *
+ * This file defines all the routes for the Angular application.
+ * Routes are organized by feature modules with proper guard protection.
+ *
+ * @module AppRoutingModule
+ */
+
 import { Routes } from '@angular/router';
-import { HomeComponent } from './pages/home/home.component';
 
-// Auth Components
-import { RegisterComponent } from './pages/auth/register/register.component';
-import { LoginComponent } from './pages/auth/login/login.component';
-import { VerifyOtpComponent } from './pages/auth/verify-otp/verify-otp.component';
-import { ForgotPasswordComponent } from './pages/auth/forgot-password/forgot-password.component';
-import { ResetPasswordComponent } from './pages/auth/reset-password/reset-password.component';
+// ============================================
+// Layout Components
+// ============================================
+import { HomeComponent } from './layout/pages/home/home.component';
+import { DashboardComponent } from './layout/pages/dashboard/dashboard.component';
+import { NotFoundComponent } from './layout/pages/not-found/not-found.component';
+import { LayoutComponent } from './layout/components/layout/layout.component';
 
-// Account Components
-import { ChangePasswordComponent } from './pages/account/change-password/change-password.component';
-import { DashboardComponent } from './pages/dashboard/dashboard.component';
-import { NotFoundComponent } from './pages/not-found/not-found.component';
-import { LayoutComponent } from './components/layout/layout.component';
-import { AuthGuard } from './guards/auth.guard';
-import { OrdersComponent } from './pages/orders/orders.component';
-import { CustomerComponent } from './pages/customers/customer.component';
-import { UserRoleManagementComponent } from './pages/auth/user-role/user-role-management.component';
-import { AdminGuard } from './guards/admin.guard';
-import { ProductComponent } from './pages/products/product.component';
-import { OtpGuard } from './guards/otp.guard';
-import { UnauthGuard } from './guards/unauth.guard';
-import { CartComponent } from './pages/cart/cart.component';
-import { SelectCompanyComponent } from './pages/companies/select-company.component';
-import { InvoiceSettingsComponent } from './features/invoices/components/invoice-settings/invoice-settings.component';
-import { CreateInvoiceComponent } from './features/invoices/components/upsert-invoice/create-invoice.component';
-import { InvoiceComponent } from './features/invoices/components/invoice-list/invoice-list.component';
-import { EmailSettingsComponent } from './settings/email/email-settings.component';
-import { CustomerGuard } from './guards/customer.guard';
-import { UserGuard } from './guards/user.guard';
-import { CustomerDashboardComponent } from './features/areas/customer/customer-dashboard.component';
-import { InvoiceDisplayComponent } from './features/invoices/components/invoice-display/invoice-display/invoice-display.component';
-import { InvoiceAccessGuard } from './guards/invoice-access.guard';
-import { RedirectGuard } from './guards/redirect.guard';
-import { AdminOrUserGuard } from './guards/admin-or-user.guard';
-import { CustomerListComponent } from './pages/customers/customer-list.component';
-import { CompanyRequestsComponent } from './pages/company-requests/company-requests.component';
-import { CompanyRequestDetailComponent } from './pages/company-requests/company-request-detail.component';
-import { TaskListComponent } from './features/tasks/task-list/task-list.component';
+// ============================================
+// Auth Module Components
+// ============================================
+import { RegisterComponent } from './modules/auth/components/register/register.component';
+import { LoginComponent } from './modules/auth/components/login/login.component';
+import { VerifyOtpComponent } from './modules/auth/components/verify-otp/verify-otp.component';
+import { ForgotPasswordComponent } from './modules/auth/components/forgot-password/forgot-password.component';
+import { ResetPasswordComponent } from './modules/auth/components/reset-password/reset-password.component';
+import { UserRoleManagementComponent } from './modules/auth/components/user-role/user-role-management.component';
+
+// ============================================
+// Account Module Components
+// ============================================
+import { ChangePasswordComponent } from './modules/account/components/change-password/change-password.component';
+
+// ============================================
+// Customer Module Components
+// ============================================
+import { CustomerListComponent } from './modules/customer/components/customer-list/customer-list.component';
+
+// ============================================
+// Company Module Components
+// ============================================
+import { SelectCompanyComponent } from './modules/company/components/select-company/select-company.component';
+import { CompanyRequestsComponent } from './modules/company/components/company-requests/company-requests.component';
+import { CompanyRequestDetailComponent } from './modules/company/components/company-requests/company-request-detail.component';
+
+// ============================================
+// Invoice Module Components
+// ============================================
+import { InvoiceSettingsComponent } from './modules/settings/components/invoice-settings/invoice-settings.component';
+import { CreateInvoiceComponent } from './modules/invoice/standard-invoice/components/invoice-upsert/create-invoice.component';
+import { InvoiceComponent } from './modules/invoice/standard-invoice/components/invoice-list/invoice-list.component';
+import { EmailSettingsComponent } from './modules/settings/components/email-settings/email-settings.component';
+import { InvoiceDisplayComponent } from './modules/invoice/standard-invoice/components/invoice-display/invoice-display.component';
+
+// ============================================
+// Tasks Module Components
+// ============================================
+import { TaskListComponent } from './modules/tasks/components/task-list/task-list.component';
+
+// ============================================
+// Features Components
+// ============================================
+// import { CustomerDashboardComponent } from './features/areas/customer/components/customer-dashboard-stats/customer-dashboard.component';
+
+// ============================================
+// Route Guards
+// ============================================
+import { AuthGuard } from './core/guards/auth.guard';
+import { AdminGuard } from './core/guards/admin.guard';
+import { OtpGuard } from './core/guards/otp.guard';
+import { UnauthGuard } from './core/guards/unauth.guard';
+import { CustomerGuard } from './core/guards/customer.guard';
+import { UserGuard } from './core/guards/user.guard';
+import { InvoiceAccessGuard } from './core/guards/invoice-access.guard';
+import { RedirectGuard } from './core/guards/redirect.guard';
+import { AdminOrUserGuard } from './core/guards/admin-or-user.guard';
+import { TaskDetailComponent } from './modules/tasks/components/task-detail/task-detail.component';
+import { RecurringInvoiceListComponent } from './modules/invoice/recurring-invoice/components/recurring-invoice-list/recurring-invoice-list.component';
+import { CustomerDetailsComponent } from './modules/customer/components/customer-details/customer-details.component';
+
+/**
+ * Main application routes configuration
+ *
+ * Route organization:
+ * 1. Public routes (home, auth)
+ * 2. Protected routes (wrapped in LayoutComponent)
+ * 3. Redirect routes
+ * 4. Fallback routes (404)
+ */
 
 export const routes: Routes = [
+  // ============================================
+  // Public Routes
+  // ============================================
+
+  /**
+   * Home/Landing Page Route
+   * Accessible to all users (authenticated and unauthenticated)
+   */
   { path: '', component: HomeComponent },
 
-  // Auth Routes
+  /**
+   * Authentication Routes
+   * All auth-related routes are prefixed with /auth
+   * Protected by UnauthGuard to prevent authenticated users from accessing
+   */
   {
     path: 'auth',
     children: [
@@ -51,68 +112,93 @@ export const routes: Routes = [
         path: 'login',
         component: LoginComponent,
         canActivate: [UnauthGuard],
+        data: { title: 'Sign In' },
       },
       {
         path: 'register',
         component: RegisterComponent,
         canActivate: [UnauthGuard],
+        data: { title: 'Create Account' },
       },
       {
         path: 'verify-otp',
         component: VerifyOtpComponent,
         canActivate: [OtpGuard],
+        data: { title: 'Verify OTP' },
       },
       {
         path: 'forgot-password',
         component: ForgotPasswordComponent,
         canActivate: [UnauthGuard],
+        data: { title: 'Forgot Password' },
       },
       {
         path: 'reset-password',
         component: ResetPasswordComponent,
         canActivate: [UnauthGuard],
+        data: { title: 'Reset Password' },
       },
       {
         path: 'callback',
         component: LoginComponent,
         canActivate: [UnauthGuard],
+        data: { title: 'Authentication Callback' },
       },
       {
         path: 'select-company',
         component: SelectCompanyComponent,
         canActivate: [UnauthGuard],
+        data: { title: 'Select Company' },
       },
     ],
   },
 
-  // Authenticated routes (wrapped in LayoutComponent)
+  // ============================================
+  // Protected Routes (Authenticated Users Only)
+  // ============================================
   {
     path: '',
     component: LayoutComponent,
     canActivate: [AuthGuard],
     children: [
-      // Dashboard Routes - Role Specific
+      /**
+       * Dashboard Routes
+       * Role-specific dashboards with appropriate guards
+       */
       {
         path: 'dashboard',
         component: DashboardComponent,
-        canActivate: [AdminOrUserGuard], // Super Admin, Admin, User
+        canActivate: [AdminOrUserGuard],
+        data: { title: 'Dashboard', roles: ['Admin', 'User', 'Super Admin'] },
       },
       {
         path: 'customer-dashboard',
-        component: CustomerDashboardComponent,
+        component: DashboardComponent,
         canActivate: [CustomerGuard], // Customer only
+        data: { title: 'Customer Dashboard', roles: ['Customer'] },
       },
+
+      /**
+       * Company Management Routes
+       * Admin only routes for company request management
+       */
       {
         path: 'company-requests',
         component: CompanyRequestsComponent,
         canActivate: [AdminGuard], // Protect admin routes
+        data: { title: 'Company Requests', roles: ['Admin'] },
       },
       {
         path: 'company-requests/:id',
         component: CompanyRequestDetailComponent,
         canActivate: [AdminGuard], // Protect admin routes
+        data: { title: 'Company Request Details', roles: ['Admin'] },
       },
-      // Invoice Management
+
+      /**
+       * Invoice Management Routes
+       * Accessible based on user roles and permissions
+       */
       {
         path: 'invoices',
         children: [
@@ -120,21 +206,31 @@ export const routes: Routes = [
             path: '',
             component: InvoiceComponent,
             canActivate: [InvoiceAccessGuard], // All authenticated users
+            data: { title: 'Invoices' },
           },
           {
             path: 'create',
             component: CreateInvoiceComponent,
             canActivate: [UserGuard], // Super Admin, Admin, User
+            data: {
+              title: 'Create Invoice',
+              roles: ['Admin', 'User', 'Super Admin'],
+            },
           },
           {
             path: 'edit/:id',
             component: CreateInvoiceComponent,
             canActivate: [UserGuard], // Super Admin, Admin, User
+            data: {
+              title: 'Edit Invoice',
+              roles: ['Admin', 'User', 'Super Admin'],
+            },
           },
           {
             path: 'view/:id',
             component: InvoiceDisplayComponent,
             canActivate: [InvoiceAccessGuard], // All authenticated users
+            data: { title: 'View Invoice' },
           },
           // {
           //   path: 'approve/:id',
@@ -144,7 +240,25 @@ export const routes: Routes = [
         ],
       },
 
-      // Customer Management
+      /**
+       * Recurring Invoice Management Routes
+       * Accessible based on user roles and permissions
+       */
+       {
+        path: 'invoices/recurring',
+        children: [
+          {
+            path: '',
+            component: RecurringInvoiceListComponent,
+            canActivate: [InvoiceAccessGuard], // All authenticated users
+            data: { title: 'Invoices' },
+          },
+        ]
+      },
+      /**
+       * Customer Management Routes
+       * Admin only for full access, view access for users
+       */
       {
         path: 'customers',
         children: [
@@ -152,26 +266,21 @@ export const routes: Routes = [
             path: '',
             component: CustomerListComponent,
             canActivate: [AdminGuard], // Super Admin, Admin only
+            data: { title: 'Customers', roles: ['Admin'] },
           },
-          {
+           {
             path: 'view/:id',
-            component: CustomerComponent,
-            canActivate: [AdminOrUserGuard], // Super Admin, Admin, User
-          },
-          {
-            path: 'create',
-            component: CustomerComponent,
+            component: CustomerDetailsComponent,
             canActivate: [AdminGuard], // Super Admin, Admin only
-          },
-          {
-            path: 'edit/:id',
-            component: CustomerComponent,
-            canActivate: [AdminGuard], // Super Admin, Admin only
+            data: { title: 'Customers', roles: ['Admin'] },
           },
         ],
       },
 
-      // Payments
+      /**
+       * Payments Routes
+       * Placeholder for future payment management features
+       */
       {
         path: 'payments',
         children: [
@@ -188,112 +297,49 @@ export const routes: Routes = [
         ],
       },
 
-      // Products
+      /**
+       * Task Management Routes
+       * Available to all authenticated users
+       */
       {
-        path: 'products',
+        path: 'tasks',
         children: [
-          {
-            path: '',
-            component: ProductComponent,
-            canActivate: [AdminOrUserGuard], // Super Admin, Admin, User
-          },
-          {
-            path: 'create',
-            component: ProductComponent,
-            canActivate: [AdminGuard], // Super Admin, Admin only
-          },
-          {
-            path: 'edit/:id',
-            component: ProductComponent,
-            canActivate: [AdminGuard], // Super Admin, Admin only
-          },
+          { path: 'list', component: TaskListComponent },
+          { path: 'view/:id', component: TaskDetailComponent },
+          { path: '', redirectTo: 'list', pathMatch: 'full' },
         ],
+        data: { title: 'Task Management' },
       },
 
-      // Orders
-      {
-        path: 'orders',
-        children: [
-          {
-            path: '',
-            component: OrdersComponent,
-            canActivate: [AdminOrUserGuard], // Super Admin, Admin, User
-          },
-          {
-            path: 'create',
-            component: OrdersComponent,
-            canActivate: [UserGuard], // Super Admin, Admin, User
-          },
-          {
-            path: 'view/:id',
-            component: OrdersComponent,
-            canActivate: [InvoiceAccessGuard], // All authenticated users
-          },
-        ],
-      },
-
-      // Reports - Admin only
-      // {
-      //   path: 'reports',
-      //   component: ReportsComponent,
-      //   canActivate: [AdminGuard], // Super Admin, Admin only
-      // },
-
-      {
-  path: 'tasks',
-  children: [
-    { path: 'list', component: TaskListComponent },
-    // { path: 'create', component: TaskFormComponent },
-    // { path: 'edit/:id', component: TaskFormComponent },
-    // { path: 'view/:id', component: TaskDetailComponent },
-    { path: '', redirectTo: 'list', pathMatch: 'full' }
-  ]
-},
-      // Cart - Customers only
-      {
-        path: 'cart',
-        component: CartComponent,
-        canActivate: [CustomerGuard], // Customer only
-      },
-
-      // Account Management - All authenticated users
+      /**
+       * Account Management Routes
+       * Available to all authenticated users
+       */
       {
         path: 'account',
         children: [
-          // {
-          //   path: 'profile',
-          //   component: ProfileComponent,
-          // },
           {
             path: 'change-password',
             component: ChangePasswordComponent,
+            data: { title: 'Change Password' },
           },
-          // {
-          //   path: 'settings',
-          //   component: CompanySettingsComponent,
-          //   canActivate: [AdminGuard], // Super Admin, Admin only
-          // },
         ],
       },
 
-      // User Management - Super Admin and Admin only
+      /**
+       * User Management Routes
+       * Admin only for user administration
+       */
       {
         path: 'users',
-        children: [
-          // {
-          //   path: '',
-          //   component: UserListComponent,
-          //   canActivate: [AdminGuard], // Super Admin, Admin only
-          // },
-          // {
-          //   path: 'roles',
-          //   component: RoleManagementComponent,
-          //   canActivate: [SuperAdminGuard], // Super Admin only
-          // },
-        ],
+        children: [],
+        data: { title: 'User Management', roles: ['Admin'] },
       },
 
-      // Settings - Admin only
+      /**
+       * System Settings Routes
+       * Admin only for configuration
+       */
       {
         path: 'settings',
         children: [
@@ -301,36 +347,45 @@ export const routes: Routes = [
             path: 'invoice',
             component: InvoiceSettingsComponent,
             canActivate: [AdminGuard], // Super Admin, Admin only
+            data: { title: 'Invoice Settings', roles: ['Admin'] },
           },
           {
             path: 'email',
             component: EmailSettingsComponent,
             canActivate: [AdminGuard], // Super Admin, Admin only
+            data: { title: 'Email Settings', roles: ['Admin'] },
           },
-          // {
-          //   path: 'company',
-          //   component: CompanySettingsComponent,
-          //   canActivate: [AdminGuard], // Super Admin, Admin only
-          // },
         ],
       },
-
-      // Support - All authenticated users
-      // {
-      //   path: 'support',
-      //   component: SupportComponent,
-      // },
     ],
   },
 
-  // Redirect after OTP verification
+  // ============================================
+  // Special Routes
+  // ============================================
+  /**
+   * Post-login redirect route
+   * Handles redirection after successful OTP verification
+   */
   {
     path: 'redirect-after-login',
     canActivate: [RedirectGuard],
     component: NotFoundComponent,
+    data: { title: 'Redirecting...' },
   },
 
-  // 404 Page
-  { path: 'notfound', component: NotFoundComponent },
+  /**
+   * 404 Not Found Route
+   * Catch-all for undefined routes
+   */
+  {
+    path: 'notfound',
+    component: NotFoundComponent,
+    data: { title: 'Page Not Found' },
+  },
+  /**
+   * Wildcard Route - Redirect all unknown paths to 404
+   * Must be the last route in the configuration
+   */
   { path: '**', redirectTo: '/notfound' },
 ];

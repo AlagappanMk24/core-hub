@@ -3,7 +3,7 @@ export enum TaskPriority {
   Low = 0,
   Medium = 1,
   High = 2,
-  Urgent = 3
+  Urgent = 3,
 }
 
 export enum TaskStatus {
@@ -12,7 +12,7 @@ export enum TaskStatus {
   Completed = 2,
   Cancelled = 3,
   OnHold = 4,
-  Overdue = 5
+  Overdue = 5,
 }
 
 export interface TaskComment {
@@ -46,7 +46,7 @@ export interface Task {
   completedAt?: Date;
   category?: string;
   tag?: string;
-  assignedToUserId?: number;
+  assignedToUserId?: string;
   assignedToUserName?: string;
   createdByUserId?: number;
   createdByUserName?: string;
@@ -71,11 +71,11 @@ export interface CreateTaskDto {
   title: string;
   description?: string;
   priority: TaskPriority;
-  dueDate?: Date;
+  dueDate?: Date | string;
   category?: string;
   tag?: string;
-  assignedToUserId?: number;
-  reminderDate?: Date;
+  assignedToUserId?: string;
+  reminderDate?: Date | string;
   isRecurring: boolean;
   recurrencePattern?: string;
   estimatedHours?: number;
@@ -87,11 +87,11 @@ export interface UpdateTaskDto {
   description?: string;
   priority?: TaskPriority;
   status?: TaskStatus;
-  dueDate?: Date;
+  dueDate?: Date | string;
   category?: string;
   tag?: string;
-  assignedToUserId?: number;
-  reminderDate?: Date;
+  assignedToUserId?: string;
+  reminderDate?: Date | string;
   isRecurring?: boolean;
   recurrencePattern?: string;
   estimatedHours?: number;
@@ -102,11 +102,11 @@ export interface UpdateTaskDto {
 export interface TaskFilterDto {
   status?: TaskStatus;
   priority?: TaskPriority;
-  assignedToUserId?: number;
+  assignedToUserId?: string;
   category?: string;
   tag?: string;
-  dueDateFrom?: Date;
-  dueDateTo?: Date;
+  dueDateFrom?: Date | string;
+  dueDateTo?: Date | string;
   overdue?: boolean;
   myTasks?: boolean;
   searchTerm?: string;

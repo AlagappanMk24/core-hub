@@ -1,0 +1,456 @@
+<div
+  class="customer-details-container"
+  *ngIf="!isLoading; else loadingTemplate"
+>
+  <!-- Header Section with Back Button -->
+  <div class="details-header" @fadeInUp>
+    <button class="back-btn" (click)="goBack()">
+      <mat-icon>arrow_back</mat-icon>
+      Back to Customers
+    </button>
+    <div class="header-actions">
+      <button
+        class="action-btn edit-btn"
+        (click)="editCustomer()"
+        *ngIf="isAdmin || isUser"
+        matTooltip="Edit Customer"
+      >
+        <mat-icon>edit</mat-icon>
+      </button>
+      <button
+        class="action-btn delete-btn"
+        (click)="deleteCustomer()"
+        *ngIf="isAdmin"
+        matTooltip="Delete Customer"
+      >
+        <mat-icon>delete</mat-icon>
+      </button>
+      <button
+        class="action-btn more-btn"
+        [matMenuTriggerFor]="moreMenu"
+        matTooltip="More Actions"
+      >
+        <mat-icon>more_vert</mat-icon>
+      </button>
+      <mat-menu #moreMenu="matMenu" class="custom-action-menu">
+        <button mat-menu-item (click)="sendEmail()" style="color: #3b82f6">
+          <mat-icon style="color: #3b82f6;">email</mat-icon>
+          <span style="color: #3b82f6;">Send Email</span>
+        </button>
+        <button mat-menu-item (click)="createInvoice()" style="color: #8b5cf6">
+          <mat-icon style="color: #8b5cf6;">receipt</mat-icon>
+          <span style="color: #8b5cf6;">Create Invoice</span>
+        </button>
+      </mat-menu>
+    </div>
+  </div>
+
+  <!-- Profile Section -->
+  <div class="profile-section" @slideIn>
+    <div
+      class="profile-avatar"
+      [style.background]="getAvatarColor(customer!.name)"
+    >
+      {{ getInitials(customer!.name) }}
+      <div
+        class="profile-status"
+        [class.active]="customer?.status === 'Active'"
+      ></div>
+    </div>
+    <div class="profile-info">
+      <h1 class="profile-name">{{ customer?.name }}</h1>
+      <div class="profile-meta">
+        <span class="meta-item">
+          <mat-icon>email</mat-icon>
+          {{ customer?.email }}
+        </span>
+        <span class="meta-item">
+          <mat-icon>phone</mat-icon>
+          {{ customer?.phoneNumber }}
+        </span>
+        <span class="meta-item">
+          <mat-icon>location_on</mat-icon>
+          {{ customer?.city }}, {{ customer?.countryCode }}
+        </span>
+      </div>
+      <div class="profile-badges">
+        <span class="badge" [class.active]="customer?.status === 'Active'">
+          {{ customer?.status }}
+        </span>
+        <span class="badge customer-id">ID: #{{ customer?.id }}</span>
+        <span class="badge since"
+          >Customer Since: {{ formatDate(customer?.activeSince) }}</span
+        >
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats Cards Row -->
+  <div class="stats-grid" @scaleIn>
+    <div class="stat-card">
+      <div class="stat-icon purple">
+        <mat-icon>attach_money</mat-icon>
+      </div>
+      <div class="stat-content">
+        <span class="stat-label">Total Purchases</span>
+        <span class="stat-value"
+          >${{ customer?.totalPurchases || 0 | number: "1.2-2" }}</span
+        >
+        <span class="stat-trend positive">
+          <mat-icon>trending_up</mat-icon> +12.5%
+        </span>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon green"><mat-icon>receipt</mat-icon></div>
+      <div class="stat-content">
+        <span class="stat-label">Total Invoices</span>
+        <span class="stat-value">{{ getTotalInvoicesCount() }}</span>
+        <div class="stat-trend positive" *ngIf="totalPaidInvoices > 0">
+          <mat-icon>check_circle</mat-icon> {{ totalPaidInvoices }} Paid
+        </div>
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon orange">
+        <mat-icon>credit_card</mat-icon>
+      </div>
+      <div class="stat-content">
+        <span class="stat-label">Avg. Order Value</span>
+        <span class="stat-value"
+          >${{ getAverageOrderValue() | number: "1.2-2" }}</span
+        >
+      </div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon blue">
+        <mat-icon>calendar_today</mat-icon>
+      </div>
+      <div class="stat-content">
+        <span class="stat-label">Credit Limit</span>
+        <span class="stat-value"
+          >${{ customer?.creditLimit | number: "1.2-2" }}</span
+        >
+        <span class="stat-trend"
+          >Available: ${{ getAvailableCredit() | number: "1.2-2" }}</span
+        >
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content Tabs -->
+  <mat-tab-group class="details-tabs" animationDuration="300ms">
+    <!-- Overview Tab -->
+    <mat-tab label="Overview">
+      <div class="tab-content">
+        <div class="two-column-grid">
+          <!-- Left Column - Customer Information -->
+          <div class="info-card">
+            <h3 class="card-title">
+              <mat-icon>info</mat-icon>
+              Customer Information
+            </h3>
+            <div class="info-grid">
+              <div class="info-row">
+                <span class="info-label">Full Name</span>
+                <span class="info-value">{{ customer?.name }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Email Address</span>
+                <span class="info-value">{{ customer?.email }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Phone Number</span>
+                <span class="info-value">{{ customer?.phoneNumber }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Tax ID (GST/VAT)</span>
+                <span class="info-value">{{ customer?.taxId || "N/A" }}</span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Website</span>
+                <span class="info-value">
+                  <a
+                    [href]="customer?.website"
+                    target="_blank"
+                    *ngIf="customer?.website; else noWebsite"
+                  >
+                    {{ customer?.website }}
+                  </a>
+                  <ng-template #noWebsite>N/A</ng-template>
+                </span>
+              </div>
+              <div class="info-row">
+                <span class="info-label">Customer Since</span>
+                <span class="info-value">{{
+                  formatDate(customer?.activeSince)
+                }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Column - Address Information -->
+          <div class="info-card">
+            <h3 class="card-title">
+              <mat-icon>location_on</mat-icon>
+              Address Information
+            </h3>
+            <div class="address-display">
+              <div class="address-line">{{ customer?.addressLine1 }}</div>
+              <div class="address-line" *ngIf="customer?.addressLine2">
+                {{ customer?.addressLine2 }}
+              </div>
+              <div class="address-line">
+                {{ customer?.city }}, {{ customer?.state }}
+                {{ customer?.zipCode }}
+              </div>
+              <div class="address-line">{{ customer?.countryName }}</div>
+            </div>
+            <div class="info-row mt-4">
+              <span class="info-label">Default Payment Terms</span>
+              <span class="info-value">{{
+                customer?.defaultPaymentTerms || "Net 30"
+              }}</span>
+            </div>
+            <div class="info-row">
+              <span class="info-label">Default Currency</span>
+              <span class="info-value">{{
+                customer?.defaultCurrency || "USD"
+              }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Financial Metrics Row -->
+        <div class="metrics-row">
+          <div class="metric-card">
+            <div class="metric-header">
+              <mat-icon>trending_up</mat-icon>
+              <span>Payment Health</span>
+            </div>
+            <div
+              class="metric-value-large"
+              [style.color]="getPaymentHealthColor()"
+            >
+              {{ getPaymentHealth() }}%
+            </div>
+            <div class="progress-bar-container">
+              <div
+                class="progress-bar"
+                [style.width]="getPaymentHealth() + '%'"
+                [style.background]="getPaymentHealthColor()"
+              ></div>
+            </div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-header">
+              <mat-icon>schedule</mat-icon>
+              <span>Avg Payment Days</span>
+            </div>
+            <div class="metric-value-large">
+              {{ customer?.averagePaymentDays || 15 }}
+            </div>
+            <div class="metric-subtitle">days to pay</div>
+          </div>
+          <div class="metric-card">
+            <div class="metric-header">
+              <mat-icon>loyalty</mat-icon>
+              <span>Customer Group</span>
+            </div>
+            <div class="metric-value-large">
+              {{ customer?.customerGroupName || "Standard" }}
+            </div>
+            <div class="metric-subtitle">
+              {{
+                customer?.customerGroupName === "Premium"
+                  ? "VIP Benefits Applied"
+                  : "Regular Customer"
+              }}
+            </div>
+          </div>
+        </div>
+
+        <!-- Charts Row -->
+        <div class="charts-row">
+          <div class="chart-card">
+            <h3 class="card-title">
+              <mat-icon>show_chart</mat-icon>
+              Spending Trend
+            </h3>
+            <div class="chart-container">
+              <canvas id="spendingChart"></canvas>
+            </div>
+          </div>
+          <div class="chart-card">
+            <h3 class="card-title">
+              <mat-icon>pie_chart</mat-icon>
+              Payment Behavior
+            </h3>
+            <div class="chart-container small">
+              <canvas id="paymentChart"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </mat-tab>
+
+    <!-- Invoices Tab -->
+    <mat-tab label="Invoices">
+      <div class="tab-content">
+        <div class="info-card full-width">
+          <div class="card-header">
+            <h3 class="card-title">
+              <mat-icon>receipt</mat-icon>
+              Invoice History
+            </h3>
+            <button class="primary-btn" (click)="createInvoice()">
+              <mat-icon>add</mat-icon> New Invoice
+            </button>
+          </div>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Invoice #</th>
+                  <th>Date</th>
+                  <th>Due Date</th>
+                  <th>Amount</th>
+                  <th>Status</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let invoice of invoices">
+                  <td>{{ invoice.invoiceNumber }}</td>
+                  <td>{{ invoice.issueDate | date: "MMM d, y" }}</td>
+                  <td>{{ invoice.dueDate | date: "MMM d, y" }}</td>
+                  <td>{{ formatCurrency(invoice.amount) }}</td>
+                  <td>
+                    <span
+                      class="status-badge"
+                      [class.paid]="invoice.status === 'Paid'"
+                      [class.pending]="invoice.status === 'Pending'"
+                      [class.overdue]="invoice.status === 'Overdue'"
+                    >
+                      {{ invoice.status }}
+                    </span>
+                  </td>
+                  <td>
+                    <button
+                      mat-icon-button
+                      class="table-action"
+                      (click)="viewInvoiceDetails(invoice.id)"
+                      matTooltip="View Invoice"
+                    >
+                      <mat-icon>visibility</mat-icon>
+                    </button>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="no-data-message" *ngIf="invoices.length === 0">
+              <mat-icon>receipt</mat-icon>
+              <p>No invoices found for this customer</p>
+              <button class="primary-btn" (click)="createInvoice()">
+                Create First Invoice
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </mat-tab>
+
+    <!-- Payments Tab -->
+    <mat-tab label="Payments">
+      <div class="tab-content">
+        <div class="info-card full-width">
+          <h3 class="card-title">
+            <mat-icon>payment</mat-icon>
+            Payment History
+          </h3>
+          <div class="table-container">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Payment #</th>
+                  <th>Date</th>
+                  <th>Invoice #</th>
+                  <th>Amount</th>
+                  <th>Method</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr *ngFor="let payment of payments">
+                  <td>{{ payment.paymentNumber }}</td>
+                  <td>{{ payment.paymentDate | date: "MMM d, y" }}</td>
+                  <td>{{ payment.invoiceNumber }}</td>
+                  <td>{{ formatCurrency(payment.amount) }}</td>
+                  <td>{{ payment.paymentMethod }}</td>
+                  <td>
+                    <span
+                      class="status-badge completed"
+                      *ngIf="payment.status === 'Paid'"
+                    >
+                      {{ payment.status }}
+                    </span>
+                    <span
+                      class="status-badge pending"
+                      *ngIf="payment.status === 'Pending'"
+                    >
+                      {{ payment.status }}
+                    </span>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            <div class="no-data-message" *ngIf="payments.length === 0">
+              <mat-icon>payment</mat-icon>
+              <p>No payments found for this customer</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </mat-tab>
+
+    <!-- Activities Tab -->
+    <mat-tab label="Activities">
+      <div class="tab-content">
+        <div class="info-card full-width">
+          <h3 class="card-title">
+            <mat-icon>history</mat-icon>
+            Recent Activities
+          </h3>
+          <div class="timeline">
+            <div class="timeline-item" *ngFor="let activity of activities">
+              <div class="timeline-icon" [style.background]="activity.color">
+                <mat-icon>{{ activity.icon }}</mat-icon>
+              </div>
+              <div class="timeline-content">
+                <div class="timeline-header">
+                  <span class="timeline-action">{{ activity.action }}</span>
+                  <span class="timeline-date">{{
+                    activity.date | date: "MMM d, y"
+                  }}</span>
+                </div>
+                <p class="timeline-description">{{ activity.description }}</p>
+              </div>
+            </div>
+            <div class="no-data-message" *ngIf="activities.length === 0">
+              <mat-icon>history</mat-icon>
+              <p>No recent activities found</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </mat-tab>
+  </mat-tab-group>
+</div>
+
+<!-- Loading Template -->
+<ng-template #loadingTemplate>
+  <div class="loading-container">
+    <mat-spinner diameter="40"></mat-spinner>
+    <p>Loading customer details...</p>
+  </div>
+</ng-template>

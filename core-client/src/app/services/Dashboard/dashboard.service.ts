@@ -3,9 +3,10 @@ import { BehaviorSubject, Observable, Subscription, interval, tap } from 'rxjs';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { ChartConfiguration } from 'chart.js';
 import { inject } from '@angular/core';
-import { AuthService } from '../auth/auth.service';
+import { AuthService } from '../../core/services/auth/auth.service';
 import { environment } from '../../environments/environment';
 
+// ============ COMMON INTERFACES ============
 export interface DashboardStats {
   totalInvoiceAmount: number;
   totalInvoices: number;
@@ -53,7 +54,8 @@ export interface MonthlyTrend {
   count: number;
 }
 
-export interface DashboardSummary {
+// ============ ADMIN DASHBOARD INTERFACES ============
+export interface AdminDashboardSummary {
   stats: DashboardStats;
   recentInvoices: RecentInvoice[];
   paymentProgress: InvoiceProgress[]; // Partially paid
@@ -65,12 +67,108 @@ export interface DashboardSummary {
   b2CTrend: MonthlyTrend[];
   retailTrend: MonthlyTrend[];
 }
+
+// ============ USER DASHBOARD INTERFACES ============
+export interface UserDashboardSummary {
+  stats: DashboardStats;
+  recentInvoices: RecentInvoice[];
+  paymentProgress: InvoiceProgress[];
+  pendingPayments: InvoiceProgress[];
+  overduePayments: InvoiceProgress[];
+  recentPayments: RecentInvoice[];
+  monthlyTrend: MonthlyTrend[];
+  teamPerformance?: TeamPerformance[];
+  recentActivities?: RecentActivity[];
+}
+
+export interface TeamPerformance {
+  userId: number;
+  userName: string;
+  userAvatar?: string;
+  invoicesCreated: number;
+  totalAmount: number;
+  collectionRate: number;
+}
+
+export interface RecentActivity {
+  id: number;
+  action: string;
+  description: string;
+  user: string;
+  timestamp: Date;
+  icon: string;
+  color: string;
+}
+
+// ============ CUSTOMER DASHBOARD INTERFACES ============
+export interface CustomerDashboardStats {
+  totalInvoiced: number;
+  totalPaid: number;
+  totalDue: number;
+  overdueAmount: number;
+  invoiceCount: number;
+  paidCount: number;
+  pendingCount: number;
+  overdueCount: number;
+  percentageChangeInvoiced: number;
+  percentageChangePaid: number;
+  percentageChangeDue: number;
+}
+
+export interface CustomerInvoiceProgress {
+  id: number;
+  invoiceNumber: string;
+  totalAmount: number;
+  amountPaid: number;
+  remainingAmount: number;
+  paidPercentage: number;
+  dueDate: string;
+  color?: string;
+}
+
+export interface CustomerRecentInvoice {
+  id: number;
+  invoiceNumber: string;
+  amount: number;
+  issueDate: string;
+  dueDate: string;
+  status: string;
+}
+
+export interface CustomerPaymentActivity {
+  id: number;
+  invoiceId: number;
+  invoiceNumber: string;
+  amount: number;
+  paymentDate: string;
+  paymentMethod: string;
+}
+
+export interface CustomerInvoiceSummary {
+  status: string;
+  count: number;
+  amount: number;
+}
+
+export interface CustomerDashboardSummary {
+  stats: CustomerDashboardStats;
+  paymentProgress: CustomerInvoiceProgress[];
+  pendingInvoices: CustomerInvoiceProgress[];
+  overdueInvoices: CustomerInvoiceProgress[];
+  recentInvoices: CustomerRecentInvoice[];
+  recentPayments: CustomerPaymentActivity[];
+  invoiceSummary: CustomerInvoiceSummary[];
+  monthlyTrend: MonthlyTrend[];
+}
+
+// ============ TODO INTERFACES ============
 export interface TodoItem {
   id: number;
   text: string;
   completed: boolean;
 }
 
+// ============ UNIFIED DASHBOARD SERVICE ============
 @Injectable({
   providedIn: 'root',
 })
@@ -79,46 +177,56 @@ export class DashboardService {
   private authService = inject(AuthService);
 
   private apiUrl = `${environment.apiBaseUrl}/dashboard`;
-  private dashboardSubject = new BehaviorSubject<DashboardSummary | null>(null);
-  dashboard$ = this.dashboardSubject.asObservable();
+
+  // Role-based subjects
+  private adminDashboardSubject =
+    new BehaviorSubject<AdminDashboardSummary | null>(null);
+  adminDashboard$ = this.adminDashboardSubject.asObservable();
+
+  private userDashboardSubject =
+    new BehaviorSubject<UserDashboardSummary | null>(null);
+  userDashboard$ = this.userDashboardSubject.asObservable();
+
+  private customerDashboardSubject =
+    new BehaviorSubject<CustomerDashboardSummary | null>(null);
+  customerDashboard$ = this.customerDashboardSubject.asObservable();
 
   private refreshIntervalSub: Subscription | null = null;
+  private currentRole: 'admin' | 'user' | 'customer' = 'customer';
 
   constructor() {
+    this.initRoleAndStartUpdates();
+  }
+
+  private initRoleAndStartUpdates(): void {
+    const user = this.authService.getUserDetail();
+    if (user?.roles?.includes('Admin')) {
+      this.currentRole = 'admin';
+    } else if (user?.roles?.includes('User')) {
+      this.currentRole = 'user';
+    } else {
+      this.currentRole = 'customer';
+    }
     this.startRealTimeUpdates();
   }
 
-  getAdminDashboard(): Observable<DashboardSummary> {
-    return this.http
-      .get<DashboardSummary>(`${this.apiUrl}/admin/summary`)
-      .pipe(
-        // ✅ The correct way to log the response data
-        tap((data) => console.log('Admin Dashboard API Response:', data)),
-      );
+  // ============ ADMIN DASHBOARD METHODS ============
+  getAdminDashboard(): Observable<AdminDashboardSummary> {
+    return this.http.get<AdminDashboardSummary>(`${this.apiUrl}/admin/summary`);
   }
 
-  getCustomerDashboard(): Observable<DashboardSummary> {
-    return this.http
-      .get<DashboardSummary>(`${this.apiUrl}/customer/summary`)
-      .pipe(
-        tap((data) => console.log('Customer Dashboard API Response:', data)),
-      );
+  // ============ USER DASHBOARD METHODS ============
+  getUserDashboard(): Observable<UserDashboardSummary> {
+    return this.http.get<UserDashboardSummary>(`${this.apiUrl}/user/summary`);
+  }
+  // ============ CUSTOMER DASHBOARD METHODS ============
+  getCustomerDashboard(): Observable<CustomerDashboardSummary> {
+    return this.http.get<CustomerDashboardSummary>(
+      `${this.apiUrl}/customer/summary`,
+    );
   }
 
-  getStats(): Observable<DashboardStats> {
-    return this.http
-      .get<DashboardStats>(`${this.apiUrl}/stats`)
-      .pipe(tap((data) => console.log('Stats API Response:', data)));
-  }
-
-  getRecentInvoices(count: number = 5): Observable<RecentInvoice[]> {
-    return this.http
-      .get<RecentInvoice[]>(`${this.apiUrl}/recent-invoices`, {
-        params: new HttpParams().set('count', count.toString())
-      })
-      .pipe(tap((data) => console.log('Recent Invoices API Response:', data)));
-  }
-
+  // ============ UNIFIED REFRESH LOGIC ============
   // ✅ Single startRealTimeUpdates — polls API every 30 seconds
   startRealTimeUpdates(): void {
     this.refreshIntervalSub = interval(30000).subscribe(() => {
@@ -127,19 +235,23 @@ export class DashboardService {
   }
 
   refreshDashboard(): void {
-    const user = this.authService.getUserDetail();
-
-    const isAdminOrUser =
-      user?.roles?.includes('Admin') || user?.roles?.includes('User');
-
-    const dashboardObservable = isAdminOrUser
-      ? this.getAdminDashboard()
-      : this.getCustomerDashboard();
-
-    dashboardObservable.subscribe({
-      next: (dashboard) => this.dashboardSubject.next(dashboard),
-      error: (err) => console.error('Error refreshing dashboard:', err),
-    });
+    if (this.currentRole === 'admin') {
+      this.getAdminDashboard().subscribe({
+        next: (dashboard) => this.adminDashboardSubject.next(dashboard),
+        error: (err) => console.error('Error refreshing admin dashboard:', err),
+      });
+    } else if (this.currentRole === 'user') {
+      this.getUserDashboard().subscribe({
+        next: (dashboard) => this.userDashboardSubject.next(dashboard),
+        error: (err) => console.error('Error refreshing user dashboard:', err),
+      });
+    } else {
+      this.getCustomerDashboard().subscribe({
+        next: (dashboard) => this.customerDashboardSubject.next(dashboard),
+        error: (err) =>
+          console.error('Error refreshing customer dashboard:', err),
+      });
+    }
   }
 
   stopRealTimeUpdates(): void {
@@ -147,6 +259,20 @@ export class DashboardService {
     this.refreshIntervalSub = null;
   }
 
+  // ============ SHARED METHODS ============
+  getStats(): Observable<DashboardStats> {
+    return this.http
+      .get<DashboardStats>(`${this.apiUrl}/stats`);
+  }
+
+  getRecentInvoices(count: number = 5): Observable<RecentInvoice[]> {
+    return this.http
+      .get<RecentInvoice[]>(`${this.apiUrl}/recent-invoices`, {
+        params: new HttpParams().set('count', count.toString()),
+      });
+  }
+
+  // ============ TODO METHODS (Shared) ============
   private todosSubject = new BehaviorSubject<TodoItem[]>([
     {
       id: 1,
@@ -180,16 +306,13 @@ export class DashboardService {
     this.todosSubject.next(current.filter((t) => t.id !== id));
   }
 
+  // ============ UTILITY METHODS ============
   generateCalendar(year: number, month: number): number[] {
     const days: number[] = [];
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const firstDayOfWeek = new Date(year, month, 1).getDay();
-    for (let i = 0; i < firstDayOfWeek; i++) {
-      days.push(0);
-    }
-    for (let day = 1; day <= daysInMonth; day++) {
-      days.push(day);
-    }
+    for (let i = 0; i < firstDayOfWeek; i++) days.push(0);
+    for (let day = 1; day <= daysInMonth; day++) days.push(day);
     return days;
   }
 

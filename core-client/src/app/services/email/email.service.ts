@@ -2,11 +2,24 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError } from 'rxjs/operators';
-import { AuthService } from '../auth/auth.service';
+import { AuthService } from '../../core/services/auth/auth.service';
 import { environment } from '../../environments/environment.development';
 
 export interface EmailSettings {
   fromEmail: string;
+}
+
+export interface SendEmailRequest {
+  to: string;
+  cc?: string;
+  bcc?: string;
+  subject: string;
+  body: string;
+  attachPdf: boolean;
+  sendCopyToSelf: boolean;
+  customerId: number;
+  invoiceId?: number;
+  type: 'statement' | 'invoice' | 'custom';
 }
 
 @Injectable({
@@ -43,5 +56,16 @@ export class EmailService {
           this.handleError(error, 'Failed to save email settings')
         )
       );
+  }
+   sendCustomerEmail(request: SendEmailRequest): Observable<any> {
+    return this.http.post(`${this.apiUrl}/send-customer-email`, request, {
+      headers: { Authorization: `Bearer ${this.authService.getAuthToken()}` },
+    });
+  }
+
+  getEmailHistory(customerId: number): Observable<any[]> {
+    return this.http.get<any[]>(`${this.apiUrl}/history/${customerId}`, {
+      headers: { Authorization: `Bearer ${this.authService.getAuthToken()}` },
+    });
   }
 }
