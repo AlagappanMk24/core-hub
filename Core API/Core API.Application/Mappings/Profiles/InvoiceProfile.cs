@@ -1,6 +1,7 @@
 ﻿using AutoMapper;
 using Core_API.Application.DTOs.Invoice.Request;
 using Core_API.Application.DTOs.Invoice.Response;
+using Core_API.Application.DTOs.Invoices.Requests;
 using Core_API.Domain.Entities.Invoices;
 using Core_API.Domain.Enums;
 
@@ -87,7 +88,12 @@ namespace Core_API.Application.Mappings.Profiles
                 // Navigation properties
                 .ForMember(dest => dest.Customer, opt => opt.Ignore())
                 .ForMember(dest => dest.Company, opt => opt.Ignore())
-                .ForMember(dest => dest.RecurringInvoice, opt => opt.Ignore());
+                .ForMember(dest => dest.RecurringInvoice, opt => opt.Ignore())
+
+                .ForMember(dest => dest.BaseCurrencySubtotal, opt => opt.Ignore())
+                .ForMember(dest => dest.BaseCurrencyTotalAmount, opt => opt.Ignore())
+                .ForMember(dest => dest.BaseCurrencyAmountPaid, opt => opt.Ignore())
+                .ForMember(dest => dest.BaseCurrencyAmountDue, opt => opt.Ignore());
 
             #endregion
 
@@ -113,6 +119,7 @@ namespace Core_API.Application.Mappings.Profiles
                 .ForMember(dest => dest.Type, opt => opt.MapFrom(src => src.InvoiceType.ToString()))
                 .ForMember(dest => dest.CustomerId, opt => opt.MapFrom(src => src.CustomerId))
                 .ForMember(dest => dest.CompanyId, opt => opt.MapFrom(src => src.CompanyId))
+                .ForMember(dest => dest.CompanyName, opt => opt.MapFrom(src => src.Company != null ? src.Company.Name : null))
                 .ForMember(dest => dest.Currency, opt => opt.MapFrom(src => src.Currency))
                 .ForMember(dest => dest.CurrencyRate, opt => opt.MapFrom(src => src.CurrencyRate))
                 .ForMember(dest => dest.Subtotal, opt => opt.MapFrom(src => src.Subtotal))
@@ -141,7 +148,7 @@ namespace Core_API.Application.Mappings.Profiles
                 .ForMember(dest => dest.CreatedBy, opt => opt.MapFrom(src => src.CreatedBy))
                 .ForMember(dest => dest.UpdatedDate, opt => opt.MapFrom(src => src.UpdatedDate))
                 .ForMember(dest => dest.UpdatedBy, opt => opt.MapFrom(src => src.UpdatedBy))
-
+                .ForMember(dest => dest.Notes, opt => opt.MapFrom(src => src.InternalNotes ?? string.Empty))
                 // Nested DTOs
                 .ForMember(dest => dest.Customer, opt => opt.MapFrom(src => src.Customer))
                 .ForMember(dest => dest.Items, opt => opt.MapFrom(src => src.InvoiceItems))

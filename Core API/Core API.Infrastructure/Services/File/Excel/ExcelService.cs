@@ -23,35 +23,35 @@ namespace Core_API.Infrastructure.Services.File.Excel
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         }
 
-        public async Task<OperationResult<byte[]>> ExportInvoicesExcelAsync(
-            OperationContext operationContext,
-            InvoiceFilterRequestDto filter)
-        {
-            try
-            {
-                if (!operationContext.CompanyId.HasValue)
-                {
-                    _logger.LogWarning("Company ID is required for exporting invoices");
-                    return OperationResult<byte[]>.FailureResult("Company ID is required.");
-                }
+        //public async Task<OperationResult<byte[]>> ExportInvoicesExcelAsync(
+        //    OperationContext operationContext,
+        //    GetInvoicesPagedQuery filter)
+        //{
+        //    try
+        //    {
+        //        if (!operationContext.CompanyId.HasValue)
+        //        {
+        //            _logger.LogWarning("Company ID is required for exporting invoices");
+        //            return OperationResult<byte[]>.FailureResult("Company ID is required.");
+        //        }
 
-                int companyId = operationContext.CompanyId.Value;
-                var result = await _unitOfWork.Invoices.GetPagedAsync(companyId, filter);
+        //        int companyId = operationContext.CompanyId.Value;
+        //        var result = await _unitOfWork.Invoices.GetPagedAsync(companyId, filter);
 
-                if (result.Items.Count == 0)
-                {
-                    return OperationResult<byte[]>.FailureResult("No invoices found for export.");
-                }
+        //        if (result.Items.Count == 0)
+        //        {
+        //            return OperationResult<byte[]>.FailureResult("No invoices found for export.");
+        //        }
 
-                var excelBytes = GenerateExcelBytes(result.Items);
-                return OperationResult<byte[]>.SuccessResult(excelBytes);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error exporting invoices to Excel for company {CompanyId}", operationContext.CompanyId);
-                return OperationResult<byte[]>.FailureResult("Failed to export invoices to Excel: " + ex.Message);
-            }
-        }
+        //        var excelBytes = GenerateExcelBytes(result.Items);
+        //        return OperationResult<byte[]>.SuccessResult(excelBytes);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "Error exporting invoices to Excel for company {CompanyId}", operationContext.CompanyId);
+        //        return OperationResult<byte[]>.FailureResult("Failed to export invoices to Excel: " + ex.Message);
+        //    }
+        //}
 
         private byte[] GenerateExcelBytes(List<Domain.Entities.Invoices.Invoice> invoices)
         {

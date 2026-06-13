@@ -12,6 +12,7 @@ import {
   TaskComment,
   CreateTaskCommentDto,
   TaskAttachment,
+  PaginatedResult,
 } from '../../../interfaces/tasks/task.interface';
 
 @Injectable({
@@ -30,43 +31,54 @@ export class TaskService {
   }
 
   // Task CRUD
-  getTasks(filter: TaskFilterDto): Observable<Task[]> {
+ getTasks(filter: TaskFilterDto): Observable<PaginatedResult<Task>> {
     let params = new HttpParams()
       .set('page', filter.page.toString())
       .set('pageSize', filter.pageSize.toString())
-      .set('sortDescending', filter.sortDescending.toString());
+      .set('sortBy', filter.sortBy || 'dueDate')
+      .set('sortDescending', (filter.sortDescending ?? false).toString());
 
-    if (filter.status !== undefined)
-      params = params.set('status', filter.status);
-    if (filter.priority !== undefined)
-      params = params.set('priority', filter.priority);
-    if (filter.assignedToUserId)
+    // Add optional filters
+    if (filter.priority !== undefined && filter.priority !== null) {
+      params = params.set('priority', filter.priority.toString());
+    }
+    if (filter.status !== undefined && filter.status !== null) {
+      params = params.set('status', filter.status.toString());
+    }
+    if (filter.searchTerm) {
+      params = params.set('searchTerm', filter.searchTerm);
+    }
+    if (filter.myTasks) {
+      params = params.set('myTasks', 'true');
+    }
+    if (filter.assignedToUserId) {
       params = params.set('assignedToUserId', filter.assignedToUserId);
-    if (filter.category) params = params.set('category', filter.category);
-    if (filter.tag) params = params.set('tag', filter.tag);
+    }
+    if (filter.category) {
+      params = params.set('category', filter.category);
+    }
+    if (filter.tag) {
+      params = params.set('tag', filter.tag);
+    }
     if (filter.dueDateFrom) {
-      const dueDateFrom = this.toISOString(filter.dueDateFrom);
-      if (dueDateFrom) params = params.set('dueDateFrom', dueDateFrom);
+      params = params.set('dueDateFrom', new Date(filter.dueDateFrom).toISOString());
     }
     if (filter.dueDateTo) {
-      const dueDateTo = this.toISOString(filter.dueDateTo);
-      if (dueDateTo) params = params.set('dueDateTo', dueDateTo);
+      params = params.set('dueDateTo', new Date(filter.dueDateTo).toISOString());
     }
-    if (filter.overdue !== undefined)
-      params = params.set('overdue', filter.overdue);
-    if (filter.myTasks !== undefined)
-      params = params.set('myTasks', filter.myTasks);
-    if (filter.searchTerm) params = params.set('searchTerm', filter.searchTerm);
-    if (filter.sortBy) params = params.set('sortBy', filter.sortBy);
+    if (filter.overdue !== undefined) {
+      params = params.set('overdue', filter.overdue.toString());
+    }
 
-    return this.http.get<Task[]>(this.apiUrl, { params });
+    return this.http.get<PaginatedResult<Task>>(this.apiUrl, { params });
   }
+
 
   getMyTasks(filter: TaskFilterDto): Observable<Task[]> {
     let params = new HttpParams()
       .set('page', filter.page.toString())
       .set('pageSize', filter.pageSize.toString())
-      .set('sortDescending', filter.sortDescending.toString());
+   .set('sortDescending', (filter.sortDescending ?? false).toString());
 
     if (filter.status !== undefined)
       params = params.set('status', filter.status);

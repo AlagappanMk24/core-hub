@@ -45,6 +45,12 @@ export class AdminDashboardStatsComponent
   newTodo = '';
   calendarDays: number[] = [];
 
+  currentMonth: Date = new Date();
+currentMonthName: string = '';
+currentYear: number = 0;
+today: Date = new Date();
+todayDate: number = new Date().getDate();
+
   private dashboard: AdminDashboardSummary | null = null;
   private subscription: Subscription = new Subscription();
   private amountChart: Chart | null = null;
@@ -184,4 +190,22 @@ export class AdminDashboardStatsComponent
   get Math() {
     return Math;
   }
+
+  previousMonth(): void {
+  const newMonth = new Date(this.currentMonth);
+  newMonth.setMonth(this.currentMonth.getMonth() - 1);
+  this.currentMonth = newMonth;
+  this.currentMonthName = this.currentMonth.toLocaleString('default', { month: 'long' });
+  this.currentYear = this.currentMonth.getFullYear();
+  this.calendarDays = this.dashboardService.generateCalendar(this.currentYear, this.currentMonth.getMonth());
+}
+
+nextMonth(): void {
+  const newMonth = new Date(this.currentMonth);
+  newMonth.setMonth(this.currentMonth.getMonth() + 1);
+  this.currentMonth = newMonth;
+  this.currentMonthName = this.currentMonth.toLocaleString('default', { month: 'long' });
+  this.currentYear = this.currentMonth.getFullYear();
+  this.calendarDays = this.dashboardService.generateCalendar(this.currentYear, this.currentMonth.getMonth());
+}
 }

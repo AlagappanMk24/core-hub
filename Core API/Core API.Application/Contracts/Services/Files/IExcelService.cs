@@ -6,7 +6,7 @@ namespace Core_API.Application.Contracts.Services.Files
 {
     public interface IExcelService
     {
-        Task<OperationResult<byte[]>> ExportInvoicesExcelAsync(OperationContext operationContext, InvoiceFilterRequestDto invoiceFilterRequestDto);
+        //Task<OperationResult<byte[]>> ExportInvoicesExcelAsync(OperationContext operationContext, InvoiceFilterRequestDto invoiceFilterRequestDto);
         byte[] GenerateImportTemplate();
     }
 }

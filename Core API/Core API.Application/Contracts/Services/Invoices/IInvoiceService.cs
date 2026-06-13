@@ -3,6 +3,7 @@ using Core_API.Application.Common.Results;
 using Core_API.Application.DTOs.Email.Requests;
 using Core_API.Application.DTOs.Invoice.Request;
 using Core_API.Application.DTOs.Invoice.Response;
+using Core_API.Application.DTOs.Invoices.Requests;
 using Core_API.Application.DTOs.User.Response;
 
 namespace Core_API.Application.Contracts.Services.Invoices
@@ -35,9 +36,9 @@ namespace Core_API.Application.Contracts.Services.Invoices
         /// <summary>
         /// Retrieves a paged list of invoices
         /// </summary>
-        Task<OperationResult<PaginatedResult<InvoiceResponseDto>>> GetPagedAsync(
-          OperationContext operationContext,
-          InvoiceFilterRequestDto filter);
+        //Task<OperationResult<PaginatedResult<InvoiceResponseDto>>> GetPagedAsync(
+        //  OperationContext operationContext,
+        //  InvoiceFilterRequestDto filter);
 
         /// <summary>
         /// Duplicates an existing invoice

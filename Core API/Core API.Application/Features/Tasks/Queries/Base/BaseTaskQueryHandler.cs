@@ -15,21 +15,15 @@ namespace Core_API.Application.Features.Tasks.Queries.Base
     /// Base handler for task queries to eliminate code duplication.
     /// Handles common filtering, sorting, pagination, and includes.
     /// </summary>
-    public abstract class BaseTaskQueryHandler<TQuery> : IRequestHandler<TQuery, OperationResult<IEnumerable<TaskDto>>>
+    public abstract class BaseTaskQueryHandler<TQuery>(
+        IUnitOfWork unitOfWork,
+        IMapper mapper,
+        ILogger logger) : IRequestHandler<TQuery, OperationResult<IEnumerable<TaskDto>>>
         where TQuery : BaseQuery<IEnumerable<TaskDto>>
     {
-        protected readonly IUnitOfWork _unitOfWork;
-        protected readonly IMapper _mapper;
-        protected readonly ILogger _logger;
-        protected BaseTaskQueryHandler(
-            IUnitOfWork unitOfWork,
-            IMapper mapper,
-            ILogger logger)
-        {
-            _unitOfWork = unitOfWork;
-            _mapper = mapper;
-            _logger = logger;
-        }
+        protected readonly IUnitOfWork _unitOfWork = unitOfWork;
+        protected readonly IMapper _mapper = mapper;
+        protected readonly ILogger _logger = logger;
 
         public abstract Task<OperationResult<IEnumerable<TaskDto>>> Handle(TQuery request, CancellationToken cancellationToken);
 

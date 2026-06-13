@@ -44,7 +44,7 @@ namespace Core_API.Application.Features.CompanyRequests.Commands.UpdateCompany
                         $"Failed to update company: {string.Join(", ", updateResult.Errors.Select(e => e.Description))}");
 
                 // Generate new JWT with updated company context
-                var newToken = await jwtService.GenerateJwtToken(user);
+                var newToken = await jwtService.GenerateJwtTokenAsync(user);
 
                 logger.LogInformation("Company updated successfully for user {UserId} to CompanyId {CompanyId}",
                     context.UserId, request.CompanyId);

@@ -19,49 +19,40 @@ namespace Core_API.Infrastructure.Services.Authentication
     /// Service responsible for JWT token generation, validation, refresh token management,
     /// and token persistence/revocation.
     /// </summary>
-    public class JwtService(IConfiguration configuration, IUnitOfWork unitOfWork,CoreInvoiceDbContext context, IOptions<JwtSettings> jwtSettings, ILogger<JwtService> logger) : IJwtService
+    public class JwtService(IOptions<JwtSettings> jwtSettings, CoreInvoiceDbContext context, IUnitOfWork unitOfWork, ILogger<JwtService> logger) : IJwtService
     {
-        private readonly IConfiguration _configuration = configuration;
-        private readonly IUnitOfWork _unitOfWork = unitOfWork;
-        private readonly CoreInvoiceDbContext _context = context;
+        #region Private Fields
+
         private readonly JwtSettings _jwtSettings = jwtSettings.Value;
+        private readonly CoreInvoiceDbContext _context = context;
+        private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly ILogger<JwtService> _logger = logger;
 
+        #endregion
+
+        #region Public Methods
         /// <inheritdoc/>
-        public async Task<string> GenerateJwtToken(ApplicationUser user)
+        public async Task<string> GenerateJwtTokenAsync(ApplicationUser user)
         {
             ArgumentNullException.ThrowIfNull(user);
 
-            var claims = await BuildUserClaimsAsync(user);
-
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JwtSettings:SecretKey"]!));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
-
-            var token = new JwtSecurityToken(
-                issuer: _jwtSettings.ValidIssuer,
-                audience: _jwtSettings.ValidAudience,
-                claims: claims,
-                expires: DateTime.UtcNow.AddHours(12),
-                signingCredentials: creds);
-
+            var token = await CreateTokenAsync(user);
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
         /// <inheritdoc/>
-        public async Task<JwtSecurityToken> CreateToken(ApplicationUser user)
+        public async Task<JwtSecurityToken> CreateTokenAsync(ApplicationUser user)
         {
             ArgumentNullException.ThrowIfNull(user);
 
             var claims = await BuildUserClaimsAsync(user);
-
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.SecretKey));
-            var signingCredentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+            var signingCredentials = GetSigningCredentials();
 
             return new JwtSecurityToken(
                 issuer: _jwtSettings.ValidIssuer,
                 audience: _jwtSettings.ValidAudience,
                 claims: claims,
-                expires: DateTime.UtcNow.AddHours(12),
+                expires: DateTime.UtcNow.AddHours(_jwtSettings.ExpireHours),
                 signingCredentials: signingCredentials);
         }
 
@@ -70,22 +61,21 @@ namespace Core_API.Infrastructure.Services.Authentication
         {
             ArgumentNullException.ThrowIfNull(user);
 
-            var claims = new[]
+            var claims = new List<Claim>
             {
-            new Claim(ClaimTypes.NameIdentifier, user.Id),
-            new Claim(ClaimTypes.Email, user.Email ?? string.Empty),
-            new Claim("otp_purpose", "verification")
-        };
-
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.SecretKey));
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+                new(JwtRegisteredClaimNames.Sub, user.Id),
+                new(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
+                new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new("otp_purpose", "verification"),
+                new("otp_identifier", Guid.NewGuid().ToString())
+            };
 
             var token = new JwtSecurityToken(
                 issuer: _jwtSettings.ValidIssuer,
                 audience: _jwtSettings.ValidAudience,
                 claims: claims,
-                expires: DateTime.UtcNow.AddMinutes(5),
-                signingCredentials: creds);
+                expires: DateTime.UtcNow.AddMinutes(_jwtSettings.OtpExpireMinutes),
+                signingCredentials: GetSigningCredentials());
 
             return new JwtSecurityTokenHandler().WriteToken(token);
         }
@@ -99,21 +89,20 @@ namespace Core_API.Infrastructure.Services.Authentication
             try
             {
                 var tokenHandler = new JwtSecurityTokenHandler();
-                var key = Encoding.UTF8.GetBytes(_jwtSettings.SecretKey);
+                var validationParameters = GetTokenValidationParameters(validateLifetime: true);
 
-                var principal = tokenHandler.ValidateToken(token, new TokenValidationParameters
-                {
-                    ValidateIssuer = true,
-                    ValidateAudience = true,
-                    ValidateLifetime = true,
-                    ValidateIssuerSigningKey = true,
-                    ValidIssuer = _jwtSettings.ValidIssuer,
-                    ValidAudience = _jwtSettings.ValidAudience,
-                    IssuerSigningKey = new SymmetricSecurityKey(key),
-                    ClockSkew = TimeSpan.Zero
-                }, out _);
-
+                var principal = tokenHandler.ValidateToken(token, validationParameters, out _);
                 return principal;
+            }
+            catch (SecurityTokenExpiredException ex)
+            {
+                _logger.LogWarning(ex, "OTP token has expired");
+                return null;
+            }
+            catch (SecurityTokenInvalidSignatureException ex)
+            {
+                _logger.LogWarning(ex, "OTP token has invalid signature");
+                return null;
             }
             catch (Exception ex)
             {
@@ -123,12 +112,24 @@ namespace Core_API.Infrastructure.Services.Authentication
         }
 
         /// <inheritdoc/>
-        public string GenerateSecretKey(int length = 32)
+        public ClaimsPrincipal? GetPrincipalFromExpiredToken(string token)
         {
-            using var rng = RandomNumberGenerator.Create();
-            var byteArray = new byte[length];
-            rng.GetBytes(byteArray);
-            return Convert.ToBase64String(byteArray);
+            if (string.IsNullOrWhiteSpace(token))
+                return null;
+
+            try
+            {
+                var tokenHandler = new JwtSecurityTokenHandler();
+                var validationParameters = GetTokenValidationParameters(validateLifetime: false);
+
+                var principal = tokenHandler.ValidateToken(token, validationParameters, out _);
+                return principal;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to get principal from expired token");
+                return null;
+            }
         }
 
         /// <inheritdoc/>
@@ -141,13 +142,23 @@ namespace Core_API.Infrastructure.Services.Authentication
             return new RefreshToken
             {
                 Token = Convert.ToBase64String(randomNumber),
-                ExpiresOn = DateTime.UtcNow.AddHours(6),
-                CreatedOn = DateTime.UtcNow
+                ExpiresOn = DateTime.UtcNow.AddHours(_jwtSettings.RefreshTokenExpireHours),
+                CreatedOn = DateTime.UtcNow,
+                CreatedByIp = GetCurrentIpAddress()
             };
         }
 
         /// <inheritdoc/>
-        public async System.Threading.Tasks.Task StoreTokenAsync(string userId, string token)
+        public string GenerateSecretKey(int length = 32)
+        {
+            var byteArray = new byte[length];
+            using var rng = RandomNumberGenerator.Create();
+            rng.GetBytes(byteArray);
+            return Convert.ToBase64String(byteArray);
+        }
+
+        /// <inheritdoc/>
+        public async Task StoreTokenAsync(string userId, string token)
         {
             ArgumentException.ThrowIfNullOrEmpty(userId);
             ArgumentException.ThrowIfNullOrEmpty(token);
@@ -158,7 +169,9 @@ namespace Core_API.Infrastructure.Services.Authentication
                 {
                     UserId = userId,
                     Token = token,
-                    ExpiresAt = DateTime.UtcNow.AddHours(Convert.ToDouble(_configuration["JwtSettings:ExpireHours"] ?? "12"))
+                    ExpiresAt = DateTime.UtcNow.AddHours(_jwtSettings.ExpireHours),
+                    CreatedAt = DateTime.UtcNow,
+                    CreatedByIp = GetCurrentIpAddress()
                 };
 
                 await _context.AuthTokens.AddAsync(authToken);
@@ -185,12 +198,67 @@ namespace Core_API.Infrastructure.Services.Authentication
         }
 
         /// <inheritdoc/>
-        public async System.Threading.Tasks.Task CleanupExpiredTokensAsync()
+        public async Task RevokeUserTokensAsync(string userId)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(userId);
+
+            try
+            {
+                var tokens = await _context.AuthTokens
+                    .Where(t => t.UserId == userId && !t.IsRevoked)
+                    .ToListAsync();
+
+                foreach (var token in tokens)
+                {
+                    token.IsRevoked = true;
+                    token.RevokedAt = DateTime.UtcNow;
+                    token.RevokedByIp = GetCurrentIpAddress();
+                }
+
+                await _context.SaveChangesAsync();
+                _logger.LogInformation("Revoked {Count} tokens for user {UserId}", tokens.Count, userId);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error revoking tokens for user {UserId}", userId);
+                throw;
+            }
+        }
+
+        /// <inheritdoc/>
+        public async Task RevokeTokenAsync(string token)
+        {
+            ArgumentException.ThrowIfNullOrEmpty(token);
+
+            try
+            {
+                var authToken = await _context.AuthTokens
+                    .FirstOrDefaultAsync(t => t.Token == token && !t.IsRevoked);
+
+                if (authToken != null)
+                {
+                    authToken.IsRevoked = true;
+                    authToken.RevokedAt = DateTime.UtcNow;
+                    authToken.RevokedByIp = GetCurrentIpAddress();
+                    await _context.SaveChangesAsync();
+                    _logger.LogInformation("Revoked token for user {UserId}", authToken.UserId);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error revoking token");
+                throw;
+            }
+        }
+
+        /// <inheritdoc/>
+        public async Task CleanupExpiredTokensAsync()
         {
             try
             {
                 var expiredTokens = await _context.AuthTokens
                     .Where(t => t.ExpiresAt < DateTime.UtcNow)
+                    .Take(1000) // Limit batch size
                     .ToListAsync();
 
                 if (expiredTokens.Any())
@@ -207,36 +275,9 @@ namespace Core_API.Infrastructure.Services.Authentication
                 throw;
             }
         }
+        #endregion
 
-        /// <inheritdoc/>
-        public async System.Threading.Tasks.Task RevokeTokenAsync(string userId)
-        {
-            ArgumentException.ThrowIfNullOrEmpty(userId);
-
-            try
-            {
-                var tokens = await _context.AuthTokens
-                    .Where(t => t.UserId == userId && !t.IsRevoked)
-                    .ToListAsync();
-
-                foreach (var token in tokens)
-                {
-                    token.IsRevoked = true;
-                    token.RevokedAt = DateTime.UtcNow;
-                }
-
-                await _context.SaveChangesAsync();
-
-                _logger.LogInformation("Revoked {Count} tokens for user {UserId}", tokens.Count, userId);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error revoking tokens for user {UserId}", userId);
-                throw;
-            }
-        }
-
-        #region Private Helpers
+        #region Private Methods
 
         /// <summary>
         /// Builds the complete list of claims for a user including roles.
@@ -245,24 +286,77 @@ namespace Core_API.Infrastructure.Services.Authentication
         {
             var claims = new List<Claim>
             {
-                new Claim(ClaimTypes.Name, user.UserName ?? string.Empty),
-                new Claim(ClaimTypes.NameIdentifier, user.Id),
-                new Claim(JwtRegisteredClaimNames.Sub, user.Id),
-                new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
-                new Claim(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
-                new Claim("uid", user.Id),
-                new Claim("companyId", user.CompanyId?.ToString() ?? "0"),
-                new Claim("customerId", user.CustomerId?.ToString() ?? "0")
+                new(JwtRegisteredClaimNames.Sub, user.Id),
+                new(JwtRegisteredClaimNames.Email, user.Email ?? string.Empty),
+                new(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
+                new(JwtRegisteredClaimNames.Iat, DateTimeOffset.UtcNow.ToUnixTimeSeconds().ToString(), ClaimValueTypes.Integer64),
+                new(ClaimTypes.NameIdentifier, user.Id),
+                new(ClaimTypes.Name, user.UserName ?? string.Empty),
+                new(ClaimTypes.Email, user.Email ?? string.Empty),
+                new("uid", user.Id),
+                new("companyId", user.CompanyId?.ToString() ?? "0"),
+                new("customerId", user.CustomerId?.ToString() ?? "0"),
+                new("fullName", user.FullName ?? string.Empty)
             };
 
+            // Add roles as claims
             var roles = await _unitOfWork.AuthUsers.GetRolesAsync(user);
-
             foreach (var role in roles)
             {
                 claims.Add(new Claim(ClaimTypes.Role, role));
+                claims.Add(new Claim("role", role)); // For backward compatibility
             }
 
+            // Add custom permissions if needed
+            // var permissions = await _unitOfWork.AuthUsers.GetPermissionsAsync(user);
+            // foreach (var permission in permissions)
+            // {
+            //     claims.Add(new Claim("permission", permission));
+            // }
+
             return claims;
+        }
+
+        /// <summary>
+        /// Gets the signing credentials using the configured secret key.
+        /// </summary>
+        private SigningCredentials GetSigningCredentials()
+        {
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.SecretKey));
+            return new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        }
+
+        /// <summary>
+        /// Gets the token validation parameters.
+        /// </summary>
+        /// <param name="validateLifetime">Whether to validate token lifetime.</param>
+        private TokenValidationParameters GetTokenValidationParameters(bool validateLifetime = true)
+        {
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.SecretKey));
+
+            return new TokenValidationParameters
+            {
+                ValidateIssuer = true,
+                ValidateAudience = true,
+                ValidateLifetime = validateLifetime,
+                ValidateIssuerSigningKey = true,
+                ValidIssuer = _jwtSettings.ValidIssuer,
+                ValidAudience = _jwtSettings.ValidAudience,
+                IssuerSigningKey = key,
+                ClockSkew = TimeSpan.FromMinutes(_jwtSettings.ClockSkewMinutes),
+                RequireExpirationTime = true,
+                RequireSignedTokens = true
+            };
+        }
+
+        /// <summary>
+        /// Gets the current IP address from the HTTP context.
+        /// </summary>
+        private static string GetCurrentIpAddress()
+        {
+            // This should be enhanced to get actual IP from HttpContextAccessor
+            // For now, return a placeholder
+            return "unknown";
         }
 
         #endregion

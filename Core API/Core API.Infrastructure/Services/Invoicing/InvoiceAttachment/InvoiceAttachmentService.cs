@@ -2,7 +2,7 @@
 using Core_API.Application.Common.Results;
 using Core_API.Application.Contracts.Persistence;
 using Core_API.Application.Contracts.Services.Invoice;
-using Core_API.Application.DTOs.Invoice.Request;
+using Core_API.Application.DTOs.Invoices.Requests;
 using Core_API.Domain.Entities.Invoices;
 using Microsoft.Extensions.Logging;
 using System.Text.Json;

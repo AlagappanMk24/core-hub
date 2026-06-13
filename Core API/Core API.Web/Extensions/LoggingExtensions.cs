@@ -1,4 +1,4 @@
-﻿using Core_API.Application.CrossCuttingConcerns.Logging;
+﻿using Core_API.Infrastructure.Logging;
 
 namespace Core_API.Web.Extensions;
 

@@ -100,6 +100,7 @@ export interface UpdateTaskDto {
 }
 
 export interface TaskFilterDto {
+   // Filters
   status?: TaskStatus;
   priority?: TaskPriority;
   assignedToUserId?: string;
@@ -110,10 +111,13 @@ export interface TaskFilterDto {
   overdue?: boolean;
   myTasks?: boolean;
   searchTerm?: string;
+  // Pagination
   page: number;
   pageSize: number;
+  
+  // Sorting
   sortBy?: string;
-  sortDescending: boolean;
+  sortDescending?: boolean;
 }
 
 export interface TaskStats {
@@ -139,4 +143,14 @@ export interface TaskStats {
 
 export interface CreateTaskCommentDto {
   comment: string;
+}
+
+export interface PaginatedResult<T> {
+  items: T[];
+  totalCount: number;
+  pageNumber: number;
+  pageSize: number;
+  totalPages: number;
+  hasPreviousPage: boolean;
+  hasNextPage: boolean;
 }

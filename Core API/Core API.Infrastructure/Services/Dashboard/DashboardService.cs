@@ -415,7 +415,6 @@ namespace Core_API.Infrastructure.Services.Dashboard
                 _ => 0.5m
             };
         }
-
         #endregion
     }
 }

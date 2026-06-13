@@ -1,16 +1,14 @@
-﻿using Core_API.Application.Common.Models;
-using Core_API.Application.Common.Results;
-using MediatR;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
+using Core_API.Application.Common.Models;
 
-namespace Core_API.Application.Common.Base
+namespace Core_API.Application.Common.Base;
+
+/// <summary>
+/// Abstract base class for all queries
+/// </summary>
+/// <typeparam name="TResponse">The response type</typeparam>
+public abstract record BaseQuery<TResponse> : IBaseRequest<TResponse>
 {
-    /// <summary>
-    /// Base class for all queries
-    /// </summary>
-    public abstract record BaseQuery<TResponse> : IRequest<OperationResult<TResponse>>
-    {
-        [JsonIgnore]
-        public OperationContext Context { get; init; }
-    }
+    [JsonIgnore]
+    public OperationContext Context { get; set; } = null!;
 }

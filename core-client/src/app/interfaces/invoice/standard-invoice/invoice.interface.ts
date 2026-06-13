@@ -277,7 +277,7 @@ export interface StatsItem {
 }
 
 export interface InvoiceSettings {
- companyId?: number;
+  companyId?: number;
   isAutomated: boolean;
   invoicePrefix: string;
   invoiceStartingNumber: number;
@@ -298,7 +298,7 @@ export interface DiscountSettings {
   maxDiscountAmount: number;
   allowMultipleDiscounts: boolean;
   applyDiscountBeforeTax: boolean;
-  showDiscountColumnOnInvoice: boolean;  
+  showDiscountColumnOnInvoice: boolean;
 }
 
 export interface ExtendedInvoiceSettings extends InvoiceSettings {
@@ -374,6 +374,11 @@ export interface MoreFiltersDialogData {
     dueDateFrom: Date | null;
     dueDateTo: Date | null;
   };
+}
 
-
+export interface ApiResponse<T> {
+  isSuccess: boolean;
+  data: T;
+  errorMessage: string | null;
+  errors: string[];
 }

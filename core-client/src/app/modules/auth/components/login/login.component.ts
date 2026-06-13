@@ -103,7 +103,7 @@ export class LoginComponent implements OnInit {
           setTimeout(() => {
             this.loading = false;
             this.redirectBasedOnRole(roles, companyId, customerId);
-          }, 1500);
+          }, 500);
         } else {
           this.loading = false;
           this.loginError =
@@ -203,7 +203,7 @@ export class LoginComponent implements OnInit {
               this.router.navigate(['/auth/verify-otp'], {
                 queryParams: { otpIdentifier: response.data?.otpIdentifier},
               });
-            }, 2000);
+            }, 500);
           } else {
             this.loading = false;
             this.loginError =
@@ -211,13 +211,15 @@ export class LoginComponent implements OnInit {
           }
         },
         error: (error) => {
+          console.log('Login error response:', error);
+                console.log('Login error response 1:', error.error);
           this.loading = false;
           // Handle specific error codes
           if (error.status === 400) {
             this.loginError =
               error.error?.message || 'Invalid email or password.';
           } else if (error.status === 403) {
-            this.loginError = error.error?.message || 'Unauthorized access.';
+            this.loginError = error.error?.detail || 'Unauthorized access.';
           } else if (error.status === 429) {
             const retryAfter = error.error?.retryAfterSeconds || 60;
             this.loginError = `${
@@ -233,7 +235,7 @@ export class LoginComponent implements OnInit {
           console.error('Login error:', error);
         },
       });
-    }, 2000);
+    }, 500);
   }
 
   /**

@@ -1,5 +1,5 @@
 ﻿using Core_API.Application.Contracts.Services.Taxes;
-using Core_API.Application.DTOs.Invoice.Request;
+using Core_API.Application.DTOs.Invoices.Requests;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;

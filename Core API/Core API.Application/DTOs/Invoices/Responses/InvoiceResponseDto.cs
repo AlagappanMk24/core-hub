@@ -1,5 +1,5 @@
 ﻿using Core_API.Application.DTOs.Customer.Response;
-using Core_API.Application.DTOs.Invoice.Request;
+using Core_API.Application.DTOs.Invoices.Requests;
 
 namespace Core_API.Application.DTOs.Invoice.Response
 {
@@ -25,6 +25,9 @@ namespace Core_API.Application.DTOs.Invoice.Response
         public int CustomerId { get; set; }
         public CustomerResponseDto Customer { get; set; }
         public int CompanyId { get; set; }
+
+        // ✅ For Super Admin - to know which company the invoice belongs to
+        public string? CompanyName { get; set; }
 
         // Financial
         public string Currency { get; set; }

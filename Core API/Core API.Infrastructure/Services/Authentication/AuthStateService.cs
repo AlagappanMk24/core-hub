@@ -21,19 +21,16 @@ namespace Core_API.Infrastructure.Services.Authentication
 
             return authState;
         }
-
         public async Task<AuthState> GetAuthStateAsync(string authStateId)
         {
             await CleanupExpiredStatesAsync();
             return await _context.AuthStates.FindAsync(authStateId);
         }
-
         public async System.Threading.Tasks.Task UpdateAuthStateAsync(AuthState authState)
         {
             _context.AuthStates.Update(authState);
             await _context.SaveChangesAsync();
         }
-
         public async System.Threading.Tasks.Task CleanupExpiredStatesAsync()
         {
             var expiredStates = await _context.AuthStates

@@ -116,6 +116,8 @@ export class InvoiceComponent implements OnInit {
   customers: { id: number; name: string }[] = [];
   taxTypes: { name: string }[] = [];
   moreFiltersForm: FormGroup;
+  sortField: string = 'issueDate';
+sortDirection: 'asc' | 'desc' = 'desc';
   constructor(
     private invoiceService: InvoiceService,
     private customerService: CustomerService,
@@ -310,12 +312,13 @@ export class InvoiceComponent implements OnInit {
   loadStats(): void {
     this.isLoading = true;
     this.invoiceService.getInvoiceStats().subscribe({
-      next: (stats: InvoiceStats) => {
+      next: (response: any) => {
+        const statsData = response.data;
         this.stats = {
-          ...stats,
+          ...statsData,
           // Map for backward compatibility
-          approved: stats.sent,
-          completed: stats.paid,
+          approved: statsData.sent,
+          completed: statsData.paid,
         };
         this.isLoading = false;
       },
@@ -867,4 +870,54 @@ getCustomerPaymentHealth(): number {
   
   return Math.round((onTimePayments.length / paidInvoices.length) * 100);
 }
+sortBy(field: string): void {
+  if (this.sortField === field) {
+    this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+  } else {
+    this.sortField = field;
+    this.sortDirection = 'asc';
+  }
+  this.sortInvoices();
+}
+
+sortInvoices(): void {
+  this.invoices.sort((a, b) => {
+    let aVal = a[this.sortField as keyof Invoice];
+    let bVal = b[this.sortField as keyof Invoice];
+    
+    if (typeof aVal === 'number' && typeof bVal === 'number') {
+      return this.sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+    }
+    
+    const aStr = String(aVal || '').toLowerCase();
+    const bStr = String(bVal || '').toLowerCase();
+    
+    return this.sortDirection === 'asc' 
+      ? aStr.localeCompare(bStr) 
+      : bStr.localeCompare(aStr);
+  });
+}
+
+getInvoiceStatusClass(status: string): string {
+  return status;
+}
+
+getPaymentStatusClass(status: string): string {
+  return status;
+}
+
+isOverdue(dueDate: Date | string): boolean {
+  return new Date(dueDate) < new Date();
+}
+printInvoiceList(): void {
+  const printWindow = window.open('', '_blank');
+  printWindow?.document.write(`
+    <html>
+      <head><title>Invoice List</title></head>
+      <body>${document.querySelector('.invoice-table')?.outerHTML}</body>
+    </html>
+  `);
+  printWindow?.print();
+}
+
 }

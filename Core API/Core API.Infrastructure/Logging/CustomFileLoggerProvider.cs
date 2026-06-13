@@ -1,7 +1,8 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Core_API.Application.CrossCuttingConcerns.Logging;
+using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 
-namespace Core_API.Application.CrossCuttingConcerns.Logging
+namespace Core_API.Infrastructure.Logging
 {
     public class CustomFileLoggerProvider : ILoggerProvider
     {

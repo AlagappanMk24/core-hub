@@ -12,6 +12,7 @@ public class RefreshToken
     public DateTime CreatedOn { get; set; } = DateTime.UtcNow; // When the refresh token was created
     public bool IsRevoked { get; set; } // To mark a token as revoked (e.g., on logout)
     public string? RevokedByIp { get; set; } // Optional: IP address from which it was revoked
+    public string? CreatedByIp { get;set; } // Optional: IP address from which it was created
     public DateTime? RevokedOn { get; set; } // Optional: When it was revoked
 
     // Foreign key to ApplicationUser

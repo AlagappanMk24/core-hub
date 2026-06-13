@@ -5,7 +5,6 @@ using Core_API.Domain.Entities.Companies;
 using Core_API.Domain.Entities.Customers;
 using Core_API.Domain.Entities.Invoices;
 using Core_API.Domain.Entities.RecurringInvoices;
-using Core_API.Domain.Entities.Payments;
 using Core_API.Domain.Entities.Tasks;
 using Core_API.Domain.Entities.Settings;
 

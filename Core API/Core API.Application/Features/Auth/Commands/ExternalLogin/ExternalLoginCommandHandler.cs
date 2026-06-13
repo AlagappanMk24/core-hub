@@ -59,7 +59,7 @@ namespace Core_API.Application.Features.Auth.Commands.ExternalLogin
 
             _logger.LogInformation("Successfully exchanged authorization code for access token (Provider: {Provider})", request.Provider);
 
-            return await _jwtService.GenerateJwtToken(user);
+            return await _jwtService.GenerateJwtTokenAsync(user);
         }
         #endregion
 

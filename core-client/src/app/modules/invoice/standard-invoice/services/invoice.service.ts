@@ -129,15 +129,24 @@ export class InvoiceService {
       params = params.set('dueDateFrom', filter.dueDateFrom);
     if (filter.dueDateTo) params = params.set('dueDateTo', filter.dueDateTo);
 
+    // 1. Change <PaginatedResult<Invoice>> to <any> (or your custom API response wrapper interface)
     return this.http
-      .get<PaginatedResult<Invoice>>(this.apiUrl, {
+      .get<any>(this.apiUrl, {
         params,
       })
       .pipe(
-        map((response) => ({
-          ...response,
-          items: response.items.map((item) => this.mapToInvoice(item)),
-        })),
+        map((response) => {
+          // 2. Extract the 'data' property which holds the actual PaginatedResult
+          const paginationData = response.data;
+
+          return {
+            ...paginationData,
+            // 3. Perform the item mapping safely on the inner items array
+            items: paginationData.items.map((item: any) =>
+              this.mapToInvoice(item),
+            ),
+          };
+        }),
         catchError((error) =>
           this.handleError(error, 'Failed to fetch invoices'),
         ),

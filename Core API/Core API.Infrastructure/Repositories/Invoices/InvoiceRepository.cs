@@ -1,18 +1,19 @@
 ﻿using Core_API.Application.Common.Results;
 using Core_API.Application.Contracts.Persistence.Invoice;
 using Core_API.Application.DTOs.Invoice.Request;
+using Core_API.Application.Features.Invoices.Queries.GetInvoicesPaged;
 using Core_API.Domain.Enums;
 using Core_API.Infrastructure.Persistence.Context;
-using Core_API.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 
-namespace Core_API.Infrastructure.Repositories.Invoice
+namespace Core_API.Infrastructure.Repositories.Invoices
 {
     public class InvoiceRepository(CoreInvoiceDbContext dbContext) : GenericRepository<Domain.Entities.Invoices.Invoice>(dbContext), IInvoiceRepository
     {
         public async Task<PaginatedResult<Domain.Entities.Invoices.Invoice>> GetPagedAsync(
-           int? companyId,
-           InvoiceFilterRequestDto filter)
+         int? companyId,
+         GetPagedInvoicesQuery filter,
+         CancellationToken cancellationToken = default)
         {
             IQueryable<Domain.Entities.Invoices.Invoice> query = _dbSet.Where(i => !i.IsDeleted);
 
@@ -23,49 +24,34 @@ namespace Core_API.Infrastructure.Repositories.Invoice
             }
 
             query = query
-                .Include(i => i.Customer)
-                .Include(i => i.InvoiceItems)
-                .Include(i => i.TaxDetails)
-                .Include(i => i.Discounts);
+             .Include(i => i.Customer)
+             .Include(i => i.Company)
+             .Include(i => i.InvoiceItems)
+             .Include(i => i.TaxDetails)
+             .Include(i => i.Discounts)
+             .Include(i => i.InvoiceAttachments)
+             .Include(i => i.Payments);
 
             // Apply filters
             if (!string.IsNullOrEmpty(filter.Search))
             {
-                filter.Search = filter.Search.ToLower();
-                query = query.Where(i => i.InvoiceNumber.ToLower().Contains(filter.Search) || i.Customer.Name.ToLower().Contains(filter.Search));
+                var searchLower = filter.Search.ToLower();
+                query = query.Where(i => i.InvoiceNumber.ToLower().Contains(searchLower) ||
+                                         i.Customer.Name.ToLower().Contains(searchLower));
             }
 
             if (!string.IsNullOrEmpty(filter.InvoiceStatus))
             {
-                var invoiceStatusValue = filter.InvoiceStatus;
-
-                // Map common frontend values to backend enum
-                invoiceStatusValue = invoiceStatusValue switch
-                {
-                    "Cancelled" => "Void",      // Map "Cancelled" to "Void"
-                    "Approved" => "Sent",       // Map "Approved" to "Sent" (if needed)
-                    _ => invoiceStatusValue
-                };
-
+                var invoiceStatusValue = MapInvoiceStatus(filter.InvoiceStatus);
                 if (Enum.TryParse<InvoiceStatus>(invoiceStatusValue, true, out var parsedInvoiceStatus))
                 {
                     query = query.Where(i => i.InvoiceStatus == parsedInvoiceStatus);
                 }
             }
 
-            // Complete fix for GetPagedAsync
             if (!string.IsNullOrEmpty(filter.PaymentStatus))
             {
-                var paymentStatusValue = filter.PaymentStatus;
-
-                // Map common frontend values to backend enum
-                paymentStatusValue = paymentStatusValue switch
-                {
-                    "Completed" => "Paid",
-                    "Processing" => "Pending",
-                    _ => paymentStatusValue
-                };
-
+                var paymentStatusValue = MapPaymentStatus(filter.PaymentStatus);
                 if (Enum.TryParse<PaymentStatus>(paymentStatusValue, true, out var parsedPaymentStatus))
                 {
                     query = query.Where(i => i.PaymentStatus == parsedPaymentStatus);
@@ -123,6 +109,7 @@ namespace Core_API.Infrastructure.Repositories.Invoice
             }
 
             var totalCount = await query.CountAsync();
+
             var items = await query
                 .OrderByDescending(i => i.IssueDate)
                 .Skip((filter.PageNumber - 1) * filter.PageSize)
@@ -145,6 +132,24 @@ namespace Core_API.Infrastructure.Repositories.Invoice
                 query = query.Where(i => i.Id != excludeInvoiceId.Value);
             }
             return await query.AnyAsync();
+        }
+        private static string MapInvoiceStatus(string status)
+        {
+            return status switch
+            {
+                "Cancelled" => "Void",
+                "Approved" => "Sent",
+                _ => status
+            };
+        }
+        private static string MapPaymentStatus(string status)
+        {
+            return status switch
+            {
+                "Completed" => "Paid",
+                "Processing" => "Pending",
+                _ => status
+            };
         }
     }
 }

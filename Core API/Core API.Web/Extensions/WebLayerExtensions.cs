@@ -82,6 +82,7 @@ namespace Core_API.Web.Extensions
             ConfigureAdminSettings(services, configuration);
             ConfigureEmailSettings(services, configuration);
             ConfigureSmsSettings(services, configuration);
+            ConfigureOtpSettings(services, configuration);
 
             #endregion
 
@@ -134,8 +135,8 @@ namespace Core_API.Web.Extensions
         /// </exception>
         private static void ConfigureStripe(IConfiguration configuration)
         {
-            var stripeSecretKey = configuration.GetSection("Stripe:SecretKey").Get<string>()
-            ?? throw new ArgumentNullException("Stripe:SecretKey is missing from configuration");
+            var stripeSecretKey = configuration.GetSection("StripeKeys:SecretKey").Get<string>()
+            ?? throw new ArgumentNullException("StripeKeys:SecretKey is missing from configuration");
 
             StripeConfiguration.ApiKey = stripeSecretKey;
         }
@@ -179,6 +180,20 @@ namespace Core_API.Web.Extensions
         private static void ConfigureSmsSettings(IServiceCollection services, IConfiguration configuration)
         {
             services.Configure<SMSSettings>(configuration.GetSection("SMSSettings"));
+        }
+
+        /// <summary>
+        /// Configures OTP service settings from application configuration.
+        /// </summary>
+        /// <param name="services">The service collection to add settings to.</param>
+        /// <param name="configuration">The application configuration containing OTP settings.</param>
+        /// <remarks>
+        /// Settings include OTP provider configuration, API keys, and phone number formats.
+        /// Settings are bound to <see cref="OtpSettings"/> class for strongly-typed access.
+        /// </remarks>
+        private static void ConfigureOtpSettings(IServiceCollection services, IConfiguration configuration)
+        {
+            services.Configure<OtpSettings>(configuration.GetSection("OtpSettings"));
         }
         #endregion
     }

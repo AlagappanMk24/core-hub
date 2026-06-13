@@ -31,12 +31,13 @@ namespace Core_API.Application.DTOs.Common
                 Message = message
             };
 
-        public static ResponseDto Failure(string message, int statusCode = StatusCodes.Status400BadRequest)
+        public static ResponseDto Failure(string message, int statusCode = StatusCodes.Status400BadRequest, object? data = null)
             => new()
             {
                 StatusCode = statusCode,
                 IsSucceeded = false,
-                Message = message
+                Message = message,
+                Data = data
             };
     }
 }

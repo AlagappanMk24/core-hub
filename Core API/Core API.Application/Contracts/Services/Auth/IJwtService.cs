@@ -11,14 +11,14 @@ namespace Core_API.Application.Contracts.Services.Auth
         /// </summary>
         /// <param name="user">The application user for whom the token is generated.</param>
         /// <returns>A JWT token as a string.</returns>
-        Task<string> GenerateJwtToken(ApplicationUser user);
+        Task<string> GenerateJwtTokenAsync(ApplicationUser user);
 
         /// <summary>
         /// Creates a JwtSecurityToken object with claims and roles (used internally or for advanced scenarios).
         /// </summary>
         /// <param name="user">The authenticated user.</param>
         /// <returns>A <see cref="JwtSecurityToken"/> instance.</returns>
-        Task<JwtSecurityToken> CreateToken(ApplicationUser user);
+        Task<JwtSecurityToken> CreateTokenAsync(ApplicationUser user);
 
         /// <summary>
         /// Generates a short-lived OTP token for two-factor authentication verification.
@@ -35,17 +35,24 @@ namespace Core_API.Application.Contracts.Services.Auth
         ClaimsPrincipal? ValidateOtpToken(string token);
 
         /// <summary>
-        /// Generates a cryptographically secure random secret key.
+        /// Gets the principal from an expired token (used for token refresh).
         /// </summary>
-        /// <param name="length">The length of the key in bytes (default: 32).</param>
-        /// <returns>A Base64-encoded secret key.</returns>
-        string GenerateSecretKey(int length = 32);
+        /// <param name="token">The expired token.</param>
+        /// <returns>The claims principal from the expired token.</returns>
+        ClaimsPrincipal? GetPrincipalFromExpiredToken(string token);
 
         /// <summary>
         /// Creates a refresh token for maintaining user sessions.
         /// </summary>
         /// <returns>A <see cref="RefreshToken"/> containing token value and expiry information.</returns>
         RefreshToken CreateRefreshToken();
+
+        /// <summary>
+        /// Generates a cryptographically secure random secret key.
+        /// </summary>
+        /// <param name="length">The length of the key in bytes (default: 32).</param>
+        /// <returns>A Base64-encoded secret key.</returns>
+        string GenerateSecretKey(int length = 32);
 
         /// <summary>
         /// Stores a JWT token in the database for tracking and revocation purposes.
@@ -63,10 +70,10 @@ namespace Core_API.Application.Contracts.Services.Auth
         Task<bool> ValidateTokenAsync(string token);
 
         /// <summary>
-        /// Cleans up all expired tokens from the database.
+        /// Revokes all tokens for a specific user.
         /// </summary>
-        /// <returns>A task representing the asynchronous operation.</returns>
-        Task CleanupExpiredTokensAsync();
+        /// <param name="userId">The user ID.</param>
+        Task RevokeUserTokensAsync(string userId);
 
         /// <summary>
         /// Revokes all active tokens for a specific user.
@@ -74,5 +81,11 @@ namespace Core_API.Application.Contracts.Services.Auth
         /// <param name="userId">The ID of the user whose tokens should be revoked.</param>
         /// <returns>A task representing the asynchronous operation.</returns>
         Task RevokeTokenAsync(string userId);
+
+        /// <summary>
+        /// Cleans up all expired tokens from the database.
+        /// </summary>
+        /// <returns>A task representing the asynchronous operation.</returns>
+        Task CleanupExpiredTokensAsync();
     }
 }

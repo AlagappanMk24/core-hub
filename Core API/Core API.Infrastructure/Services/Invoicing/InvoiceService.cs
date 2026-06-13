@@ -10,6 +10,7 @@ using Core_API.Application.DTOs.Customer.Response;
 using Core_API.Application.DTOs.Email.Requests;
 using Core_API.Application.DTOs.Invoice.Request;
 using Core_API.Application.DTOs.Invoice.Response;
+using Core_API.Application.DTOs.Invoices.Requests;
 using Core_API.Domain.Entities.Invoices;
 using Core_API.Domain.Enums;
 using Core_API.Domain.Models.Email;
@@ -592,50 +593,50 @@ namespace Core_API.Infrastructure.Services.Invoicing
                 return OperationResult<InvoiceResponseDto>.FailureResult("Failed to retrieve invoice.");
             }
         }
-        public async Task<OperationResult<PaginatedResult<InvoiceResponseDto>>> GetPagedAsync(OperationContext operationContext, InvoiceFilterRequestDto filter)
-        {
-            try
-            {
-                int? companyId = null;
-                if (!operationContext.IsSuperAdmin)
-                {
-                    if (!operationContext.CompanyId.HasValue)
-                        return OperationResult<PaginatedResult<InvoiceResponseDto>>.FailureResult("Company ID is required.");
+        //public async Task<OperationResult<PaginatedResult<InvoiceResponseDto>>> GetPagedAsync(OperationContext operationContext, InvoiceFilterRequestDto filter)
+        //{
+        //    try
+        //    {
+        //        int? companyId = null;
+        //        if (!operationContext.IsSuperAdmin)
+        //        {
+        //            if (!operationContext.CompanyId.HasValue)
+        //                return OperationResult<PaginatedResult<InvoiceResponseDto>>.FailureResult("Company ID is required.");
 
-                    companyId = operationContext.CompanyId.Value;
-                }
+        //            companyId = operationContext.CompanyId.Value;
+        //        }
 
-                // Apply customer filter if user is a customer
-                if (operationContext.CustomerId.HasValue)
-                {
-                    filter.CustomerId = operationContext.CustomerId.Value;
-                }
+        //        // Apply customer filter if user is a customer
+        //        if (operationContext.CustomerId.HasValue)
+        //        {
+        //            filter.CustomerId = operationContext.CustomerId.Value;
+        //        }
 
-                var result = await _unitOfWork.Invoices.GetPagedAsync(companyId, filter);
+        //        var result = await _unitOfWork.Invoices.GetPagedAsync(companyId, filter);
 
-                var mappedItems = new List<InvoiceResponseDto>();
-                foreach (var invoice in result.Items)
-                {
-                    var dto = MapToInvoiceResponseDto(invoice);
-                    mappedItems.Add(dto);
-                }
+        //        var mappedItems = new List<InvoiceResponseDto>();
+        //        foreach (var invoice in result.Items)
+        //        {
+        //            var dto = MapToInvoiceResponseDto(invoice);
+        //            mappedItems.Add(dto);
+        //        }
 
-                var response = new PaginatedResult<InvoiceResponseDto>
-                {
-                    Items = mappedItems,
-                    TotalCount = result.TotalCount,
-                    PageNumber = result.PageNumber,
-                    PageSize = result.PageSize,
-                };
+        //        var response = new PaginatedResult<InvoiceResponseDto>
+        //        {
+        //            Items = mappedItems,
+        //            TotalCount = result.TotalCount,
+        //            PageNumber = result.PageNumber,
+        //            PageSize = result.PageSize,
+        //        };
 
-                return OperationResult<PaginatedResult<InvoiceResponseDto>>.SuccessResult(response);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error retrieving paged invoices for company {CompanyId}", operationContext.CompanyId);
-                return OperationResult<PaginatedResult<InvoiceResponseDto>>.FailureResult("Failed to retrieve invoices.");
-            }
-        }
+        //        return OperationResult<PaginatedResult<InvoiceResponseDto>>.SuccessResult(response);
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "Error retrieving paged invoices for company {CompanyId}", operationContext.CompanyId);
+        //        return OperationResult<PaginatedResult<InvoiceResponseDto>>.FailureResult("Failed to retrieve invoices.");
+        //    }
+        //}
         public async Task<OperationResult<InvoiceResponseDto>> DuplicateAsync(int id, OperationContext operationContext)
         {
             // 1️. Fetch the original invoice (without company filter for Super Admin)

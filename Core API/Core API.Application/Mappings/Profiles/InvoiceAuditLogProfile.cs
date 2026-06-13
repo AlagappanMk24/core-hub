@@ -1,11 +1,6 @@
 ﻿using AutoMapper;
 using Core_API.Application.DTOs.Invoice.Response;
 using Core_API.Domain.Entities.Invoices;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Core_API.Application.Mappings.Profiles
 {

@@ -1,11 +1,380 @@
+/* ============================================
+   ENTERPRISE DASHBOARD ANIMATIONS & STYLES
+   ============================================ */
+
+/* ──────────────────────────────────────────
+   BASE ANIMATIONS
+   ────────────────────────────────────────── */
+
+@keyframes slideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes fadeIn {
+  0% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes slideIn {
+  0% {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes pulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(139, 92, 246, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(139, 92, 246, 0);
+  }
+}
+
+@keyframes spinSlow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@keyframes bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+/* ──────────────────────────────────────────
+   ANIMATION CLASSES
+   ────────────────────────────────────────── */
+
+.animate-slide-up {
+  animation: slideUp 0.6s ease-out forwards;
+  opacity: 0;
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out forwards;
+  opacity: 0;
+}
+
+.animate-slide-in {
+  animation: slideIn 0.5s ease-out forwards;
+  opacity: 0;
+}
+
+.animate-pulse-glow {
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+.animate-spin-slow {
+  animation: spinSlow 3s linear infinite;
+}
+
+.animate-progress-item {
+  animation: slideUp 0.4s ease-out forwards;
+  opacity: 0;
+}
+
+/* Stagger delays */
+.animate-slide-up:nth-child(1) { animation-delay: 0s; }
+.animate-slide-up:nth-child(2) { animation-delay: 0.1s; }
+.animate-slide-up:nth-child(3) { animation-delay: 0.2s; }
+
+/* ──────────────────────────────────────────
+   STATS CARDS
+   ────────────────────────────────────────── */
+
 .stats-card {
-  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
 }
 
 .stats-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  transform: translateY(-8px) scale(1.02);
+  box-shadow: 0 25px 40px -12px rgba(0, 0, 0, 0.25);
 }
+
+.stats-card .sparkle {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 100px;
+  height: 100px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, transparent 70%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+
+.stats-card:hover .sparkle {
+  opacity: 1;
+  animation: sparklePulse 1s ease-out;
+}
+
+@keyframes sparklePulse {
+  0% {
+    transform: scale(0.5);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.6;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 0;
+  }
+}
+
+.stats-card .icon-wrapper {
+  transition: transform 0.3s ease;
+}
+
+.stats-card:hover .icon-wrapper {
+  transform: scale(1.1) rotate(5deg);
+}
+
+.stats-card .stat-number {
+  transition: all 0.3s ease;
+}
+
+.stats-card:hover .stat-number {
+  transform: scale(1.05);
+}
+
+/* ──────────────────────────────────────────
+   TABLE ROWS
+   ────────────────────────────────────────── */
+
+.table-row {
+  transition: all 0.3s ease;
+  animation: fadeIn 0.4s ease-out forwards;
+  opacity: 0;
+}
+
+.table-row:hover {
+  background-color: rgba(139, 92, 246, 0.05);
+  transform: translateX(4px);
+}
+
+/* Stagger animation for table rows */
+.table-row:nth-child(1) { animation-delay: 0.05s; }
+.table-row:nth-child(2) { animation-delay: 0.1s; }
+.table-row:nth-child(3) { animation-delay: 0.15s; }
+.table-row:nth-child(4) { animation-delay: 0.2s; }
+.table-row:nth-child(5) { animation-delay: 0.25s; }
+.table-row:nth-child(6) { animation-delay: 0.3s; }
+.table-row:nth-child(7) { animation-delay: 0.35s; }
+.table-row:nth-child(8) { animation-delay: 0.4s; }
+.table-row:nth-child(9) { animation-delay: 0.45s; }
+.table-row:nth-child(10) { animation-delay: 0.5s; }
+
+/* ──────────────────────────────────────────
+   STATUS BADGES
+   ────────────────────────────────────────── */
+
+.status-badge {
+  transition: all 0.2s ease;
+  animation: fadeIn 0.4s ease-out;
+}
+
+.status-badge:hover {
+  transform: scale(1.05);
+  filter: brightness(1.05);
+}
+
+/* ──────────────────────────────────────────
+   PROGRESS BARS
+   ────────────────────────────────────────── */
+
+.progress-bar-fill {
+  transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.progress-bar-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  animation: shimmer 2s infinite;
+}
+
+/* ──────────────────────────────────────────
+   HOVER CARDS
+   ────────────────────────────────────────── */
+
+.hover-card {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 20px 25px -12px rgba(0, 0, 0, 0.15);
+}
+
+/* ──────────────────────────────────────────
+   TODO LIST
+   ────────────────────────────────────────── */
+
+@keyframes todoItemEnter {
+  0% {
+    opacity: 0;
+    transform: translateX(-20px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.todo-item {
+  animation: todoItemEnter 0.3s ease-out forwards;
+  transition: all 0.2s ease;
+}
+
+.todo-item:hover {
+  background-color: #f9fafb;
+  transform: translateX(4px);
+}
+
+/* ──────────────────────────────────────────
+   RIPPLE BUTTON
+   ────────────────────────────────────────── */
+
+.ripple-button {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.ripple-button::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.3);
+  transform: translate(-50%, -50%);
+  transition: width 0.6s, height 0.6s;
+}
+
+.ripple-button:active::after {
+  width: 300px;
+  height: 300px;
+  opacity: 0;
+  transition: 0s;
+}
+
+/* ──────────────────────────────────────────
+   CUSTOM SCROLLBAR
+   ────────────────────────────────────────── */
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #c084fc, #9333ea);
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #a855f7;
+}
+
+.overflow-x-auto::-webkit-scrollbar {
+  height: 6px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb {
+  background: linear-gradient(90deg, #c084fc, #9333ea);
+  border-radius: 3px;
+}
+
+/* ──────────────────────────────────────────
+   RESPONSIVE DESIGN
+   ────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .stats-card:hover {
+    transform: translateY(-4px) scale(1.01);
+  }
+  
+  .table-row:hover {
+    transform: translateX(2px);
+  }
+  
+  .dashboard-container {
+    padding: 1rem;
+  }
+  
+  .stats-card .stat-number {
+    font-size: 1.75rem;
+  }
+}
+
+@media (max-width: 640px) {
+  .grid {
+    gap: 1rem;
+  }
+  
+  .stats-card .p-6 {
+    padding: 1.25rem;
+  }
+}
+
+/* ──────────────────────────────────────────
+   CHART CONTAINER
+   ────────────────────────────────────────── */
 
 .chart-container {
   position: relative;
@@ -13,19 +382,7 @@
   width: 100%;
 }
 
-.table-hover tr:hover {
-  background-color: #f9fafb;
-}
-
-.animate-pulse {
-  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-}
-
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: .5;
-  }
+canvas {
+  max-width: 100%;
+  height: auto;
 }

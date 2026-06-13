@@ -9,14 +9,8 @@ using Core_API.Domain.Enums;
 
 namespace Core_API.Application.Mappings.Profiles
 {
-    /// <summary>
-    /// AutoMapper profile for Customer entity to DTO mappings.
-    /// </summary>
     public class CustomerProfile : Profile
     {
-        /// <summary>
-        /// Initializes a new instance of the <see cref="CustomerProfile"/> class.
-        /// </summary>
         public CustomerProfile()
         {
             #region Customer to Response DTO
@@ -37,37 +31,71 @@ namespace Core_API.Application.Mappings.Profiles
 
             #region Create DTO to Customer
             CreateMap<CreateCustomerDto, Customer>()
-               .ForMember(dest => dest.Id, opt => opt.Ignore())
-               .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name))
-               .ForMember(dest => dest.Email, opt => opt.Ignore()) // Will be created as Value Object in service
-               .ForMember(dest => dest.PhoneNumber, opt => opt.Ignore()) // Will be created as Value Object in service
-               .ForMember(dest => dest.Address, opt => opt.Ignore()) // Will be created as Value Object in service
-               .ForMember(dest => dest.CompanyId, opt => opt.Ignore())
-               .ForMember(dest => dest.Invoices, opt => opt.Ignore())
-               .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
-               .ForMember(dest => dest.CreatedDate, opt => opt.Ignore())
-               .ForMember(dest => dest.UpdatedBy, opt => opt.Ignore())
-               .ForMember(dest => dest.UpdatedDate, opt => opt.Ignore())
-               .ForMember(dest => dest.IsDeleted, opt => opt.Ignore());
-            #endregion
-
-            #region Update DTO to Customer
-            CreateMap<UpdateCustomerDto, Customer>()
-                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
                 .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name))
-                .ForMember(dest => dest.Email, opt => opt.Ignore()) // Will be updated as Value Object in service
-                .ForMember(dest => dest.PhoneNumber, opt => opt.Ignore()) // Will be updated as Value Object in service
-                .ForMember(dest => dest.Address, opt => opt.Ignore()) // Will be updated as Value Object in service
+                .ForMember(dest => dest.Email, opt => opt.Ignore())
+                .ForMember(dest => dest.PhoneNumber, opt => opt.Ignore())
+                .ForMember(dest => dest.Address, opt => opt.Ignore())
                 .ForMember(dest => dest.CompanyId, opt => opt.Ignore())
                 .ForMember(dest => dest.Invoices, opt => opt.Ignore())
                 .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
                 .ForMember(dest => dest.CreatedDate, opt => opt.Ignore())
                 .ForMember(dest => dest.UpdatedBy, opt => opt.Ignore())
                 .ForMember(dest => dest.UpdatedDate, opt => opt.Ignore())
-                .ForMember(dest => dest.IsDeleted, opt => opt.Ignore());
+                .ForMember(dest => dest.IsDeleted, opt => opt.Ignore())
+                .ForMember(dest => dest.CustomerGroup, opt => opt.Ignore())
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => CustomerStatus.Active))
+                .ForMember(dest => dest.ActiveSince, opt => opt.MapFrom(src => DateTime.UtcNow))
+                .ForMember(dest => dest.LastPurchaseDate, opt => opt.Ignore())
+                .ForMember(dest => dest.TotalPurchases, opt => opt.Ignore())
+                .ForMember(dest => dest.AveragePaymentDays, opt => opt.Ignore())
+                .ForMember(dest => dest.Company, opt => opt.Ignore())
+                .ForMember(dest => dest.RecurringInvoices, opt => opt.Ignore())
+                .ForMember(dest => dest.Notes, opt => opt.Ignore())
+                .ForMember(dest => dest.Documents, opt => opt.Ignore())
+                .ForMember(dest => dest.Contacts, opt => opt.Ignore())
+                .ForMember(dest => dest.TaxId, opt => opt.MapFrom(src => src.TaxId))
+                .ForMember(dest => dest.Website, opt => opt.MapFrom(src => src.Website))
+                .ForMember(dest => dest.CreditLimit, opt => opt.MapFrom(src => src.CreditLimit))
+                .ForMember(dest => dest.DefaultPaymentTerms, opt => opt.MapFrom(src => src.DefaultPaymentTerms))
+                .ForMember(dest => dest.DefaultCurrency, opt => opt.MapFrom(src => src.DefaultCurrency))
+                .ForMember(dest => dest.CustomerGroupId, opt => opt.MapFrom(src => src.CustomerGroupId));
             #endregion
 
-            # region Invoice to CustomerInvoiceDto
+            #region Update DTO to Customer
+            CreateMap<UpdateCustomerDto, Customer>()
+                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
+                .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name))
+                .ForMember(dest => dest.Email, opt => opt.Ignore())
+                .ForMember(dest => dest.PhoneNumber, opt => opt.Ignore())
+                .ForMember(dest => dest.Address, opt => opt.Ignore())
+                .ForMember(dest => dest.CompanyId, opt => opt.Ignore())
+                .ForMember(dest => dest.Invoices, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedDate, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdatedDate, opt => opt.Ignore())
+                .ForMember(dest => dest.IsDeleted, opt => opt.Ignore())
+                .ForMember(dest => dest.CustomerGroup, opt => opt.Ignore())
+                .ForMember(dest => dest.Status, opt => opt.Ignore())
+                .ForMember(dest => dest.ActiveSince, opt => opt.Ignore())
+                .ForMember(dest => dest.LastPurchaseDate, opt => opt.Ignore())
+                .ForMember(dest => dest.TotalPurchases, opt => opt.Ignore())
+                .ForMember(dest => dest.AveragePaymentDays, opt => opt.Ignore())
+                .ForMember(dest => dest.Company, opt => opt.Ignore())
+                .ForMember(dest => dest.RecurringInvoices, opt => opt.Ignore())
+                .ForMember(dest => dest.Notes, opt => opt.Ignore())
+                .ForMember(dest => dest.Documents, opt => opt.Ignore())
+                .ForMember(dest => dest.Contacts, opt => opt.Ignore())
+                .ForMember(dest => dest.TaxId, opt => opt.MapFrom(src => src.TaxId))
+                .ForMember(dest => dest.Website, opt => opt.MapFrom(src => src.Website))
+                .ForMember(dest => dest.CreditLimit, opt => opt.MapFrom(src => src.CreditLimit))
+                .ForMember(dest => dest.DefaultPaymentTerms, opt => opt.MapFrom(src => src.DefaultPaymentTerms))
+                .ForMember(dest => dest.DefaultCurrency, opt => opt.MapFrom(src => src.DefaultCurrency))
+                .ForMember(dest => dest.CustomerGroupId, opt => opt.MapFrom(src => src.CustomerGroupId));
+            #endregion
+
+            #region Invoice to CustomerInvoiceDto
             CreateMap<Invoice, CustomerInvoiceDto>()
                 .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
                 .ForMember(dest => dest.InvoiceNumber, opt => opt.MapFrom(src => src.InvoiceNumber))
@@ -80,15 +108,15 @@ namespace Core_API.Application.Mappings.Profiles
 
             #region Payment to CustomerPaymentDto
             CreateMap<InvoicePayment, CustomerPaymentDto>()
-               .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
-               .ForMember(dest => dest.PaymentNumber, opt => opt.MapFrom(src => src.PaymentNumber))
-               .ForMember(dest => dest.InvoiceId, opt => opt.MapFrom(src => src.InvoiceId))
-               .ForMember(dest => dest.InvoiceNumber, opt => opt.MapFrom(src => src.Invoice != null ? src.Invoice.InvoiceNumber : "N/A"))
-               .ForMember(dest => dest.Amount, opt => opt.MapFrom(src => src.Amount))
-               .ForMember(dest => dest.PaymentDate, opt => opt.MapFrom(src => src.PaymentDate))
-               .ForMember(dest => dest.PaymentMethod, opt => opt.MapFrom(src => src.PaymentMethod))
-               .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.PaymentStatus.ToString()))
-               .ForMember(dest => dest.IsOnTime, opt => opt.MapFrom(src => src.PaymentDate <= src.Invoice!.DueDate));
+                .ForMember(dest => dest.Id, opt => opt.MapFrom(src => src.Id))
+                .ForMember(dest => dest.PaymentNumber, opt => opt.MapFrom(src => src.PaymentNumber))
+                .ForMember(dest => dest.InvoiceId, opt => opt.MapFrom(src => src.InvoiceId))
+                .ForMember(dest => dest.InvoiceNumber, opt => opt.MapFrom(src => src.Invoice != null ? src.Invoice.InvoiceNumber : "N/A"))
+                .ForMember(dest => dest.Amount, opt => opt.MapFrom(src => src.Amount))
+                .ForMember(dest => dest.PaymentDate, opt => opt.MapFrom(src => src.PaymentDate))
+                .ForMember(dest => dest.PaymentMethod, opt => opt.MapFrom(src => src.PaymentMethod))
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => src.PaymentStatus.ToString()))
+                .ForMember(dest => dest.IsOnTime, opt => opt.MapFrom(src => src.PaymentDate <= src.Invoice!.DueDate));
             #endregion
 
             #region Create Command to Entity
@@ -109,7 +137,19 @@ namespace Core_API.Application.Mappings.Profiles
                 .ForMember(dest => dest.Notes, opt => opt.Ignore())
                 .ForMember(dest => dest.Documents, opt => opt.Ignore())
                 .ForMember(dest => dest.Contacts, opt => opt.Ignore())
-                .ForMember(dest => dest.Company, opt => opt.Ignore());
+                .ForMember(dest => dest.Company, opt => opt.Ignore())
+                .ForMember(dest => dest.CustomerGroup, opt => opt.Ignore())
+                .ForMember(dest => dest.LastPurchaseDate, opt => opt.Ignore())
+                .ForMember(dest => dest.TotalPurchases, opt => opt.Ignore())
+                .ForMember(dest => dest.AveragePaymentDays, opt => opt.Ignore())
+                .ForMember(dest => dest.CompanyId, opt => opt.Ignore())
+                .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name))
+                .ForMember(dest => dest.TaxId, opt => opt.MapFrom(src => src.TaxId))
+                .ForMember(dest => dest.Website, opt => opt.MapFrom(src => src.Website))
+                .ForMember(dest => dest.CreditLimit, opt => opt.MapFrom(src => src.CreditLimit))
+                .ForMember(dest => dest.DefaultPaymentTerms, opt => opt.MapFrom(src => src.DefaultPaymentTerms))
+                .ForMember(dest => dest.DefaultCurrency, opt => opt.MapFrom(src => src.DefaultCurrency))
+                .ForMember(dest => dest.CustomerGroupId, opt => opt.MapFrom(src => src.CustomerGroupId));
             #endregion
 
             #region Update Command to Entity
@@ -129,7 +169,19 @@ namespace Core_API.Application.Mappings.Profiles
                 .ForMember(dest => dest.ActiveSince, opt => opt.Ignore())
                 .ForMember(dest => dest.TotalPurchases, opt => opt.Ignore())
                 .ForMember(dest => dest.AveragePaymentDays, opt => opt.Ignore())
-                .ForMember(dest => dest.LastPurchaseDate, opt => opt.Ignore());
+                .ForMember(dest => dest.LastPurchaseDate, opt => opt.Ignore())
+                .ForMember(dest => dest.CustomerGroup, opt => opt.Ignore())
+                .ForMember(dest => dest.CompanyId, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdatedDate, opt => opt.Ignore())
+                .ForMember(dest => dest.IsDeleted, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.Name, opt => opt.MapFrom(src => src.Name))
+                .ForMember(dest => dest.TaxId, opt => opt.MapFrom(src => src.TaxId))
+                .ForMember(dest => dest.Website, opt => opt.MapFrom(src => src.Website))
+                .ForMember(dest => dest.CreditLimit, opt => opt.MapFrom(src => src.CreditLimit))
+                .ForMember(dest => dest.DefaultPaymentTerms, opt => opt.MapFrom(src => src.DefaultPaymentTerms))
+                .ForMember(dest => dest.DefaultCurrency, opt => opt.MapFrom(src => src.DefaultCurrency))
+                .ForMember(dest => dest.CustomerGroupId, opt => opt.MapFrom(src => src.CustomerGroupId));
             #endregion
         }
     }

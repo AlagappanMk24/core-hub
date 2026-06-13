@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using System.ComponentModel.DataAnnotations;
 
-namespace Core_API.Application.DTOs.Invoice.Request
+namespace Core_API.Application.DTOs.Invoices.Requests
 {
     /// <summary>
     /// DTO for creating a new invoice

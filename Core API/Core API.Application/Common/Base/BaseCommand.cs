@@ -1,19 +1,14 @@
-﻿using Core_API.Application.Common.Models;
-using Core_API.Application.Common.Results;
-using MediatR;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
-using System.Text.Json.Serialization;
+﻿using System.Text.Json.Serialization;
+using Core_API.Application.Common.Models;
 
-namespace Core_API.Application.Common.Base
+namespace Core_API.Application.Common.Base;
+
+/// <summary>
+/// Abstract base class for all commands
+/// </summary>
+/// <typeparam name="TResponse">The response type</typeparam>
+public abstract record BaseCommand<TResponse> : IBaseRequest<TResponse>
 {
-    /// <summary>
-    /// Base class for all commands
-    /// </summary>
-    public abstract record BaseCommand<TResponse> : IRequest<OperationResult<TResponse>>
-    {
-        // This property should NOT be in the JSON request
-        // It will be set by the pipeline behavior
-        [JsonIgnore]
-        public OperationContext Context { get; init; }
-    }
+    [JsonIgnore]
+    public OperationContext Context { get; set; } = null!;
 }

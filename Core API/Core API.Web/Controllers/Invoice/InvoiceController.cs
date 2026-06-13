@@ -1,11 +1,28 @@
 ﻿using Core_API.Application.Contracts.Services.Files;
 using Core_API.Application.Contracts.Services.Invoice;
 using Core_API.Application.Contracts.Services.Invoices;
+using Core_API.Application.DTOs.Common;
 using Core_API.Application.DTOs.Email.Requests;
 using Core_API.Application.DTOs.Invoice.Request;
+using Core_API.Application.DTOs.Invoice.Response;
+using Core_API.Application.DTOs.Invoices.Requests;
+using Core_API.Application.Features.Invoices.Commands.CreateInvoice;
+using Core_API.Application.Features.Invoices.Commands.DeleteInvoice;
+using Core_API.Application.Features.Invoices.Commands.DuplicateInvoice;
+using Core_API.Application.Features.Invoices.Commands.SendInvoice;
+using Core_API.Application.Features.Invoices.Commands.UpdateInvoice;
+using Core_API.Application.Features.Invoices.Queries.GetInvoiceById;
+using Core_API.Application.Features.Invoices.Queries.GetInvoicePdf;
+using Core_API.Application.Features.Invoices.Queries.GetInvoicesPaged;
+using Core_API.Application.Features.Invoices.Queries.GetInvoiceStats;
+using Core_API.Application.Features.Invoices.Queries.GetNextInvoiceNumber;
+using Humanizer;
+using MediatR;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Polly;
+using System.Diagnostics;
 
 namespace Core_API.Web.Controllers.Invoice
 {
@@ -20,9 +37,10 @@ namespace Core_API.Web.Controllers.Invoice
     [Route("api/[controller]")]
     [ApiController]
     [Authorize(Roles = "Admin, User, Customer")]
-    public class InvoiceController(IInvoiceService invoiceService, IInvoiceNumberService invoiceNumberService, IInvoiceStatisticsService invoiceStatisticsService, IExcelService excelService,IPdfService pdfService, ILogger<InvoiceController> logger) : BaseApiController
+    public class InvoiceController(IInvoiceService invoiceService, IMediator mediator, IInvoiceNumberService invoiceNumberService, IInvoiceStatisticsService invoiceStatisticsService, IExcelService excelService,IPdfService pdfService, ILogger<InvoiceController> logger) : BaseApiController
     {
         private readonly IInvoiceService _invoiceService = invoiceService ?? throw new ArgumentNullException(nameof(invoiceService));
+        private readonly IMediator _mediator = mediator ?? throw new ArgumentNullException(nameof(mediator));
         private readonly IInvoiceNumberService _invoiceNumberService = invoiceNumberService ?? throw new ArgumentNullException(nameof(invoiceNumberService));
         private readonly IInvoiceStatisticsService _invoiceStatisticsService = invoiceStatisticsService ?? throw new ArgumentNullException(nameof(invoiceStatisticsService));
         private readonly IExcelService _excelService = excelService ?? throw new ArgumentNullException(nameof(excelService));
@@ -44,7 +62,7 @@ namespace Core_API.Web.Controllers.Invoice
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [Authorize(Roles = "Admin, User")]
-        public async Task<IActionResult> Create([FromForm] CreateInvoiceDto invoiceDto)
+        public async Task<IActionResult> Create([FromForm] CreateInvoiceDto dto)
         {
             var operationContext = CurrentContext;
             try
@@ -63,12 +81,16 @@ namespace Core_API.Web.Controllers.Invoice
 
                 _logger.LogInformation("Creating invoice for company {CompanyId} by user {UserId}", operationContext.CompanyId, operationContext.UserId);
 
-                if (invoiceDto.IsAutomated)
+                if (dto.IsAutomated)
                 {
-                    invoiceDto.InvoiceNumber = $"INV{DateTime.UtcNow.Ticks}";
+                    dto.InvoiceNumber = $"INV{DateTime.UtcNow.Ticks}";
                 }
+                var command = CreateInvoiceCommand.FromDto(dto);
+                command = command with { Context = CurrentContext };
 
-                var result = await _invoiceService.CreateAsync(invoiceDto, operationContext);
+                // ✅ Send through MediatR
+                var result = await _mediator.Send(command);
+
                 if (!result.IsSuccess)
                 {
                     _logger.LogWarning("Invoice creation failed: {ErrorMessage}", result.ErrorMessage);
@@ -141,17 +163,22 @@ namespace Core_API.Web.Controllers.Invoice
                 }
                 _logger.LogInformation("Updating invoice {InvoiceId} for company {CompanyId} by user {UserId}", id, operationContext.CompanyId, operationContext.UserId);
 
-                var result = await _invoiceService.UpdateAsync(dto, operationContext);
+                var command = UpdateInvoiceCommand.FromDto(dto);
+                command = command with { Context = CurrentContext };
+
+                // Send command through MediatR
+                var result = await _mediator.Send(command);
                 if (!result.IsSuccess)
                 {
                     _logger.LogWarning("Invoice update failed: {ErrorMessage}", result.ErrorMessage);
-                    return BadRequest(new ProblemDetails
-                    {
-                        Title = "Invoice Update Failed",
-                        Detail = result.ErrorMessage,
-                        Status = StatusCodes.Status400BadRequest
-                    });
+
+                    return BadRequest(ApiResponse<object>.Error(
+                        result.ErrorMessage,
+                        400,
+                        new ErrorDetails { Code = "UPDATE_FAILED", Description = result.ErrorMessage }));
                 }
+
+                return Ok(ApiResponse<InvoiceResponseDto>.Ok(result.Data, "Invoice updated successfully"));
 
                 return Ok(result.Data);
             }
@@ -197,21 +224,26 @@ namespace Core_API.Web.Controllers.Invoice
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> Delete(int id)
         {
-            var operationContext = CurrentContext;
+            var traceId = HttpContext.TraceIdentifier;
             try
             {
-                _logger.LogInformation("Deleting invoice {InvoiceId} for company {CompanyId} by user {UserId}", id, operationContext.CompanyId, operationContext.UserId);
+                _logger.LogInformation("Deleting invoice {InvoiceId} for company {CompanyId} by user {UserId}",
+          id, CurrentContext.CompanyId, CurrentContext.UserId);
 
-                var result = await _invoiceService.DeleteAsync(id, operationContext);
+                // Create command with context
+                var command = DeleteInvoiceCommand.Create(id);
+
+                // Send command through MediatR
+                var result = await _mediator.Send(command);
                 if (!result.IsSuccess)
                 {
-                    _logger.LogWarning("Invoice deletion failed: {ErrorMessage}", result.ErrorMessage);
-                    return BadRequest(new ProblemDetails
-                    {
-                        Title = "Invoice Deletion Failed",
-                        Detail = result.ErrorMessage,
-                        Status = StatusCodes.Status400BadRequest
-                    });
+                    _logger.LogWarning("Invoice deletion failed: {ErrorMessage}. TraceId: {TraceId}",
+                        result.ErrorMessage, traceId);
+
+                    return BadRequest(ApiResponse<object>.Error(
+                        result.ErrorMessage,
+                        400,
+                        new ErrorDetails { Code = "DELETION_FAILED", Description = result.ErrorMessage }));
                 }
 
                 return NoContent();
@@ -223,7 +255,7 @@ namespace Core_API.Web.Controllers.Invoice
             }
             catch (DbUpdateException ex)
             {
-                _logger.LogError(ex, "Database error deleting invoice {InvoiceId} for company {CompanyId}", id, operationContext.CompanyId);
+                _logger.LogError(ex, "Database error deleting invoice {InvoiceId}. TraceId: {TraceId}", id, traceId);
                 return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
                 {
                     Title = "Database Error",
@@ -232,7 +264,7 @@ namespace Core_API.Web.Controllers.Invoice
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting invoice {InvoiceId} for company {CompanyId}", id, operationContext.CompanyId);
+                _logger.LogError(ex, "Error deleting invoice {InvoiceId}. TraceId: {TraceId}", id, traceId);
                 return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
                 {
                     Title = "Internal Server Error",
@@ -257,38 +289,44 @@ namespace Core_API.Web.Controllers.Invoice
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetById(int id)
         {
-            var operationContext = CurrentContext;
+            var traceId = HttpContext.TraceIdentifier;
             try
             {
-                _logger.LogInformation("Retrieving invoice {InvoiceId} for company {CompanyId}", id, operationContext.CompanyId);
+                _logger.LogInformation("Retrieving invoice {InvoiceId} for company {CompanyId}, UserId: {UserId}",
+            id, CurrentContext.CompanyId, CurrentContext.UserId);
 
-                var result = await _invoiceService.GetByIdAsync(id, operationContext);
+                // Create query with context
+                var query = GetInvoiceByIdQuery.FromId(id);
+                query.Context = CurrentContext;
+
+                // Send query through MediatR
+                var result = await _mediator.Send(query);
                 if (!result.IsSuccess)
                 {
-                    _logger.LogWarning("Invoice retrieval failed: {ErrorMessage}", result.ErrorMessage);
-                    return NotFound(new ProblemDetails
-                    {
-                        Title = "Invoice Not Found",
-                        Detail = result.ErrorMessage,
-                        Status = StatusCodes.Status404NotFound
-                    });
+                    _logger.LogWarning("Invoice retrieval failed: {ErrorMessage}. TraceId: {TraceId}",
+                        result.ErrorMessage, traceId);
+
+                    return NotFound(ApiResponse<object>.Error(
+                        result.ErrorMessage,
+                        404,
+                        new ErrorDetails { Code = "NOT_FOUND", Description = result.ErrorMessage }));
                 }
 
-                return Ok(result.Data);
+                return Ok(ApiResponse<InvoiceResponseDto>.Ok(result.Data, "Invoice retrieved successfully"));
             }
             catch (UnauthorizedAccessException ex)
             {
-                _logger.LogWarning(ex, "Unauthorized access during invoice retrieval.");
+                _logger.LogWarning(ex, "Unauthorized access during invoice retrieval. TraceId: {TraceId}", traceId);
                 return Unauthorized(new ProblemDetails { Title = "Unauthorized", Detail = ex.Message });
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving invoice {InvoiceId} for company {CompanyId}", id, operationContext.CompanyId);
-                return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
-                {
-                    Title = "Internal Server Error",
-                    Detail = "An unexpected error occurred while retrieving the invoice."
-                });
+                _logger.LogError(ex, "Error retrieving invoice {InvoiceId}. TraceId: {TraceId}", id, traceId);
+
+                return StatusCode(500, ApiResponse<object>.Error(
+                    "An unexpected error occurred while retrieving the invoice.",
+                    500,
+                    new ErrorDetails { Code = "INTERNAL_ERROR", Description = "Please try again later" }));
             }
         }
 
@@ -308,50 +346,50 @@ namespace Core_API.Web.Controllers.Invoice
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetPaged([FromQuery] InvoiceFilterRequestDto filter)
         {
-            var operationContext = CurrentContext;
+            var traceId = HttpContext.TraceIdentifier;
             try
             {
+                // Validate query parameters
                 if (!filter.IsValid())
                 {
-                    _logger.LogWarning("Invalid filter parameters: pageNumber={PageNumber}, pageSize={PageSize}", filter.PageNumber, filter.PageSize);
-                    return BadRequest(new ProblemDetails
-                    {
-                        Title = "Invalid Filter Parameters",
-                        Detail = "Page number and page size must be greater than 0, and minAmount must not exceed maxAmount.",
-                        Status = StatusCodes.Status400BadRequest
-                    });
+                    _logger.LogWarning("Invalid filter parameters: pageNumber={PageNumber}, pageSize={PageSize}",
+                        filter.PageNumber, filter.PageSize);
+
+                    return BadRequest(ApiResponse<object>.Error(
+                        "Invalid filter parameters. Page number and page size must be greater than 0, and minAmount must not exceed maxAmount.",
+                        400,
+                        new ErrorDetails
+                        {
+                            Code = "INVALID_PARAMETERS",
+                            Description = "Validation failed for the provided query parameters"
+                        }));
                 }
 
-                _logger.LogInformation("Retrieving paged invoices for company {CompanyId}, page {PageNumber}, size {PageSize}, search: {Search}, status: {Status}",
-                    operationContext.CompanyId, filter.PageNumber, filter.PageSize, filter.Search ?? "none", filter.InvoiceStatus ?? "none");
+                // Extension method to map filter to query
+                var query = filter.ToQuery(CurrentContext);
 
-                var result = await _invoiceService.GetPagedAsync(operationContext, filter);
-                if (!result.IsSuccess)
-                {
-                    _logger.LogWarning("Paged invoices retrieval failed: {ErrorMessage}", result.ErrorMessage);
-                    return BadRequest(new ProblemDetails
-                    {
-                        Title = "Invoice Retrieval Failed",
-                        Detail = result.ErrorMessage,
-                        Status = StatusCodes.Status400BadRequest
-                    });
-                }
+                // Send query through MediatR
+                var result = await _mediator.Send(query);
 
-                return Ok(result.Data);
+                return Ok(result);
             }
             catch (UnauthorizedAccessException ex)
             {
-                _logger.LogWarning(ex, "Unauthorized access during paged invoice retrieval.");
-                return Unauthorized(new ProblemDetails { Title = "Unauthorized", Detail = ex.Message });
+                _logger.LogWarning(ex, "Unauthorized access during paged invoice retrieval. TraceId: {TraceId}", traceId);
+
+                return Unauthorized(ApiResponse<object>.Error(
+                    "Unauthorized access to invoices",
+                    401,
+                    new ErrorDetails { Code = "UNAUTHORIZED", Description = ex.Message }));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving paged invoices for company {CompanyId}", operationContext.CompanyId);
-                return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
-                {
-                    Title = "Internal Server Error",
-                    Detail = "An unexpected error occurred while retrieving invoices."
-                });
+                _logger.LogError(ex, "Error retrieving paged invoices. TraceId: {TraceId}", traceId);
+
+                return StatusCode(500, ApiResponse<object>.Error(
+                    "An unexpected error occurred while retrieving invoices.",
+                    500,
+                    new ErrorDetails { Code = "INTERNAL_ERROR", Description = "Please try again later" }));
             }
         }
 
@@ -372,48 +410,60 @@ namespace Core_API.Web.Controllers.Invoice
         [Authorize(Roles = "Admin, User")]
         public async Task<IActionResult> Duplicate(int id)
         {
-            var operationContext = CurrentContext;
+            var traceId = HttpContext.TraceIdentifier;
+
             try
             {
                 _logger.LogInformation("Duplicating invoice {InvoiceId} for company {CompanyId} by user {UserId}",
-                    id, operationContext.CompanyId, operationContext.UserId);
+            id, CurrentContext.CompanyId, CurrentContext.UserId);
 
-                var result = await _invoiceService.DuplicateAsync(id, operationContext);
+                // Create command with context
+                var command = DuplicateInvoiceCommand.FromId(id);
+                command.Context = CurrentContext;
+
+                // Send command through MediatR
+                var result = await _mediator.Send(command);
+
                 if (!result.IsSuccess)
                 {
-                    _logger.LogWarning("Invoice duplication failed: {ErrorMessage}", result.ErrorMessage);
-                    return BadRequest(new ProblemDetails
-                    {
-                        Title = "Invoice Duplication Failed",
-                        Detail = result.ErrorMessage,
-                        Status = StatusCodes.Status400BadRequest
-                    });
+                    _logger.LogWarning("Invoice duplication failed: {ErrorMessage}. TraceId: {TraceId}",
+                        result.ErrorMessage, traceId);
+
+                    return BadRequest(ApiResponse<object>.Error(
+                        result.ErrorMessage,
+                        400,
+                        new ErrorDetails { Code = "DUPLICATION_FAILED", Description = result.ErrorMessage }));
                 }
 
-                return CreatedAtAction(nameof(GetById), new { id = result.Data.Id }, result.Data);
+                return CreatedAtAction(nameof(GetById), new { id = result.Data.Id },
+                    ApiResponse<InvoiceResponseDto>.Ok(result.Data, "Invoice duplicated successfully"));
             }
             catch (UnauthorizedAccessException ex)
             {
-                _logger.LogWarning(ex, "Unauthorized access during invoice duplication.");
-                return Unauthorized(new ProblemDetails { Title = "Unauthorized", Detail = ex.Message });
+                _logger.LogWarning(ex, "Unauthorized access during invoice duplication. TraceId: {TraceId}", traceId);
+
+                return Unauthorized(ApiResponse<object>.Error(
+                    "Unauthorized access to duplicate invoice",
+                    401,
+                    new ErrorDetails { Code = "UNAUTHORIZED", Description = ex.Message }));
             }
             catch (DbUpdateException ex)
             {
-                _logger.LogError(ex, "Database error duplicating invoice {InvoiceId} for company {CompanyId}", id, operationContext.CompanyId);
-                return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
-                {
-                    Title = "Database Error",
-                    Detail = "An error occurred while duplicating the invoice in the database."
-                });
+                _logger.LogError(ex, "Database error duplicating invoice {InvoiceId}. TraceId: {TraceId}", id, traceId);
+
+                return StatusCode(500, ApiResponse<object>.Error(
+                    "An error occurred while duplicating the invoice in the database.",
+                    500,
+                    new ErrorDetails { Code = "DATABASE_ERROR", Description = "Please try again later" }));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error duplicating invoice {InvoiceId} for company {CompanyId}", id, operationContext.CompanyId);
-                return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
-                {
-                    Title = "Internal Server Error",
-                    Detail = "An unexpected error occurred while duplicating the invoice."
-                });
+                _logger.LogError(ex, "Error duplicating invoice {InvoiceId}. TraceId: {TraceId}", id, traceId);
+
+                return StatusCode(500, ApiResponse<object>.Error(
+                    "An unexpected error occurred while duplicating the invoice.",
+                    500,
+                    new ErrorDetails { Code = "INTERNAL_ERROR", Description = "Please try again later" }));
             }
         }
 
@@ -431,38 +481,51 @@ namespace Core_API.Web.Controllers.Invoice
         [Authorize(Roles = "Admin, User")]
         public async Task<ActionResult<string>> GetNextInvoiceNumber()
         {
-            var operationContext = CurrentContext;
+            var traceId = HttpContext.TraceIdentifier;
+
             try
             {
-                _logger.LogInformation("Retrieving next invoice number for company {CompanyId}", operationContext.CompanyId);
+                _logger.LogInformation("Retrieving next invoice number for company {CompanyId}, UserId: {UserId}",
+                    CurrentContext.CompanyId, CurrentContext.UserId);
 
-                var result = await _invoiceNumberService.GetNextInvoiceNumberAsync(operationContext);
+                // Create query with context
+                var query = GetNextInvoiceNumberQuery.Create();
+                query.Context = CurrentContext;
+
+                // Send query through MediatR
+                var result = await _mediator.Send(query);
+
                 if (!result.IsSuccess)
                 {
-                    _logger.LogWarning("Next invoice number retrieval failed: {ErrorMessage}", result.ErrorMessage);
-                    return BadRequest(new ProblemDetails
-                    {
-                        Title = "Next Invoice Number Retrieval Failed",
-                        Detail = result.ErrorMessage,
-                        Status = StatusCodes.Status400BadRequest
-                    });
+                    _logger.LogWarning("Next invoice number retrieval failed: {ErrorMessage}. TraceId: {TraceId}",
+                        result.ErrorMessage, traceId);
+
+                    return BadRequest(ApiResponse<object>.Error(
+                        result.ErrorMessage,
+                        400,
+                        new ErrorDetails { Code = "RETRIEVAL_FAILED", Description = result.ErrorMessage }));
                 }
 
-                return Ok(result.Data);
+                return Ok(ApiResponse<string>.Ok(result.Data, "Next invoice number retrieved successfully"));
             }
             catch (UnauthorizedAccessException ex)
             {
-                _logger.LogWarning(ex, "Unauthorized access during next invoice number retrieval.");
-                return Unauthorized(new ProblemDetails { Title = "Unauthorized", Detail = ex.Message });
+                _logger.LogWarning(ex, "Unauthorized access during next invoice number retrieval. TraceId: {TraceId}", traceId);
+
+                return Unauthorized(ApiResponse<object>.Error(
+                    "Unauthorized access to retrieve next invoice number",
+                    401,
+                    new ErrorDetails { Code = "UNAUTHORIZED", Description = ex.Message }));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving next invoice number for company {CompanyId}", operationContext.CompanyId);
-                return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
-                {
-                    Title = "Internal Server Error",
-                    Detail = "An unexpected error occurred while retrieving the next invoice number."
-                });
+                _logger.LogError(ex, "Error retrieving next invoice number for company {CompanyId}. TraceId: {TraceId}",
+                    CurrentContext.CompanyId, traceId);
+
+                return StatusCode(500, ApiResponse<object>.Error(
+                    "An unexpected error occurred while retrieving the next invoice number.",
+                    500,
+                    new ErrorDetails { Code = "INTERNAL_ERROR", Description = "Please try again later" }));
             }
         }
 
@@ -482,38 +545,59 @@ namespace Core_API.Web.Controllers.Invoice
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> SendInvoice(int id, [FromBody] EmailDataDto emailData)
         {
-            var operationContext = CurrentContext;
+            var traceId = HttpContext.TraceIdentifier;
+
             try
             {
-                _logger.LogInformation("Sending invoice {InvoiceId} for company {CompanyId} by user {UserId}", id, operationContext.CompanyId, operationContext.UserId);
+                _logger.LogInformation("Sending invoice {InvoiceId} for company {CompanyId} by user {UserId}",
+                    id, CurrentContext.CompanyId, CurrentContext.UserId);
 
-                var result = await _invoiceService.SendInvoiceAsync(id, operationContext, emailData);
-                if (!result.IsSuccess)
+                // Validate email data
+                if (emailData.To == null || emailData.To.Count == 0 || emailData.To.All(e => string.IsNullOrWhiteSpace(e)))
                 {
-                    _logger.LogWarning("Invoice sending failed: {ErrorMessage}", result.ErrorMessage);
-                    return BadRequest(new ProblemDetails
-                    {
-                        Title = "Invoice Sending Failed",
-                        Detail = result.ErrorMessage,
-                        Status = StatusCodes.Status400BadRequest
-                    });
+                    return BadRequest(ApiResponse<object>.Error(
+                        "At least one valid 'To' email address is required.",
+                        400,
+                        new ErrorDetails { Code = "INVALID_EMAIL", Description = "No valid recipients provided." }));
                 }
 
-                return Ok(new { Message = "Invoice sent successfully." });
+                // Create command with context
+                var command = SendInvoiceCommand.Create(id, emailData);
+                command.Context = CurrentContext;
+
+                // Send command through MediatR
+                var result = await _mediator.Send(command);
+
+                if (!result.IsSuccess)
+                {
+                    _logger.LogWarning("Invoice sending failed: {ErrorMessage}. TraceId: {TraceId}",
+                        result.ErrorMessage, traceId);
+
+                    return BadRequest(ApiResponse<object>.Error(
+                        result.ErrorMessage,
+                        400,
+                        new ErrorDetails { Code = "SEND_FAILED", Description = result.ErrorMessage }));
+                }
+
+                return Ok(ApiResponse<object>.Ok(new { Message = "Invoice sent successfully." }, "Invoice sent successfully"));
             }
             catch (UnauthorizedAccessException ex)
             {
-                _logger.LogWarning(ex, "Unauthorized access during invoice sending.");
-                return Unauthorized(new ProblemDetails { Title = "Unauthorized", Detail = ex.Message });
+                _logger.LogWarning(ex, "Unauthorized access during invoice sending. TraceId: {TraceId}", traceId);
+
+                return Unauthorized(ApiResponse<object>.Error(
+                    "Unauthorized access to send invoice",
+                    401,
+                    new ErrorDetails { Code = "UNAUTHORIZED", Description = ex.Message }));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error sending invoice {InvoiceId} for company {CompanyId}", id, operationContext.CompanyId);
-                return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
-                {
-                    Title = "Internal Server Error",
-                    Detail = "An unexpected error occurred while sending the invoice."
-                });
+                _logger.LogError(ex, "Error sending invoice {InvoiceId}. TraceId: {TraceId}", id, traceId);
+
+                return StatusCode(500, ApiResponse<object>.Error(
+                    "An unexpected error occurred while sending the invoice.",
+                    500,
+                    new ErrorDetails { Code = "INTERNAL_ERROR", Description = "Please try again later" }));
             }
         }
 
@@ -530,64 +614,74 @@ namespace Core_API.Web.Controllers.Invoice
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetStats()
         {
+            var traceId = HttpContext.TraceIdentifier;
             try
             {
-                // Get the operation context from base controller
                 var context = CurrentContext;
 
                 if (context == null)
                 {
-                    _logger.LogWarning("Unable to retrieve operation context - user not authenticated");
-                    return Unauthorized(new ProblemDetails
-                    {
-                        Title = "Unauthorized",
-                        Detail = "Unable to determine user context. Please ensure you are authenticated."
-                    });
+                    _logger.LogWarning("Unable to retrieve operation context - user not authenticated. TraceId: {TraceId}", traceId);
+
+                    return Unauthorized(ApiResponse<object>.Error(
+                        "Unable to determine user context. Please ensure you are authenticated.",
+                        401,
+                        new ErrorDetails { Code = "UNAUTHORIZED", Description = "User context not found" }));
                 }
 
                 // Log the context for debugging
-                _logger.LogInformation("Retrieving invoice stats - Context: {Context}", context.ToString());
+                _logger.LogInformation("Retrieving invoice stats - Context: {Context}, TraceId: {TraceId}",
+                    context.ToString(), traceId);
 
-                // Validate based on role using base controller helpers
-                if (!IsSuperAdmin && !context.CompanyId.HasValue)
+                // Validate based on role
+                if (!context.IsSuperAdmin && !context.CompanyId.HasValue)
                 {
-                    _logger.LogWarning("Stats access denied: Non-super admin without company ID. UserId: {UserId}, Roles: {Roles}",
-                        context.UserId, string.Join(",", context.Roles));
+                    _logger.LogWarning("Stats access denied: Non-super admin without company ID. UserId: {UserId}, Roles: {Roles}, TraceId: {TraceId}",
+                        context.UserId, string.Join(",", context.Roles), traceId);
 
-                    return Unauthorized(new ProblemDetails
-                    {
-                        Title = "Unauthorized",
-                        Detail = "Company ID is required for non-super admin users."
-                    });
+                    return Unauthorized(ApiResponse<object>.Error(
+                        "Company ID is required for non-super admin users.",
+                        401,
+                        new ErrorDetails { Code = "UNAUTHORIZED", Description = "Company ID missing in user context" }));
                 }
 
-                var result = await _invoiceStatisticsService.GetStatsAsync(context);
+                // Create query with context
+                var query = GetInvoiceStatsQuery.Create();
+                query.Context = context;
+
+                // Send query through MediatR
+                var result = await _mediator.Send(query);
+
                 if (!result.IsSuccess)
                 {
-                    _logger.LogWarning("Stats retrieval failed: {ErrorMessage}", result.ErrorMessage);
-                    return BadRequest(new ProblemDetails
-                    {
-                        Title = "Stats Retrieval Failed",
-                        Detail = result.ErrorMessage,
-                        Status = StatusCodes.Status400BadRequest
-                    });
+                    _logger.LogWarning("Stats retrieval failed: {ErrorMessage}. TraceId: {TraceId}",
+                        result.ErrorMessage, traceId);
+
+                    return BadRequest(ApiResponse<object>.Error(
+                        result.ErrorMessage,
+                        400,
+                        new ErrorDetails { Code = "STATS_FAILED", Description = result.ErrorMessage }));
                 }
 
-                return Ok(result.Data);
+                return Ok(ApiResponse<InvoiceStatsDto>.Ok(result.Data, "Statistics retrieved successfully"));
             }
             catch (UnauthorizedAccessException ex)
             {
-                _logger.LogWarning(ex, "Unauthorized access during stats retrieval.");
-                return Unauthorized(new ProblemDetails { Title = "Unauthorized", Detail = ex.Message });
+                _logger.LogWarning(ex, "Unauthorized access during stats retrieval. TraceId: {TraceId}", traceId);
+
+                return Unauthorized(ApiResponse<object>.Error(
+                    "Unauthorized access to retrieve statistics",
+                    401,
+                    new ErrorDetails { Code = "UNAUTHORIZED", Description = ex.Message }));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error retrieving invoice stats");
-                return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
-                {
-                    Title = "Internal Server Error",
-                    Detail = "An unexpected error occurred while retrieving stats."
-                });
+                _logger.LogError(ex, "Error retrieving invoice stats. TraceId: {TraceId}", traceId);
+
+                return StatusCode(500, ApiResponse<object>.Error(
+                    "An unexpected error occurred while retrieving statistics.",
+                    500,
+                    new ErrorDetails { Code = "INTERNAL_ERROR", Description = "Please try again later" }));
             }
         }
 
@@ -624,105 +718,117 @@ namespace Core_API.Web.Controllers.Invoice
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         public async Task<IActionResult> GetInvoicePdf(int id)
         {
-            var operationContext = CurrentContext;
+            var traceId = HttpContext.TraceIdentifier;
+
             try
             {
-                _logger.LogInformation("Generating PDF for invoice {InvoiceId} for company {CompanyId}", id, operationContext.CompanyId);
+                _logger.LogInformation("Generating PDF for invoice {InvoiceId} for company {CompanyId}, UserId: {UserId}",
+                    id, CurrentContext.CompanyId, CurrentContext.UserId);
 
-                var result = await _pdfService.GenerateInvoicePdfAsync(id, operationContext);
+                // Create query with context
+                var query = GetInvoicePdfQuery.FromId(id);
+                query.Context = CurrentContext;
+
+                // Send query through MediatR
+                var result = await _mediator.Send(query);
+
                 if (!result.IsSuccess)
                 {
-                    _logger.LogWarning("Invoice PDF generation failed: {ErrorMessage}", result.ErrorMessage);
-                    return NotFound(new ProblemDetails
-                    {
-                        Title = "Invoice Not Found",
-                        Detail = result.ErrorMessage,
-                        Status = StatusCodes.Status404NotFound
-                    });
+                    _logger.LogWarning("Invoice PDF generation failed: {ErrorMessage}. TraceId: {TraceId}",
+                        result.ErrorMessage, traceId);
+
+                    return NotFound(ApiResponse<object>.Error(
+                        result.ErrorMessage,
+                        404,
+                        new ErrorDetails { Code = "NOT_FOUND", Description = result.ErrorMessage }));
                 }
-                // Get the PDF stream from the InvoiceResponseDto
+
                 var pdfStream = result.Data.PdfStream;
 
-                if (pdfStream == null || !pdfStream.CanRead)
+                if (pdfStream == null || !pdfStream.CanRead || pdfStream.Length == 0)
                 {
-                    _logger.LogError("PDF stream is null or not readable for invoice {InvoiceId}", id);
-                    return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
-                    {
-                        Title = "PDF Generation Error",
-                        Detail = "The generated PDF stream is invalid."
-                    });
+                    _logger.LogError("PDF stream is null or invalid for invoice {InvoiceId}. TraceId: {TraceId}", id, traceId);
+
+                    return StatusCode(500, ApiResponse<object>.Error(
+                        "The generated PDF stream is invalid.",
+                        500,
+                        new ErrorDetails { Code = "PDF_ERROR", Description = "Unable to generate PDF" }));
                 }
 
-                // Convert the MemoryStream to a byte array
+                // Convert to byte array
                 byte[] pdfBytes = pdfStream.ToArray();
-
-                // Ensure the stream position is at the beginning before returning (optional but good practice if you were to reuse the stream)
                 pdfStream.Position = 0;
 
-                // Return the byte array as a file
+                _logger.LogInformation("PDF generated successfully for invoice {InvoiceNumber} (ID: {InvoiceId})",
+                    result.Data.InvoiceNumber, id);
+
                 return File(pdfBytes, "application/pdf", $"invoice_{result.Data.InvoiceNumber}.pdf");
             }
             catch (UnauthorizedAccessException ex)
             {
-                _logger.LogWarning(ex, "Unauthorized access during invoice PDF generation.");
-                return Unauthorized(new ProblemDetails { Title = "Unauthorized", Detail = ex.Message });
+                _logger.LogWarning(ex, "Unauthorized access during invoice PDF generation. TraceId: {TraceId}", traceId);
+
+                return Unauthorized(ApiResponse<object>.Error(
+                    "Unauthorized access to generate invoice PDF",
+                    401,
+                    new ErrorDetails { Code = "UNAUTHORIZED", Description = ex.Message }));
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error generating PDF for invoice {InvoiceId} for company {CompanyId}", id, operationContext.CompanyId);
-                return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
-                {
-                    Title = "Internal Server Error",
-                    Detail = "An unexpected error occurred while generating the invoice PDF."
-                });
+                _logger.LogError(ex, "Error generating PDF for invoice {InvoiceId}. TraceId: {TraceId}", id, traceId);
+
+                return StatusCode(500, ApiResponse<object>.Error(
+                    "An unexpected error occurred while generating the invoice PDF.",
+                    500,
+                    new ErrorDetails { Code = "INTERNAL_ERROR", Description = "Please try again later" }));
             }
         }
 
         /// <summary>
         /// Exports multiple invoices to Excel
         /// </summary>
-        [HttpGet("export/excel")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-        [ProducesResponseType(StatusCodes.Status500InternalServerError)]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> ExportExcel([FromQuery] InvoiceFilterRequestDto invoiceFilterRequestDto)
-        {
-            var operationContext = CurrentContext;
-            try
-            {
-                _logger.LogInformation("Exporting invoices to Excel for company {CompanyId}", operationContext.CompanyId);
+        //[HttpGet("export/excel")]
+        //[ProducesResponseType(StatusCodes.Status200OK)]
+        //[ProducesResponseType(StatusCodes.Status400BadRequest)]
+        //[ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        //[ProducesResponseType(StatusCodes.Status500InternalServerError)]
+        //[Authorize(Roles = "Admin")]
+        //public async Task<IActionResult> ExportExcel([FromQuery] InvoiceFilterRequestDto invoiceFilterRequestDto)
+        //{
+        //    var operationContext = CurrentContext;
+        //    try
+        //    {
+        //        _logger.LogInformation("Exporting invoices to Excel for company {CompanyId}", operationContext.CompanyId);
 
-                var result = await _excelService.ExportInvoicesExcelAsync(operationContext, invoiceFilterRequestDto);
-                if (!result.IsSuccess)
-                {
-                    _logger.LogWarning("Excel export failed: {ErrorMessage}", result.ErrorMessage);
-                    return BadRequest(new ProblemDetails
-                    {
-                        Title = "Excel Export Failed",
-                        Detail = result.ErrorMessage,
-                        Status = StatusCodes.Status400BadRequest
-                    });
-                }
+        //        var result = await _excelService.ExportInvoicesExcelAsync(operationContext, invoiceFilterRequestDto);
+        //        if (!result.IsSuccess)
+        //        {
+        //            _logger.LogWarning("Excel export failed: {ErrorMessage}", result.ErrorMessage);
+        //            return BadRequest(new ProblemDetails
+        //            {
+        //                Title = "Excel Export Failed",
+        //                Detail = result.ErrorMessage,
+        //                Status = StatusCodes.Status400BadRequest
+        //            });
+        //        }
 
-                return File(result.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"invoices_{DateTime.UtcNow:yyyyMMddHHmmss}.xlsx");
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                _logger.LogWarning(ex, "Unauthorized access during Excel export.");
-                return Unauthorized(new ProblemDetails { Title = "Unauthorized", Detail = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error exporting invoices to Excel for company {CompanyId}", operationContext.CompanyId);
-                return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
-                {
-                    Title = "Internal Server Error",
-                    Detail = "An unexpected error occurred while exporting invoices to Excel."
-                });
-            }
-        }
+        //        return File(result.Data, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"invoices_{DateTime.UtcNow:yyyyMMddHHmmss}.xlsx");
+        //    }
+        //    catch (UnauthorizedAccessException ex)
+        //    {
+        //        _logger.LogWarning(ex, "Unauthorized access during Excel export.");
+        //        return Unauthorized(new ProblemDetails { Title = "Unauthorized", Detail = ex.Message });
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        _logger.LogError(ex, "Error exporting invoices to Excel for company {CompanyId}", operationContext.CompanyId);
+        //        return StatusCode(StatusCodes.Status500InternalServerError, new ProblemDetails
+        //        {
+        //            Title = "Internal Server Error",
+        //            Detail = "An unexpected error occurred while exporting invoices to Excel."
+        //        });
+        //    }
+        //}
 
         /// <summary>
         /// Exports multiple invoices to PDF
@@ -733,7 +839,7 @@ namespace Core_API.Web.Controllers.Invoice
         [ProducesResponseType(StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(StatusCodes.Status500InternalServerError)]
         [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> ExportPdf([FromQuery] InvoiceFilterRequestDto invoiceFilterRequestDto)
+        public async Task<IActionResult> ExportPdf([FromQuery] GetPagedInvoicesQuery invoiceFilterRequestDto)
         {
             var operationContext = CurrentContext;
             try

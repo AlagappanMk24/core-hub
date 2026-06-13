@@ -123,7 +123,7 @@ export const routes: Routes = [
       {
         path: 'verify-otp',
         component: VerifyOtpComponent,
-        canActivate: [OtpGuard],
+        // canActivate: [OtpGuard],
         data: { title: 'Verify OTP' },
       },
       {

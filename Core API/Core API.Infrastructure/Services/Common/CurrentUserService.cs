@@ -9,9 +9,7 @@ namespace Core_API.Infrastructure.Services.Common
     {
         private readonly IHttpContextAccessor _httpContextAccessor = httpContextAccessor;
         private OperationContext _cachedContext;
-
         public string? UserId => GetClaimValue(ClaimTypes.NameIdentifier) ?? GetClaimValue("uid");
-
         public int? CompanyId
         {
             get
@@ -20,7 +18,6 @@ namespace Core_API.Infrastructure.Services.Common
                 return int.TryParse(companyIdClaim, out var id) ? id : null;
             }
         }
-
         public int? CustomerId
         {
             get
@@ -29,10 +26,14 @@ namespace Core_API.Infrastructure.Services.Common
                 return int.TryParse(customerIdClaim, out var id) ? id : null;
             }
         }
+        public bool IsAdmin => Roles.Contains("Admin", StringComparer.OrdinalIgnoreCase);
 
-        public bool IsAdmin => Roles.Contains("Admin");
-        public bool IsSuperAdmin => Roles.Contains("SuperAdmin");
-
+        // ✅ FIX: Case-insensitive check with multiple possible role name formats
+        public bool IsSuperAdmin => Roles.Any(r =>
+            string.Equals(r, "SuperAdmin", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(r, "Super Admin", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(r, "SUPERADMIN", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(r, "superadmin", StringComparison.OrdinalIgnoreCase));
         public List<string> Roles
         {
             get
@@ -44,7 +45,6 @@ namespace Core_API.Infrastructure.Services.Common
                     .ToList() ?? new List<string>();
             }
         }
-
         public OperationContext GetCurrentContext()
         {
             if (_cachedContext != null)
@@ -60,7 +60,6 @@ namespace Core_API.Infrastructure.Services.Common
 
             return _cachedContext;
         }
-
         private string? GetClaimValue(string claimType)
         {
             return _httpContextAccessor.HttpContext?.User?.FindFirst(claimType)?.Value;

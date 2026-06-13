@@ -222,11 +222,19 @@ public class AuthController(IMediator mediator, ICompanyRequestService companyRe
         if (!ModelState.IsValid)
         {
             _logger.LogWarning("Invalid model state for OTP validation");
-            return BadRequest(new ValidationProblemDetails(ModelState)
-            {
-                Title = "Validation Error",
-                Status = StatusCodes.Status400BadRequest
-            });
+            return BadRequest(ApiResponse<object>.Error(
+                     "Invalid request data",
+                     400,
+                     new ErrorDetails
+                     {
+                         Code = "VALIDATION_ERROR",
+                         ValidationErrors = ModelState
+                             .Where(x => x.Value?.Errors.Any() == true)
+                             .ToDictionary(
+                                 x => x.Key,
+                                 x => x.Value!.Errors.Select(e => e.ErrorMessage).ToArray()
+                             )
+                     }));
         }
         try
         {
@@ -234,35 +242,7 @@ public class AuthController(IMediator mediator, ICompanyRequestService companyRe
 
             var result = await _mediator.Send(command);
 
-            if (!result.IsSucceeded)
-            {
-                _logger.LogWarning("OTP validation failed for identifier {OtpIdentifier}: {Message}",
-                    command.OtpIdentifier, result.Message);
-
-                return result.StatusCode switch
-                {
-                    403 => StatusCode(403, new ProblemDetails
-                    {
-                        Title = "OTP Validation Failed",
-                        Detail = result.Message,
-                        Status = StatusCodes.Status403Forbidden
-                    }),
-                    429 => StatusCode(429, new ProblemDetails
-                    {
-                        Title = "Too Many Attempts",
-                        Detail = result.Message,
-                        Status = StatusCodes.Status429TooManyRequests
-                    }),
-                    _ => BadRequest(new ProblemDetails
-                    {
-                        Title = "OTP Validation Failed",
-                        Detail = result.Message,
-                        Status = StatusCodes.Status400BadRequest
-                    })
-                };
-            }
-            _logger.LogInformation("OTP validated successfully for identifier: {OtpIdentifier}", command.OtpIdentifier);
-            return Ok(result.Data);
+            return result.Success ? Ok(result) : StatusCode(result.StatusCode, result);
         }
         catch (Exception ex)
         {

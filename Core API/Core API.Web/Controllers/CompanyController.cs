@@ -8,7 +8,7 @@ using System.Security.Claims;
 
 namespace Core_API.Web.Controllers;
 
-[Route("api/companies")]
+[Route("api/companies")] 
 [ApiController]
 [Authorize(Roles = "Admin, Customer, User")]
 public class CompanyController(ICompanyService companyService, ILogger<CompanyController> logger) : BaseApiController

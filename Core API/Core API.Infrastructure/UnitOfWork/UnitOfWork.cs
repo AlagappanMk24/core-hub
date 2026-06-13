@@ -14,6 +14,7 @@ using Core_API.Infrastructure.Repositories.Companies;
 using Core_API.Infrastructure.Repositories.Customers;
 using Core_API.Infrastructure.Repositories.EmailSettings;
 using Core_API.Infrastructure.Repositories.Invoice;
+using Core_API.Infrastructure.Repositories.Invoices;
 using Core_API.Infrastructure.Repositories.RecurringInvoice;
 using Core_API.Infrastructure.Repositories.Tasks;
 using Core_API.Infrastructure.Repositories.User;

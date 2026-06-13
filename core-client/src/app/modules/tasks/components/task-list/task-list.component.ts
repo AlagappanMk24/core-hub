@@ -19,7 +19,7 @@ import {
   TaskStatus,
   TaskPriority,
   TaskFilterDto,
-  TaskStats
+  TaskStats,
 } from '../../../../interfaces/tasks/task.interface';
 import { TaskDrawerComponent } from '../task-drawer/task-drawer.component';
 
@@ -49,7 +49,7 @@ import { TaskDrawerComponent } from '../task-drawer/task-drawer.component';
         style({ boxShadow: '0 0 0 0 rgba(138, 43, 226, 0.5)' }),
         animate(
           '600ms ease-in-out',
-          style({ boxShadow: '0 0 0 8px rgba(138, 43, 226, 0)' })
+          style({ boxShadow: '0 0 0 8px rgba(138, 43, 226, 0)' }),
         ),
       ]),
     ]),
@@ -77,7 +77,7 @@ export class TaskListComponent implements OnInit, OnDestroy {
   selectedTaskStatus: string | null = 'All';
   selectedTaskPriority: string | null = null;
   searchTerm = '';
-  
+
   stats: TaskStats = {
     totalTasks: 0,
     myTasks: 0,
@@ -96,21 +96,44 @@ export class TaskListComponent implements OnInit, OnDestroy {
     tasksDueThisMonth: 0,
     tasksByCategory: {},
     tasksByStatus: {},
-    tasksByPriority: {}
+    tasksByPriority: {},
   };
+
+  // Column visibility
+  visibleColumns: { [key: string]: boolean } = {
+    title: true,
+    priority: true,
+    status: true,
+    dueDate: true,
+    category: true,
+    actions: true,
+  };
+
+  columnOptions = [
+    { key: 'title', label: 'Task Title' },
+    { key: 'priority', label: 'Priority' },
+    { key: 'status', label: 'Status' },
+    { key: 'dueDate', label: 'Due Date' },
+    { key: 'category', label: 'Category' },
+    { key: 'actions', label: 'Actions' },
+  ];
+
+  // Sort properties
+  sortField: string = 'dueDate';
+  sortDirection: 'asc' | 'desc' = 'asc';
 
   private searchSubject = new Subject<string>();
   private destroy$ = new Subject<void>();
   isAdmin = false;
   isUser = false;
   isCustomer = false;
-    isEditMode: any;
+  isEditMode: any;
 
   constructor(
     private taskService: TaskService,
     private authService: AuthService,
     private router: Router,
-    private dialog: MatDialog
+    private dialog: MatDialog,
   ) {}
 
   ngOnInit(): void {
@@ -122,6 +145,7 @@ export class TaskListComponent implements OnInit, OnDestroy {
     this.loadTasks();
     this.loadStats();
     this.setupSearch();
+    this.loadColumnPreferences();
   }
 
   ngOnDestroy(): void {
@@ -139,32 +163,59 @@ export class TaskListComponent implements OnInit, OnDestroy {
       });
   }
 
-  loadTasks(): void {
-    this.isLoading = true;
-    const filter: TaskFilterDto = {
-      page: this.currentPage,
-      pageSize: this.itemsPerPage,
-      sortBy: 'dueDate',
-      sortDescending: false,
-    //   status: this.selectedTaskStatus !== 'All' ? this.getStatusValue(this.selectedTaskStatus) : undefined,
-      priority: this.selectedTaskPriority ? this.getPriorityValue(this.selectedTaskPriority) : undefined,
-      searchTerm: this.searchTerm || undefined,
-      myTasks: this.selectedTaskStatus === 'My Tasks' ? true : undefined
-    };
+loadTasks(): void {
+  this.isLoading = true;
+  const filter: TaskFilterDto = {
+    page: this.currentPage,
+    pageSize: this.itemsPerPage,
+    sortBy: 'dueDate',
+    sortDescending: false,
+    priority: this.selectedTaskPriority ? this.getPriorityValue(this.selectedTaskPriority) : undefined,
+    searchTerm: this.searchTerm || undefined,
+    myTasks: this.selectedTaskStatus === 'My Tasks' ? true : undefined
+  };
 
-    this.taskService.getTasks(filter).subscribe({
-      next: (tasks) => {
-        this.tasks = tasks;
-        this.totalItems = tasks.length; // Update with actual total from API
+  this.taskService.getTasks(filter).subscribe({
+    next: (response: any) => {
+      console.log('Raw response from getTasks:', response);
+      
+      // Handle different response formats
+      if (Array.isArray(response)) {
+        // Direct array response
+        this.tasks = response;
+        this.totalItems = response.length;
         this.totalPages = Math.ceil(this.totalItems / this.itemsPerPage);
-        this.isLoading = false;
-      },
-      error: (error) => {
-        console.error('Error fetching tasks:', error);
-        this.isLoading = false;
-      },
-    });
-  }
+      } else if (response?.items && Array.isArray(response.items)) {
+        // Paginated response with items array
+        this.tasks = response.items;
+        this.totalItems = response.totalCount || response.items.length;
+        this.totalPages = response.totalPages || Math.ceil(this.totalItems / this.itemsPerPage);
+      } else if (response?.data && Array.isArray(response.data)) {
+        // Response with data array
+        this.tasks = response.data;
+        this.totalItems = response.total || response.data.length;
+        this.totalPages = Math.ceil(this.totalItems / this.itemsPerPage);
+      } else {
+        // Fallback
+        this.tasks = [];
+        this.totalItems = 0;
+        this.totalPages = 0;
+      }
+      
+      console.log(`Loaded ${this.tasks.length} tasks, Total: ${this.totalItems}, Pages: ${this.totalPages}`);
+      
+      this.sortTasks();
+      this.isLoading = false;
+    },
+    error: (error) => {
+      console.error('Error fetching tasks:', error);
+      this.isLoading = false;
+      this.tasks = [];
+      this.totalItems = 0;
+      this.totalPages = 0;
+    },
+  });
+}
 
   loadStats(): void {
     this.taskService.getTaskStats().subscribe({
@@ -197,23 +248,35 @@ export class TaskListComponent implements OnInit, OnDestroy {
 
   getStatusValue(status: string): TaskStatus | undefined {
     switch (status) {
-      case 'Pending': return TaskStatus.Pending;
-      case 'InProgress': return TaskStatus.InProgress;
-      case 'Completed': return TaskStatus.Completed;
-      case 'Cancelled': return TaskStatus.Cancelled;
-      case 'OnHold': return TaskStatus.OnHold;
-      case 'Overdue': return TaskStatus.Overdue;
-      default: return undefined;
+      case 'Pending':
+        return TaskStatus.Pending;
+      case 'InProgress':
+        return TaskStatus.InProgress;
+      case 'Completed':
+        return TaskStatus.Completed;
+      case 'Cancelled':
+        return TaskStatus.Cancelled;
+      case 'OnHold':
+        return TaskStatus.OnHold;
+      case 'Overdue':
+        return TaskStatus.Overdue;
+      default:
+        return undefined;
     }
   }
 
   getPriorityValue(priority: string): TaskPriority | undefined {
     switch (priority) {
-      case 'Low': return TaskPriority.Low;
-      case 'Medium': return TaskPriority.Medium;
-      case 'High': return TaskPriority.High;
-      case 'Urgent': return TaskPriority.Urgent;
-      default: return undefined;
+      case 'Low':
+        return TaskPriority.Low;
+      case 'Medium':
+        return TaskPriority.Medium;
+      case 'High':
+        return TaskPriority.High;
+      case 'Urgent':
+        return TaskPriority.Urgent;
+      default:
+        return undefined;
     }
   }
 
@@ -227,33 +290,50 @@ export class TaskListComponent implements OnInit, OnDestroy {
 
   getStatusClass(status: TaskStatus): string {
     switch (status) {
-      case TaskStatus.Pending: return 'status-pending';
-      case TaskStatus.InProgress: return 'status-in-progress';
-      case TaskStatus.Completed: return 'status-completed';
-      case TaskStatus.Cancelled: return 'status-cancelled';
-      case TaskStatus.OnHold: return 'status-on-hold';
-      case TaskStatus.Overdue: return 'status-overdue';
-      default: return '';
+      case TaskStatus.Pending:
+        return 'status-pending';
+      case TaskStatus.InProgress:
+        return 'status-in-progress';
+      case TaskStatus.Completed:
+        return 'status-completed';
+      case TaskStatus.Cancelled:
+        return 'status-cancelled';
+      case TaskStatus.OnHold:
+        return 'status-on-hold';
+      case TaskStatus.Overdue:
+        return 'status-overdue';
+      default:
+        return '';
     }
   }
 
   getPriorityClass(priority: TaskPriority): string {
     switch (priority) {
-      case TaskPriority.Low: return 'priority-low';
-      case TaskPriority.Medium: return 'priority-medium';
-      case TaskPriority.High: return 'priority-high';
-      case TaskPriority.Urgent: return 'priority-urgent';
-      default: return '';
+      case TaskPriority.Low:
+        return 'priority-low';
+      case TaskPriority.Medium:
+        return 'priority-medium';
+      case TaskPriority.High:
+        return 'priority-high';
+      case TaskPriority.Urgent:
+        return 'priority-urgent';
+      default:
+        return '';
     }
   }
 
   getPriorityIcon(priority: TaskPriority): string {
     switch (priority) {
-      case TaskPriority.Low: return 'arrow_downward';
-      case TaskPriority.Medium: return 'remove';
-      case TaskPriority.High: return 'arrow_upward';
-      case TaskPriority.Urgent: return 'warning';
-      default: return 'remove';
+      case TaskPriority.Low:
+        return 'arrow_downward';
+      case TaskPriority.Medium:
+        return 'remove';
+      case TaskPriority.High:
+        return 'arrow_upward';
+      case TaskPriority.Urgent:
+        return 'warning';
+      default:
+        return 'remove';
     }
   }
 
@@ -268,12 +348,19 @@ export class TaskListComponent implements OnInit, OnDestroy {
 
   getAvatarColor(name: string | undefined): string {
     const colors = [
-      '#FF2E63', '#00D4B9', '#FF6B6B', '#FFD93D', '#1E90FF', '#8A2BE2', '#4B0082'
+      '#FF2E63',
+      '#00D4B9',
+      '#FF6B6B',
+      '#FFD93D',
+      '#1E90FF',
+      '#8A2BE2',
+      '#4B0082',
     ];
     const fallbackName = name || 'Unknown';
-    const index = fallbackName
-      .split('')
-      .reduce((sum, char) => sum + char.charCodeAt(0), 0) % colors.length;
+    const index =
+      fallbackName
+        .split('')
+        .reduce((sum, char) => sum + char.charCodeAt(0), 0) % colors.length;
     return colors[index];
   }
 
@@ -315,7 +402,10 @@ export class TaskListComponent implements OnInit, OnDestroy {
 
   getVisiblePages(): number[] {
     const maxVisiblePages = 5;
-    let startPage = Math.max(1, this.currentPage - Math.floor(maxVisiblePages / 2));
+    let startPage = Math.max(
+      1,
+      this.currentPage - Math.floor(maxVisiblePages / 2),
+    );
     let endPage = Math.min(this.totalPages, startPage + maxVisiblePages - 1);
 
     if (endPage - startPage + 1 < maxVisiblePages) {
@@ -329,7 +419,7 @@ export class TaskListComponent implements OnInit, OnDestroy {
     return visiblePages;
   }
 
-    onCreateTask(): void {
+  onCreateTask(): void {
     const dialogRef = this.dialog.open(TaskDrawerComponent, {
       width: '600px',
       maxWidth: '90vw',
@@ -339,7 +429,7 @@ export class TaskListComponent implements OnInit, OnDestroy {
       panelClass: ['full-height-dialog', 'task-drawer-panel'],
       disableClose: true,
       autoFocus: true,
-      data: {}
+      data: {},
     });
 
     dialogRef.afterClosed().subscribe((result) => {
@@ -350,7 +440,7 @@ export class TaskListComponent implements OnInit, OnDestroy {
           'success',
           'Task Created',
           `Task "${result.task.title}" has been created successfully!`,
-          'Your new task has been added to the list.'
+          'Your new task has been added to the list.',
         );
       }
     });
@@ -366,7 +456,7 @@ export class TaskListComponent implements OnInit, OnDestroy {
       panelClass: ['full-height-dialog', 'task-drawer-panel'],
       disableClose: true,
       autoFocus: true,
-      data: { taskId: task.id }
+      data: { taskId: task.id },
     });
 
     dialogRef.afterClosed().subscribe((result) => {
@@ -377,11 +467,12 @@ export class TaskListComponent implements OnInit, OnDestroy {
           'success',
           'Task Updated',
           `Task "${result.task.title}" has been updated successfully!`,
-          'The task changes have been saved.'
+          'The task changes have been saved.',
         );
       }
     });
   }
+
   onViewTask(task: Task): void {
     this.router.navigate([`/tasks/view/${task.id}`]);
   }
@@ -411,7 +502,7 @@ export class TaskListComponent implements OnInit, OnDestroy {
               'success',
               'Task Deleted Successfully',
               `Task "${task.title}" has been deleted successfully!`,
-              'The task has been moved to trash and is no longer visible in your active task list.'
+              'The task has been moved to trash and is no longer visible in your active task list.',
             );
             this.isDeleting = false;
           },
@@ -421,7 +512,7 @@ export class TaskListComponent implements OnInit, OnDestroy {
               'error',
               'Delete Failed',
               'Failed to delete task. Please try again.',
-              'The task could not be deleted due to a system error. Please try again.'
+              'The task could not be deleted due to a system error. Please try again.',
             );
             this.isDeleting = false;
           },
@@ -433,7 +524,7 @@ export class TaskListComponent implements OnInit, OnDestroy {
   onUpdateStatus(task: Task, status: TaskStatus): void {
     this.taskService.updateTaskStatus(task.id, status).subscribe({
       next: (updatedTask) => {
-        const index = this.tasks.findIndex(t => t.id === updatedTask.id);
+        const index = this.tasks.findIndex((t) => t.id === updatedTask.id);
         if (index !== -1) {
           this.tasks[index] = updatedTask;
         }
@@ -442,7 +533,7 @@ export class TaskListComponent implements OnInit, OnDestroy {
           'success',
           'Status Updated',
           `Task status updated to ${this.getStatusText(status)}`,
-          `The task "${task.title}" status has been successfully updated.`
+          `The task "${task.title}" status has been successfully updated.`,
         );
       },
       error: (error) => {
@@ -451,17 +542,17 @@ export class TaskListComponent implements OnInit, OnDestroy {
           'error',
           'Update Failed',
           'Failed to update task status.',
-          'Please try again or contact support if the issue persists.'
+          'Please try again or contact support if the issue persists.',
         );
-      }
+      },
     });
   }
 
   openDialog(
-    type: 'success' | 'error',
+    type: 'success' | 'error' | 'info',
     title: string,
     message: string,
-    submessage: string
+    submessage: string,
   ): void {
     this.dialog.open(NotificationDialogComponent, {
       width: '400px',
@@ -471,5 +562,109 @@ export class TaskListComponent implements OnInit, OnDestroy {
 
   trackByTask(index: number, task: Task): number {
     return task.id;
+  }
+
+  // Column visibility methods
+  toggleColumn(column: string): void {
+    if (this.visibleColumns.hasOwnProperty(column)) {
+      this.visibleColumns[column] = !this.visibleColumns[column];
+      this.saveColumnPreferences();
+    }
+  }
+
+  saveColumnPreferences(): void {
+    localStorage.setItem(
+      'taskColumnVisibility',
+      JSON.stringify(this.visibleColumns),
+    );
+  }
+
+  loadColumnPreferences(): void {
+    const saved = localStorage.getItem('taskColumnVisibility');
+    if (saved) {
+      this.visibleColumns = JSON.parse(saved);
+    }
+  }
+
+  // Sort methods
+  sortBy(field: string): void {
+    if (this.sortField === field) {
+      this.sortDirection = this.sortDirection === 'asc' ? 'desc' : 'asc';
+    } else {
+      this.sortField = field;
+      this.sortDirection = 'asc';
+    }
+    this.sortTasks();
+  }
+
+  sortTasks(): void {
+    this.tasks.sort((a, b) => {
+      let aVal = a[this.sortField as keyof Task];
+      let bVal = b[this.sortField as keyof Task];
+
+      if (typeof aVal === 'number' && typeof bVal === 'number') {
+        return this.sortDirection === 'asc' ? aVal - bVal : bVal - aVal;
+      }
+
+      const aStr = String(aVal || '').toLowerCase();
+      const bStr = String(bVal || '').toLowerCase();
+
+      return this.sortDirection === 'asc'
+        ? aStr.localeCompare(bStr)
+        : bStr.localeCompare(aStr);
+    });
+  }
+
+  // Export methods
+  exportTasks(format: 'excel' | 'pdf'): void {
+    this.exportingFormat = format;
+    // Implement export logic here
+    setTimeout(() => {
+      this.exportingFormat = null;
+    }, 2000);
+  }
+
+  printTaskList(): void {
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head><title>Task List</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 20px; }
+            table { width: 100%; border-collapse: collapse; }
+            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+            th { background-color: #f2f2f2; }
+          </style>
+          </head>
+          <body>
+            <h1>Task List</h1>
+            ${document.querySelector('.task-table')?.outerHTML || ''}
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.print();
+    }
+  }
+
+  onDuplicateTask(task: Task): void {
+    // Implement duplicate logic
+    this.openDialog(
+      'success',
+      'Task Duplicated',
+      `Task "${task.title}" has been duplicated!`,
+      'A new copy of the task has been created.',
+    );
+  }
+
+  onAssignTask(task: Task): void {
+    // Implement assign logic
+    this.openDialog(
+      'info',
+      'Assign Task',
+      `Assign task "${task.title}" to another user`,
+      'This feature is coming soon.',
+    );
   }
 }

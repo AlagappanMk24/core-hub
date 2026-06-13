@@ -1,5 +1,5 @@
 ﻿using AutoMapper;
-using Core_API.Application.DTOs.Invoice.Request;
+using Core_API.Application.DTOs.Invoices.Requests;
 using Core_API.Domain.Entities.Invoices;
 
 namespace Core_API.Application.Mappings.Profiles

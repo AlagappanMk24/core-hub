@@ -16,6 +16,7 @@ using Core_API.Application.Contracts.Services.RecurringInvoices;
 using Core_API.Application.Contracts.Services.Tasks;
 using Core_API.Application.Contracts.Services.Taxes;
 using Core_API.Application.Contracts.Services.Users;
+using Core_API.Infrastructure.Configuration.Settings;
 using Core_API.Infrastructure.Seed;
 using Core_API.Infrastructure.Services.Account;
 using Core_API.Infrastructure.Services.Admin;
@@ -73,7 +74,7 @@ namespace Core_API.Infrastructure.DependencyInjection
         private static void AddPersistenceServices(this IServiceCollection services)
         {
             services.AddScoped<IUnitOfWork, Infrastructure.UnitOfWork.UnitOfWork>();
-            services.AddScoped<IDbInitializer, DbInitializer>();
+            //services.AddScoped<IDbInitializer, DbInitializer>();
         }
         private static void AddSecurityServices(this IServiceCollection services)
         {
@@ -85,6 +86,9 @@ namespace Core_API.Infrastructure.DependencyInjection
             services.AddScoped<IPermissionService, PermissionService>();
             services.AddScoped<IAuthStateService, AuthStateService>();
             services.AddScoped<IExternalAuthUrlBuilder, ExternalAuthUrlBuilder>();
+
+            // Register OTP Tracker as Scoped (per request)
+            services.AddScoped<IOtpAttemptTracker, OtpAttemptTracker>();
         }
         private static void AddBusinessServices(this IServiceCollection services)
         {

@@ -2,11 +2,6 @@
 using Core_API.Application.DTOs.Tasks.Requests;
 using Core_API.Application.DTOs.Tasks.Responses;
 using Core_API.Domain.Entities.Tasks;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Core_API.Application.Mappings.Profiles
 {
@@ -38,24 +33,36 @@ namespace Core_API.Application.Mappings.Profiles
             #endregion
 
             #region Create DTO to Entity
-
             CreateMap<CreateTaskDto, TaskItem>()
-             .ForMember(dest => dest.Id, opt => opt.Ignore())
-             .ForMember(dest => dest.Status, opt => opt.MapFrom(src => Domain.Enums.TaskStatus.Pending))
-             .ForMember(dest => dest.CreatedByUserId, opt => opt.Ignore())
-             .ForMember(dest => dest.CreatedDate, opt => opt.Ignore())
-             //.ForMember(dest => dest.UpdatedByUserId, opt => opt.Ignore())
-             .ForMember(dest => dest.UpdatedDate, opt => opt.Ignore())
-             .ForMember(dest => dest.IsDeleted, opt => opt.Ignore())
-             .ForMember(dest => dest.CompletedAt, opt => opt.Ignore())
-             .ForMember(dest => dest.AssignedToUser, opt => opt.Ignore())
-             .ForMember(dest => dest.CreatedByUser, opt => opt.Ignore())
-             .ForMember(dest => dest.ParentTask, opt => opt.Ignore())
-             .ForMember(dest => dest.Subtasks, opt => opt.Ignore())
-             .ForMember(dest => dest.Comments, opt => opt.Ignore())
-             .ForMember(dest => dest.Attachments, opt => opt.Ignore())
-             .ForMember(dest => dest.AuditLogs, opt => opt.Ignore());
-
+                .ForMember(dest => dest.Id, opt => opt.Ignore())
+                .ForMember(dest => dest.Status, opt => opt.MapFrom(src => Domain.Enums.TaskStatus.Pending))
+                .ForMember(dest => dest.CreatedByUserId, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedDate, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdatedDate, opt => opt.Ignore())
+                .ForMember(dest => dest.IsDeleted, opt => opt.Ignore())
+                .ForMember(dest => dest.CompletedAt, opt => opt.Ignore())
+                .ForMember(dest => dest.AssignedToUser, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedByUser, opt => opt.Ignore())
+                .ForMember(dest => dest.ParentTask, opt => opt.Ignore())
+                .ForMember(dest => dest.Subtasks, opt => opt.Ignore())
+                .ForMember(dest => dest.Comments, opt => opt.Ignore())
+                .ForMember(dest => dest.Attachments, opt => opt.Ignore())
+                .ForMember(dest => dest.AuditLogs, opt => opt.Ignore())
+                .ForMember(dest => dest.ActualHours, opt => opt.Ignore())
+                .ForMember(dest => dest.CreatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.UpdatedBy, opt => opt.Ignore())
+                .ForMember(dest => dest.Title, opt => opt.MapFrom(src => src.Title))
+                .ForMember(dest => dest.Description, opt => opt.MapFrom(src => src.Description))
+                .ForMember(dest => dest.Priority, opt => opt.MapFrom(src => src.Priority))
+                .ForMember(dest => dest.DueDate, opt => opt.MapFrom(src => src.DueDate))
+                .ForMember(dest => dest.Category, opt => opt.MapFrom(src => src.Category))
+                .ForMember(dest => dest.Tag, opt => opt.MapFrom(src => src.Tag))
+                .ForMember(dest => dest.AssignedToUserId, opt => opt.MapFrom(src => src.AssignedToUserId))
+                .ForMember(dest => dest.ParentTaskId, opt => opt.MapFrom(src => src.ParentTaskId))
+                .ForMember(dest => dest.ReminderDate, opt => opt.MapFrom(src => src.ReminderDate))
+                .ForMember(dest => dest.IsRecurring, opt => opt.MapFrom(src => src.IsRecurring))
+                .ForMember(dest => dest.RecurrencePattern, opt => opt.MapFrom(src => src.RecurrencePattern))
+                .ForMember(dest => dest.EstimatedHours, opt => opt.MapFrom(src => src.EstimatedHours));
             #endregion
 
             #region Update DTO to Entity

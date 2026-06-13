@@ -24,6 +24,7 @@ import {
   UpdateTaskDto,
   TaskPriority,
   TaskStatus,
+  PaginatedResult,
 } from '../../../../interfaces/tasks/task.interface';
 import { UserListDto, UserService } from '../../../user/services/user.service';
 import { NotificationDialogComponent } from '../../../../shared/components/notification/notification-dialog.component';
@@ -267,11 +268,14 @@ export class TaskDrawerComponent implements OnInit {
     };
 
     this.taskService.getTasks(filter).subscribe({
-      next: (tasks) => {
+      next: (response: PaginatedResult<Task>) => {
+        // Extract items array from paginated response
+        const tasks = response.items || [];
+        
         if (this.isEditMode && this.taskId) {
           // Exclude current task and its subtasks from parent options
           this.parentTasks = tasks.filter(
-            (t) => t.id !== this.taskId && t.parentTaskId !== this.taskId,
+            (task: Task) => task.id !== this.taskId && task.parentTaskId !== this.taskId,
           );
         } else {
           this.parentTasks = tasks;
@@ -325,7 +329,6 @@ export class TaskDrawerComponent implements OnInit {
         error: (error) => {
           console.error('Error creating task:', error);
           this.saving = false;
-          console.error('Error creating task:', error);
           this.showErrorDialog(
             'Creation Failed',
             'Failed to create task.',

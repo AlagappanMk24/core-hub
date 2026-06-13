@@ -2,8 +2,19 @@
   <div class="content-wrapper" [class.blurred]="exportingFormat">
     <!-- Header Section -->
     <div class="header">
-      <h1 class="title">Invoices</h1>
+      <div class="header-left">
+        <h1 class="title">Invoices</h1>
+        <p class="subtitle">Manage and track all your invoice transactions</p>
+      </div>
       <div class="header-actions">
+        <button
+          mat-icon-button
+          class="refresh-btn"
+          (click)="loadInvoices(); loadStats()"
+          matTooltip="Refresh Data"
+        >
+          <mat-icon>refresh</mat-icon>
+        </button>
         <button
           *ngIf="isAdmin"
           mat-stroked-button
@@ -14,19 +25,14 @@
           <mat-icon>file_download</mat-icon> Export
         </button>
         <mat-menu #exportMenu="matMenu">
-          <button
-            mat-menu-item
-            (click)="onExport('excel')"
-            [disabled]="exportingFormat"
-          >
+          <button mat-menu-item (click)="onExport('excel')" [disabled]="exportingFormat">
             <mat-icon>table_chart</mat-icon> Export as Excel
           </button>
-          <button
-            mat-menu-item
-            (click)="onExport('pdf')"
-            [disabled]="exportingFormat"
-          >
+          <button mat-menu-item (click)="onExport('pdf')" [disabled]="exportingFormat">
             <mat-icon>picture_as_pdf</mat-icon> Export as PDF
+          </button>
+          <button mat-menu-item (click)="printInvoiceList()">
+            <mat-icon>print</mat-icon> Print List
           </button>
         </mat-menu>
         <button
@@ -50,406 +56,218 @@
         </button>
       </div>
     </div>
+
     <!-- Stats Cards Section -->
     <div class="stats-section">
       <!-- All Invoices Card -->
       <div
-       *ngIf="isAdmin"
-        class="stat-card all"
+        class="stat-card all-card"
         [class.active]="selectedInvoiceStatus === 'All'"
         (click)="onSelectInvoiceStatus('All')"
         @scaleIn
-        [@pulse]="selectedInvoiceStatus === 'All' ? 'active' : 'inactive'"
       >
-        <div class="stat-header">
-          <mat-icon class="stat-icon">description</mat-icon>
-          <span class="stat-label">All Invoices ({{ stats.all.count }})</span>
-        </div>
-        <div class="stat-amount">{{ stats.all.amount | currency: "USD" }}</div>
-        <div class="stat-change" [ngClass]="getStatsChangeClass(stats.all)">
-          {{ getFormattedChange(stats.all) }}
-          <mat-icon class="change-icon">{{ getStatsIcon(stats.all) }}</mat-icon>
+        <div class="stat-card-bg"></div>
+        <div class="stat-card-content">
+          <div class="stat-header">
+            <div class="stat-icon-wrapper all-icon">
+              <mat-icon>receipt_long</mat-icon>
+            </div>
+            <div class="stat-info">
+              <span class="stat-label">Total Invoices</span>
+              <div class="stat-value-wrapper">
+                <span class="stat-value">{{ stats.all.count }}</span>
+                <span class="stat-trend" [class.positive]="getStatsChange(stats.all) >= 0" [class.negative]="getStatsChange(stats.all) < 0">
+                  <mat-icon class="trend-icon">{{ getStatsChange(stats.all) >= 0 ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+                  {{ getFormattedChange(stats.all) }}
+                </span>
+              </div>
+            </div>
+          </div>
+          <div class="stat-footer">
+            <span class="stat-subtitle">Total Amount: {{ stats.all.amount | currency:'USD' }}</span>
+          </div>
         </div>
       </div>
 
       <!-- Draft Card -->
       <div
-      *ngIf="isAdmin"
-        class="stat-card draft"
+        class="stat-card draft-card"
         [class.active]="selectedInvoiceStatus === 'Draft'"
         (click)="onSelectInvoiceStatus('Draft')"
         @scaleIn
-        [@pulse]="selectedInvoiceStatus === 'Draft' ? 'active' : 'inactive'"
       >
-        <div class="stat-header">
-          <mat-icon class="stat-icon">edit_note</mat-icon>
-          <span class="stat-label">Draft ({{ stats.draft.count }})</span>
-        </div>
-        <div class="stat-amount">
-          {{ stats.draft.amount | currency: "USD" }}
-        </div>
-        <div class="stat-change" [ngClass]="getStatsChangeClass(stats.draft)">
-          {{ getFormattedChange(stats.draft) }}
-          <mat-icon class="change-icon">{{
-            getStatsIcon(stats.draft)
-          }}</mat-icon>
+        <div class="stat-card-bg"></div>
+        <div class="stat-card-content">
+          <div class="stat-header">
+            <div class="stat-icon-wrapper draft-icon">
+              <mat-icon>edit_note</mat-icon>
+            </div>
+            <div class="stat-info">
+              <span class="stat-label">Draft</span>
+              <div class="stat-value-wrapper">
+                <span class="stat-value">{{ stats.draft.count }}</span>
+                <span class="stat-trend" [class.positive]="getStatsChange(stats.draft) >= 0" [class.negative]="getStatsChange(stats.draft) < 0">
+                  <mat-icon class="trend-icon">{{ getStatsChange(stats.draft) >= 0 ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+                  {{ getFormattedChange(stats.draft) }}
+                </span>
+              </div>
+            </div>
+          </div>
+          <div class="stat-footer">
+            <span class="stat-subtitle">Amount: {{ stats.draft.amount | currency:'USD' }}</span>
+          </div>
         </div>
       </div>
 
       <!-- Sent Card -->
       <div
-         *ngIf="isAdmin"
-        class="stat-card sent"
+        class="stat-card sent-card"
         [class.active]="selectedInvoiceStatus === 'Sent'"
         (click)="onSelectInvoiceStatus('Sent')"
         @scaleIn
-        [@pulse]="selectedInvoiceStatus === 'Sent' ? 'active' : 'inactive'"
       >
-        <div class="stat-header">
-          <mat-icon class="stat-icon">send</mat-icon>
-          <span class="stat-label">Sent ({{ stats.sent.count }})</span>
-        </div>
-        <div class="stat-amount">
-          {{ stats.sent.amount | currency: "USD" }}
-        </div>
-        <div class="stat-change" [ngClass]="getStatsChangeClass(stats.sent)">
-          {{ getFormattedChange(stats.sent) }}
-          <mat-icon class="change-icon">{{
-            getStatsIcon(stats.sent)
-          }}</mat-icon>
+        <div class="stat-card-bg"></div>
+        <div class="stat-card-content">
+          <div class="stat-header">
+            <div class="stat-icon-wrapper sent-icon">
+              <mat-icon>send</mat-icon>
+            </div>
+            <div class="stat-info">
+              <span class="stat-label">Sent</span>
+              <div class="stat-value-wrapper">
+                <span class="stat-value">{{ stats.sent.count }}</span>
+                <span class="stat-trend" [class.positive]="getStatsChange(stats.sent) >= 0" [class.negative]="getStatsChange(stats.sent) < 0">
+                  <mat-icon class="trend-icon">{{ getStatsChange(stats.sent) >= 0 ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+                  {{ getFormattedChange(stats.sent) }}
+                </span>
+              </div>
+            </div>
+          </div>
+          <div class="stat-footer">
+            <span class="stat-subtitle">Amount: {{ stats.sent.amount | currency:'USD' }}</span>
+          </div>
         </div>
       </div>
 
-      <!-- Viewed Card -->
-      <!-- <div
-        class="stat-card viewed"
-        [class.active]="selectedInvoiceStatus === 'Viewed'"
-        (click)="onSelectInvoiceStatus('Viewed')"
-        @scaleIn
-        [@pulse]="selectedInvoiceStatus === 'Viewed' ? 'active' : 'inactive'"
-      >
-        <div class="stat-header">
-          <mat-icon class="stat-icon">visibility</mat-icon>
-          <span class="stat-label">Viewed ({{ stats.viewed.count }})</span>
-        </div>
-        <div class="stat-amount">
-          {{ stats.viewed.amount | currency: "USD" }}
-        </div>
-        <div class="stat-change" [ngClass]="getStatsChangeClass(stats.viewed)">
-          {{ getFormattedChange(stats.viewed) }}
-          <mat-icon class="change-icon">{{
-            getStatsIcon(stats.viewed)
-          }}</mat-icon>
-        </div>
-      </div> -->
-
-      <!-- Approved Card (for backward compatibility) -->
-      <!-- <div
-        class="stat-card approved"
-        [class.active]="selectedInvoiceStatus === 'Approved'"
-        (click)="onSelectInvoiceStatus('Approved')"
-        @scaleIn
-        [@pulse]="selectedInvoiceStatus === 'Approved' ? 'active' : 'inactive'"
-      >
-        <div class="stat-header">
-          <mat-icon class="stat-icon">check_circle</mat-icon>
-          <span class="stat-label">Approved ({{ stats.approved?.count }})</span>
-        </div>
-        <div class="stat-amount">
-          {{ stats.approved?.amount | currency: "USD" }}
-        </div>
-        <div
-          class="stat-change"
-          [ngClass]="getStatsChangeClass(stats.approved)"
-        >
-          {{ getFormattedChange(stats.approved) }}
-          <mat-icon class="change-icon">{{
-            getStatsIcon(stats.approved)
-          }}</mat-icon>
-        </div>
-      </div> -->
-
-      <!-- Cancelled Card -->
-      <!-- <div
-        class="stat-card cancelled"
-        [class.active]="selectedInvoiceStatus === 'Cancelled'"
-        (click)="onSelectInvoiceStatus('Cancelled')"
-        @scaleIn
-        [@pulse]="selectedInvoiceStatus === 'Cancelled' ? 'active' : 'inactive'"
-      >
-        <div class="stat-header">
-          <mat-icon class="stat-icon">cancel</mat-icon>
-          <span class="stat-label"
-            >Cancelled ({{ stats.cancelled.count }})</span
-          >
-        </div>
-        <div class="stat-amount">
-          {{ stats.cancelled.amount | currency: "USD" }}
-        </div>
-        <div
-          class="stat-change"
-          [ngClass]="getStatsChangeClass(stats.cancelled)"
-        >
-          {{ getFormattedChange(stats.cancelled) }}
-          <mat-icon class="change-icon">{{
-            getStatsIcon(stats.cancelled)
-          }}</mat-icon>
-        </div>
-      </div> -->
-
-      <!-- Void Card
-      <div
-        class="stat-card void"
-        [class.active]="selectedInvoiceStatus === 'Void'"
-        (click)="onSelectInvoiceStatus('Void')"
-        @scaleIn
-        [@pulse]="selectedInvoiceStatus === 'Void' ? 'active' : 'inactive'"
-      >
-        <div class="stat-header">
-          <mat-icon class="stat-icon">block</mat-icon>
-          <span class="stat-label">Void ({{ stats.void.count }})</span>
-        </div>
-        <div class="stat-amount">{{ stats.void.amount | currency: "USD" }}</div>
-        <div class="stat-change" [ngClass]="getStatsChangeClass(stats.void)">
-          {{ getFormattedChange(stats.void) }}
-          <mat-icon class="change-icon">{{
-            getStatsIcon(stats.void)
-          }}</mat-icon>
-        </div>
-      </div> -->
-
-      <!-- Pending Payment Card -->
-      <!-- <div
-        class="stat-card pending"
-        [class.active]="selectedPaymentStatus === 'Pending'"
-        (click)="onSelectPaymentStatus('Pending')"
-        @scaleIn
-        [@pulse]="selectedPaymentStatus === 'Pending' ? 'active' : 'inactive'"
-      >
-        <div class="stat-header">
-          <mat-icon class="stat-icon">hourglass_empty</mat-icon>
-          <span class="stat-label"
-            >Pending Payment ({{ stats.pending.count }})</span
-          >
-        </div>
-        <div class="stat-amount">
-          {{ stats.pending.amount | currency: "USD" }}
-        </div>
-        <div class="stat-change" [ngClass]="getStatsChangeClass(stats.pending)">
-          {{ getFormattedChange(stats.pending) }}
-          <mat-icon class="change-icon">{{
-            getStatsIcon(stats.pending)
-          }}</mat-icon>
-        </div>
-      </div> -->
-
-      <!-- Completed Payment Card (maps to Paid) -->
-      <!-- <div
-        class="stat-card completed"
-        [class.active]="selectedPaymentStatus === 'Completed'"
-        (click)="onSelectPaymentStatus('Completed')"
-        @scaleIn
-        [@pulse]="selectedPaymentStatus === 'Completed' ? 'active' : 'inactive'"
-      >
-        <div class="stat-header">
-          <mat-icon class="stat-icon">check_circle</mat-icon>
-          <span class="stat-label"
-            >Completed Payment ({{ stats.completed?.count }})</span
-          >
-        </div>
-        <div class="stat-amount">
-          {{ stats.completed?.amount || 0 | currency: "USD" }}
-        </div>
-        <div
-          class="stat-change"
-          [ngClass]="getStatsChangeClass(stats.completed)"
-        >
-          {{ getFormattedChange(stats.completed) }}
-          <mat-icon class="change-icon">{{
-            getStatsIcon(stats.completed)
-          }}</mat-icon>
-        </div>
-      </div> -->
-
       <!-- Paid Card -->
       <div
-        class="stat-card paid"
+        class="stat-card paid-card"
         [class.active]="selectedPaymentStatus === 'Paid'"
         (click)="onSelectPaymentStatus('Paid')"
         @scaleIn
-        [@pulse]="selectedPaymentStatus === 'Paid' ? 'active' : 'inactive'"
       >
-        <div class="stat-header">
-          <mat-icon class="stat-icon">paid</mat-icon>
-          <span class="stat-label">Paid ({{ stats.paid.count }})</span>
-        </div>
-        <div class="stat-amount">{{ stats.paid.amount | currency: "USD" }}</div>
-        <div class="stat-change" [ngClass]="getStatsChangeClass(stats.paid)">
-          {{ getFormattedChange(stats.paid) }}
-          <mat-icon class="change-icon">{{
-            getStatsIcon(stats.paid)
-          }}</mat-icon>
+        <div class="stat-card-bg"></div>
+        <div class="stat-card-content">
+          <div class="stat-header">
+            <div class="stat-icon-wrapper paid-icon">
+              <mat-icon>paid</mat-icon>
+            </div>
+            <div class="stat-info">
+              <span class="stat-label">Paid</span>
+              <div class="stat-value-wrapper">
+                <span class="stat-value">{{ stats.paid.count }}</span>
+                <span class="stat-trend" [class.positive]="getStatsChange(stats.paid) >= 0" [class.negative]="getStatsChange(stats.paid) < 0">
+                  <mat-icon class="trend-icon">{{ getStatsChange(stats.paid) >= 0 ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+                  {{ getFormattedChange(stats.paid) }}
+                </span>
+              </div>
+            </div>
+          </div>
+          <div class="stat-footer">
+            <span class="stat-subtitle">Amount: {{ stats.paid.amount | currency:'USD' }}</span>
+          </div>
         </div>
       </div>
 
       <!-- Partially Paid Card -->
       <div
-        class="stat-card partially-paid"
+        class="stat-card partial-card"
         [class.active]="selectedPaymentStatus === 'PartiallyPaid'"
         (click)="onSelectPaymentStatus('PartiallyPaid')"
         @scaleIn
-        [@pulse]="
-          selectedPaymentStatus === 'PartiallyPaid' ? 'active' : 'inactive'
-        "
       >
-        <div class="stat-header">
-          <mat-icon class="stat-icon">payments</mat-icon>
-          <span class="stat-label"
-            >Partially Paid ({{ stats.partiallyPaid.count }})</span
-          >
-        </div>
-        <div class="stat-amount">
-          {{ stats.partiallyPaid.amount | currency: "USD" }}
-        </div>
-        <div
-          class="stat-change"
-          [ngClass]="getStatsChangeClass(stats.partiallyPaid)"
-        >
-          {{ getFormattedChange(stats.partiallyPaid) }}
-          <mat-icon class="change-icon">{{
-            getStatsIcon(stats.partiallyPaid)
-          }}</mat-icon>
+        <div class="stat-card-bg"></div>
+        <div class="stat-card-content">
+          <div class="stat-header">
+            <div class="stat-icon-wrapper partial-icon">
+              <mat-icon>payments</mat-icon>
+            </div>
+            <div class="stat-info">
+              <span class="stat-label">Partially Paid</span>
+              <div class="stat-value-wrapper">
+                <span class="stat-value">{{ stats.partiallyPaid.count }}</span>
+                <span class="stat-trend" [class.positive]="getStatsChange(stats.partiallyPaid) >= 0" [class.negative]="getStatsChange(stats.partiallyPaid) < 0">
+                  <mat-icon class="trend-icon">{{ getStatsChange(stats.partiallyPaid) >= 0 ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+                  {{ getFormattedChange(stats.partiallyPaid) }}
+                </span>
+              </div>
+            </div>
+          </div>
+          <div class="stat-footer">
+            <span class="stat-subtitle">Amount: {{ stats.partiallyPaid.amount | currency:'USD' }}</span>
+          </div>
         </div>
       </div>
 
       <!-- Overdue Card -->
       <div
-        class="stat-card overdue"
+        class="stat-card overdue-card"
         [class.active]="selectedPaymentStatus === 'Overdue'"
         (click)="onSelectPaymentStatus('Overdue')"
         @scaleIn
-        [@pulse]="selectedPaymentStatus === 'Overdue' ? 'active' : 'inactive'"
       >
-        <div class="stat-header">
-          <mat-icon class="stat-icon">warning</mat-icon>
-          <span class="stat-label"
-            >Overdue Payment ({{ stats.overdue.count }})</span
-          >
+        <div class="stat-card-bg"></div>
+        <div class="stat-card-content">
+          <div class="stat-header">
+            <div class="stat-icon-wrapper overdue-icon">
+              <mat-icon>warning</mat-icon>
+            </div>
+            <div class="stat-info">
+              <span class="stat-label">Overdue</span>
+              <div class="stat-value-wrapper">
+                <span class="stat-value">{{ stats.overdue.count }}</span>
+                <span class="stat-trend" [class.positive]="getStatsChange(stats.overdue) >= 0" [class.negative]="getStatsChange(stats.overdue) < 0">
+                  <mat-icon class="trend-icon">{{ getStatsChange(stats.overdue) >= 0 ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+                  {{ getFormattedChange(stats.overdue) }}
+                </span>
+              </div>
+            </div>
+          </div>
+          <div class="stat-footer">
+            <span class="stat-subtitle">Amount: {{ stats.overdue.amount | currency:'USD' }}</span>
+          </div>
         </div>
-        <div class="stat-amount">
-          {{ stats.overdue.amount | currency: "USD" }}
-        </div>
-        <div class="stat-change" [ngClass]="getStatsChangeClass(stats.overdue)">
-          {{ getFormattedChange(stats.overdue) }}
-          <mat-icon class="change-icon">{{
-            getStatsIcon(stats.overdue)
-          }}</mat-icon>
-        </div>
-      </div>
-
-      <!-- Refunded Card -->
-      <!-- <div
-        class="stat-card refunded"
-        [class.active]="selectedPaymentStatus === 'Refunded'"
-        (click)="onSelectPaymentStatus('Refunded')"
-        @scaleIn
-        [@pulse]="selectedPaymentStatus === 'Refunded' ? 'active' : 'inactive'"
-      >
-        <div class="stat-header">
-          <mat-icon class="stat-icon">money_off</mat-icon>
-          <span class="stat-label"
-            >Refunded Payment ({{ stats.refunded.count }})</span
-          >
-        </div>
-        <div class="stat-amount">
-          {{ stats.refunded.amount | currency: "USD" }}
-        </div>
-        <div
-          class="stat-change"
-          [ngClass]="getStatsChangeClass(stats.refunded)"
-        >
-          {{ getFormattedChange(stats.refunded) }}
-          <mat-icon class="change-icon">{{
-            getStatsIcon(stats.refunded)
-          }}</mat-icon>
-        </div>
-      </div> -->
-    </div>
-
-      <!-- Total Invoiced Card (Customer Only) -->
-      <!-- <div
-        *ngIf="isCustomer"
-        class="stat-card total-invoiced"
-        [class.active]="selectedPaymentStatus === 'TotalInvoiced'"
-        (click)="onSelectPaymentStatus('TotalInvoiced')"
-        @scaleIn
-      >
-        <div class="stat-header">
-          <mat-icon class="stat-icon">receipt</mat-icon>
-          <span class="stat-label">Total Invoiced</span>
-        </div>
-        <div class="stat-amount">{{ getCustomerTotalInvoiced() | currency: "USD" }}</div>
-        <div class="stat-subtitle">All invoices issued</div>
-      </div> -->
-
-      <!-- Total Due Card (Customer Only) -->
-      <!-- <div
-        *ngIf="isCustomer"
-        class="stat-card total-due"
-        [class.active]="selectedPaymentStatus === 'TotalDue'"
-        (click)="onSelectPaymentStatus('TotalDue')"
-        @scaleIn
-      >
-        <div class="stat-header">
-          <mat-icon class="stat-icon">account_balance_wallet</mat-icon>
-          <span class="stat-label">Total Due</span>
-        </div>
-        <div class="stat-amount">{{ getCustomerTotalDue() | currency: "USD" }}</div>
-        <div class="stat-subtitle">Pending & Partially Paid</div>
-      </div> -->
-       
-    <!-- Financial Summary Section (Similar to MRR/ARR for Invoices) -->
-    <div class="summary-section"  *ngIf="isAdmin">
-      <div class="summary-card">
-        <div class="summary-label">Total Receivable</div>
-        <div class="summary-value">
-          {{ getTotalReceivable() | currency: "USD" }}
-        </div>
-        <div class="summary-subtitle">Pending & Partially Paid</div>
-      </div>
-      <div class="summary-card">
-        <div class="summary-label">Total Collected</div>
-        <div class="summary-value">
-          {{ stats.paid.amount | currency: "USD" }}
-        </div>
-        <div class="summary-subtitle">Paid Invoices</div>
-      </div>
-      <div class="summary-card">
-        <div class="summary-label">Collection Rate</div>
-        <div class="summary-value">{{ getCollectionRate() }}%</div>
-        <div class="summary-subtitle">Paid / Total (excl. Draft)</div>
       </div>
     </div>
 
-     <!-- Customer Summary -->
-    <div class="summary-section customer-summary" *ngIf="isCustomer">
+    <!-- Financial Summary Section -->
+    <div class="summary-section" *ngIf="isAdmin">
       <div class="summary-card">
-        <div class="summary-label">Payment Progress</div>
-        <div class="summary-value">{{ getCustomerPaymentProgress() }}%</div>
-        <div class="summary-subtitle">Paid / Total Invoiced</div>
-        <div class="progress-bar-container" *ngIf="getCustomerPaymentProgress() > 0">
-          <div class="progress-bar" [style.width]="getCustomerPaymentProgress() + '%'"></div>
+        <div class="summary-icon">💰</div>
+        <div class="summary-info">
+          <span class="summary-label">Total Receivable</span>
+          <span class="summary-value">{{ getTotalReceivable() | currency:'USD' }}</span>
+          <span class="summary-subtitle">Pending & Partially Paid</span>
         </div>
       </div>
       <div class="summary-card">
-        <div class="summary-label">Outstanding Balance</div>
-        <div class="summary-value">{{ getCustomerTotalDue() | currency: "USD" }}</div>
-        <div class="summary-subtitle">Amount to be paid</div>
+        <div class="summary-icon">✅</div>
+        <div class="summary-info">
+          <span class="summary-label">Total Collected</span>
+          <span class="summary-value">{{ stats.paid.amount | currency:'USD' }}</span>
+          <span class="summary-subtitle">Paid Invoices</span>
+        </div>
       </div>
       <div class="summary-card">
-        <div class="summary-label">Payment Health</div>
-        <div class="summary-value">{{ getCustomerPaymentHealth() }}%</div>
-        <div class="summary-subtitle">On-time payments</div>
+        <div class="summary-icon">📊</div>
+        <div class="summary-info">
+          <span class="summary-label">Collection Rate</span>
+          <span class="summary-value">{{ getCollectionRate() }}%</span>
+          <span class="summary-subtitle">Paid / Total (excl. Draft)</span>
+          <div class="progress-bar-container">
+            <div class="progress-bar" [style.width]="getCollectionRate() + '%'"></div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -460,34 +278,35 @@
         <input
           type="text"
           class="search-input"
-          placeholder="Search"
+          placeholder="Search by invoice number or customer..."
           [(ngModel)]="searchTerm"
           (ngModelChange)="onSearch($event)"
           [disabled]="exportingFormat !== null"
         />
       </div>
-      <!-- <div class="date-filter" (click)="onDateFilter()" [class.disabled]="exportingFormat || isLoading">
-        <span>1/1/2023 - 12/31/2023</span>
-        <mat-icon>calendar_today</mat-icon>
-      </div> -->
-      <div class="more-filters">
-        <button
-          *ngIf="isAdmin"
-          mat-stroked-button
-          class="filter-btn"
-          (click)="onMoreFilters()"
-          [disabled]="exportingFormat || isLoading"
-        >
-          <mat-icon>tune</mat-icon> More filters
+      <div class="filter-chips">
+        <button class="filter-chip" [class.active]="selectedInvoiceStatus === 'All'" (click)="onSelectInvoiceStatus('All')">
+          <mat-icon>receipt_long</mat-icon>
+          All
         </button>
-        <button
-          *ngIf="isAdmin"
-          mat-stroked-button
-          class="settings-btn"
-          (click)="onSettings()"
-          [disabled]="exportingFormat || isLoading"
-        >
-          <mat-icon>settings</mat-icon>
+        <button class="filter-chip" [class.active]="selectedInvoiceStatus === 'Draft'" (click)="onSelectInvoiceStatus('Draft')">
+          <mat-icon>edit_note</mat-icon>
+          Draft
+        </button>
+        <button class="filter-chip" [class.active]="selectedInvoiceStatus === 'Sent'" (click)="onSelectInvoiceStatus('Sent')">
+          <mat-icon>send</mat-icon>
+          Sent
+        </button>
+        <button class="filter-chip" [class.active]="selectedPaymentStatus === 'Paid'" (click)="onSelectPaymentStatus('Paid')">
+          <mat-icon>paid</mat-icon>
+          Paid
+        </button>
+        <button class="filter-chip" [class.active]="selectedPaymentStatus === 'Overdue'" (click)="onSelectPaymentStatus('Overdue')">
+          <mat-icon>warning</mat-icon>
+          Overdue
+        </button>
+        <button class="filter-chip" (click)="onMoreFilters()">
+          <mat-icon>tune</mat-icon> Filters
         </button>
       </div>
     </div>
@@ -497,28 +316,38 @@
       <table class="invoice-table">
         <thead>
           <tr>
-            <th>Customer</th>
-            <th>Invoice</th>
+            <th class="sortable" (click)="sortBy('customerName')">
+              Customer
+              <mat-icon *ngIf="sortField === 'customerName'" class="sort-icon">{{ sortDirection === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+            </th>
+            <th class="sortable" (click)="sortBy('invoiceNumber')">
+              Invoice #
+              <mat-icon *ngIf="sortField === 'invoiceNumber'" class="sort-icon">{{ sortDirection === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+            </th>
             <th>Invoice Status</th>
             <th>Payment Status</th>
-            <th>Amount</th>
-            <th>Issue Date</th>
-            <th>Due Date</th>
+            <th class="sortable" (click)="sortBy('totalAmount')">
+              Amount
+              <mat-icon *ngIf="sortField === 'totalAmount'" class="sort-icon">{{ sortDirection === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+            </th>
+            <th class="sortable" (click)="sortBy('issueDate')">
+              Issue Date
+              <mat-icon *ngIf="sortField === 'issueDate'" class="sort-icon">{{ sortDirection === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+            </th>
+            <th class="sortable" (click)="sortBy('dueDate')">
+              Due Date
+              <mat-icon *ngIf="sortField === 'dueDate'" class="sort-icon">{{ sortDirection === 'asc' ? 'arrow_upward' : 'arrow_downward' }}</mat-icon>
+            </th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody>
-          <ng-container
-            *ngIf="
-              isFirstLoad || (isLoading && invoices.length === 0);
-              else invoiceData
-            "
-          >
-            <tr class="skeleton-row" *ngFor="let _ of [1, 2, 3, 4, 5, 6]">
+          <ng-container *ngIf="isLoading && invoices.length === 0; else invoiceData">
+            <tr class="skeleton-row" *ngFor="let _ of [1,2,3,4,5]">
               <td><div class="skeleton skeleton-avatar"></div></td>
               <td><div class="skeleton skeleton-text"></div></td>
               <td><div class="skeleton skeleton-badge"></div></td>
-              <td><div class="skeleton skeleton-text"></div></td>
+              <td><div class="skeleton skeleton-badge"></div></td>
               <td><div class="skeleton skeleton-text"></div></td>
               <td><div class="skeleton skeleton-text"></div></td>
               <td><div class="skeleton skeleton-text"></div></td>
@@ -526,116 +355,61 @@
             </tr>
           </ng-container>
           <ng-template #invoiceData>
-            <tr
-              *ngFor="let invoice of invoices; trackBy: trackByInvoice"
-              class="invoice-row"
-            >
+            <tr *ngFor="let invoice of invoices; trackBy: trackByInvoice" class="invoice-row" @fadeIn>
               <td class="customer-column">
                 <div class="customer-info">
-                  <div
-                    class="customer-avatar"
-                    [style.background]="getAvatarColor(invoice.customerName)"
-                  >
+                  <div class="customer-avatar" [style.background]="getAvatarColor(invoice.customerName)">
                     {{ getInitials(invoice.customerName) }}
+                    <div class="avatar-status" [class.active]="invoice.paymentStatus === 'Paid'"></div>
                   </div>
-                  <span class="customer-name">{{ invoice.customerName }}</span>
+                  <div class="customer-details">
+                    <span class="customer-name">{{ invoice.customerName }}</span>
+                    <span class="customer-id">ID: #{{ invoice.customerId }}</span>
+                  </div>
                 </div>
               </td>
               <td class="invoice-number">{{ invoice.invoiceNumber }}</td>
               <td>
-                <!-- <span class="status-badge" [ngClass]="getStatusClass(invoice.status)">
-                  {{ invoice.status }}
-                </span> -->
-                <span
-                  class="px-2 py-1 text-xs font-medium rounded-full text-white"
-                  [ngClass]="getStatusClass(invoice.invoiceStatus, 'invoice')"
-                >
-                  {{ getStatusText(invoice.invoiceStatus) }}
+                <span class="status-badge" [class]="getInvoiceStatusClass(invoice.invoiceStatus)">
+                  <span class="status-dot"></span>
+                  {{ invoice.invoiceStatus }}
                 </span>
               </td>
               <td>
-                <span
-                  class="px-2 py-1 text-xs font-medium rounded-full text-white"
-                  [ngClass]="getStatusClass(invoice.paymentStatus, 'payment')"
-                >
-                  {{ getStatusText(invoice.paymentStatus) }}
+                <span class="status-badge" [class]="getPaymentStatusClass(invoice.paymentStatus)">
+                  <span class="status-dot"></span>
+                  {{ invoice.paymentStatus }}
                 </span>
               </td>
-              <td class="amount">
-                {{ invoice.totalAmount | currency: "USD" }}
+              <td class="amount-cell">
+                <span class="amount-value">{{ invoice.totalAmount | currency:'USD' }}</span>
               </td>
-              <td class="date">
-                {{ invoice.issueDate | date: "dd MMM yyyy" }}
+              <td class="date-cell">{{ invoice.issueDate | date:'MMM d, y' }}</td>
+              <td class="date-cell" [class.overdue]="isOverdue(invoice.dueDate) && invoice.paymentStatus !== 'Paid'">
+                {{ invoice.dueDate | date:'MMM d, y' }}
               </td>
-              <td class="date">{{ invoice.dueDate | date: "dd MMM yyyy" }}</td>
               <td class="actions">
-                <button
-                  *ngIf="isAdmin || isUser"
-                  mat-icon-button
-                  class="action-icon edit-btn"
-                  (click)="onEditInvoice(invoice)"
-                  title="Edit Invoice"
-                  [disabled]="exportingFormat || isLoading"
-                >
+                <button *ngIf="isAdmin || isUser" mat-icon-button class="action-icon edit-btn" (click)="onEditInvoice(invoice)" title="Edit Invoice">
                   <mat-icon>edit</mat-icon>
                 </button>
-                <button
-                  mat-icon-button
-                  class="action-icon view-btn"
-                  (click)="onViewInvoice(invoice)"
-                  title="View Invoice"
-                  [disabled]="exportingFormat || isLoading"
-                >
+                <button mat-icon-button class="action-icon view-btn" (click)="onViewInvoice(invoice)" title="View Invoice">
                   <mat-icon>visibility</mat-icon>
                 </button>
-                <button
-                  *ngIf="isAdmin"
-                  mat-icon-button
-                  class="action-icon delete-btn"
-                  (click)="onDeleteInvoice(invoice)"
-                  title="Delete Invoice"
-                  [disabled]="exportingFormat"
-                >
+                <button *ngIf="isAdmin" mat-icon-button class="action-icon delete-btn" (click)="onDeleteInvoice(invoice)" title="Delete Invoice">
                   <mat-icon>delete</mat-icon>
                 </button>
-                <button
-                  mat-icon-button
-                  class="action-icon more-btn"
-                  [matMenuTriggerFor]="actionMenu"
-                  title="More Actions"
-                  [disabled]="exportingFormat || isLoading"
-                >
+                <button mat-icon-button class="action-icon more-btn" [matMenuTriggerFor]="actionMenu" title="More Actions">
                   <mat-icon>more_vert</mat-icon>
                 </button>
                 <mat-menu #actionMenu="matMenu">
-                  <button
-                    *ngIf="isAdmin || isUser"
-                    mat-menu-item
-                    class="send-menu-item"
-                    (click)="onSendInvoice(invoice)"
-                    [disabled]="exportingFormat || isLoading"
-                  >
-                    <mat-icon>send</mat-icon>
-                    Send Invoice
+                  <button mat-menu-item (click)="onSendInvoice(invoice)">
+                    <mat-icon>send</mat-icon> Send Invoice
                   </button>
-                  <button
-                    *ngIf="isAdmin"
-                    mat-menu-item
-                    class="duplicate-menu-item"
-                    (click)="onDuplicateInvoice(invoice)"
-                    [disabled]="exportingFormat || isLoading"
-                  >
-                    <mat-icon>content_copy</mat-icon>
-                    Duplicate
+                  <button mat-menu-item (click)="onDuplicateInvoice(invoice)">
+                    <mat-icon>content_copy</mat-icon> Duplicate
                   </button>
-                  <button
-                    mat-menu-item
-                    class="download-menu-item"
-                    (click)="onDownloadInvoice(invoice)"
-                    [disabled]="exportingFormat || isLoading"
-                  >
-                    <mat-icon>download</mat-icon>
-                    Download PDF
+                  <button mat-menu-item (click)="onDownloadInvoice(invoice)">
+                    <mat-icon>download</mat-icon> Download PDF
                   </button>
                 </mat-menu>
               </td>
@@ -643,90 +417,40 @@
           </ng-template>
         </tbody>
       </table>
+
       <!-- No Invoices Message -->
-      <div class="no-invoices" *ngIf="!isLoading && invoices.length === 0">
-        <img
-          src="assets/no-invoices.png"
-          alt="No Invoices"
-          class="no-invoices-icon"
-        />
-        <h2>No Invoices Found</h2>
-        <p>
-          Start by creating your first invoice to manage your payments
-          efficiently!
-        </p>
-        <button
-          *ngIf="isAdmin || isUser"
-          mat-raised-button
-          color="primary"
-          class="create-btn"
-          (click)="onCreateInvoice()"
-          [disabled]="exportingFormat || isLoading"
-        >
+      <div class="no-data" *ngIf="!isLoading && invoices.length === 0">
+        <div class="no-data-icon">📄</div>
+        <h3>No Invoices Found</h3>
+        <p>Start by creating your first invoice to manage your payments efficiently!</p>
+        <button *ngIf="isAdmin || isUser" mat-raised-button color="primary" class="create-btn" (click)="onCreateInvoice()">
           <mat-icon>add</mat-icon> Create Your Invoice
         </button>
       </div>
     </div>
 
-    <!-- Pagination Controls -->
-    <div class="pagination-container">
+    <!-- Pagination -->
+    <div class="pagination-container" *ngIf="totalPages > 1">
       <div class="pagination-info">
-        <span
-          >Showing {{ (currentPage - 1) * itemsPerPage + 1 }} to
-          {{
-            currentPage * itemsPerPage > totalItems
-              ? totalItems
-              : currentPage * itemsPerPage
-          }}
-          of {{ totalItems }} entries</span
-        >
+        Showing {{ (currentPage - 1) * itemsPerPage + 1 }} to {{ currentPage * itemsPerPage > totalItems ? totalItems : currentPage * itemsPerPage }} of {{ totalItems }} entries
       </div>
       <div class="pagination-controls">
-        <button
-          mat-icon-button
-          class="pagination-btn"
-          [disabled]="currentPage === 1 || exportingFormat || isLoading"
-          (click)="previousPage()"
-        >
+        <button mat-icon-button class="pagination-btn" [disabled]="currentPage === 1" (click)="previousPage()">
           <mat-icon>chevron_left</mat-icon>
         </button>
-        <button
-          mat-button
-          class="pagination-btn page-number"
-          *ngFor="let page of getVisiblePages()"
-          [class.active]="page === currentPage"
-          (click)="goToPage(page)"
-          [disabled]="exportingFormat || isLoading"
-        >
+        <button *ngFor="let page of getVisiblePages()" mat-button class="pagination-btn page-number" [class.active]="page === currentPage" (click)="goToPage(page)">
           {{ page }}
         </button>
-        <button
-          mat-icon-button
-          class="pagination-btn"
-          [disabled]="
-            currentPage === totalPages || exportingFormat || isLoading
-          "
-          (click)="nextPage()"
-        >
+        <button mat-icon-button class="pagination-btn" [disabled]="currentPage === totalPages" (click)="nextPage()">
           <mat-icon>chevron_right</mat-icon>
         </button>
       </div>
     </div>
   </div>
 
-  <!-- Loading Spinner -->
-  <!-- <div *ngIf="exportingFormat" class="progress-container" @fadeIn>
-    <mat-spinner diameter="32" color="accent"></mat-spinner>
-    <span>{{ exportingFormat === 'excel' ? 'Exporting as Excel...' : 'Exporting as PDF...' }}</span>
-  </div> -->
+  <!-- Loading Overlay -->
   <div *ngIf="exportingFormat" class="progress-container" @fadeIn>
-    <mat-spinner diameter="32" color="accent"></mat-spinner>
-    <span>{{
-      exportingFormat === "excel"
-        ? "Exporting as Excel..."
-        : isIndividualDownload
-          ? "Downloading Invoice PDF..."
-          : "Exporting as PDF..."
-    }}</span>
+    <mat-spinner diameter="40" color="accent"></mat-spinner>
+    <span>{{ exportingFormat === 'excel' ? 'Exporting as Excel...' : (isIndividualDownload ? 'Downloading Invoice PDF...' : 'Exporting as PDF...') }}</span>
   </div>
 </div>

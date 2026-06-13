@@ -6,8 +6,8 @@ using Core_API.Application.Contracts.Services.Companies;
 using Core_API.Application.Contracts.Services.Files;
 using Core_API.Application.DTOs.Companies.Responses;
 using Core_API.Application.DTOs.Customer.Response;
-using Core_API.Application.DTOs.Invoice.Request;
 using Core_API.Application.DTOs.Invoice.Response;
+using Core_API.Application.Features.Invoices.Queries.GetInvoicesPaged;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using PdfSharp.Drawing;
@@ -101,7 +101,7 @@ namespace Core_API.Infrastructure.Services.File.Pdf
                 return OperationResult<InvoiceResponseDto>.FailureResult("Failed to generate invoice PDF.");
             }
         }
-        public async Task<OperationResult<byte[]>> ExportInvoicesPdfAsync(OperationContext operationContext, InvoiceFilterRequestDto invoiceFilterRequestDto)
+        public async Task<OperationResult<byte[]>> ExportInvoicesPdfAsync(OperationContext operationContext, GetPagedInvoicesQuery invoiceFilterRequestDto)
         {
             try
             {

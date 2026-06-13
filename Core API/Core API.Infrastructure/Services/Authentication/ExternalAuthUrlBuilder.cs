@@ -3,14 +3,9 @@ using Microsoft.Extensions.Configuration;
 
 namespace Core_API.Infrastructure.Services.Authentication
 {
-    public class ExternalAuthUrlBuilder : IExternalAuthUrlBuilder
+    public class ExternalAuthUrlBuilder(IConfiguration configuration) : IExternalAuthUrlBuilder
     {
-        private readonly IConfiguration _configuration;
-
-        public ExternalAuthUrlBuilder(IConfiguration configuration)
-        {
-            _configuration = configuration;
-        }
+        private readonly IConfiguration _configuration = configuration;
 
         public Task<string> BuildAuthorizationUrlAsync(string provider)
         {
@@ -26,7 +21,6 @@ namespace Core_API.Infrastructure.Services.Authentication
                 _ => throw new ArgumentException($"Unsupported provider: {provider}")
             };
         }
-
         private string BuildGoogleUrl()
         {
             var clientId = _configuration["GoogleKeys:ClientId"]
@@ -41,7 +35,6 @@ namespace Core_API.Infrastructure.Services.Authentication
                    $"&scope=email%20profile" +
                    $"&state=google";
         }
-
         private string BuildMicrosoftUrl()
         {
             var clientId = _configuration["MicrosoftKeys:ClientId"]
@@ -59,7 +52,6 @@ namespace Core_API.Infrastructure.Services.Authentication
                    $"&scope=openid%20email%20profile%20User.Read" +
                    $"&state=microsoft";
         }
-
         private string BuildFacebookUrl()
         {
             var clientId = _configuration["FacebookKeys:ClientId"]
@@ -72,7 +64,6 @@ namespace Core_API.Infrastructure.Services.Authentication
                    $"&redirect_uri={Uri.EscapeDataString(redirectUri)}" +
                    $"&scope=email%20public_profile";
         }
-
         private string BuildGitHubUrl()
         {
             var clientId = _configuration["GitHubKeys:ClientId"]

@@ -596,6 +596,9 @@ namespace Core_API.Infrastructure.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("ConsecutiveFailedAttempts")
+                        .HasColumnType("int");
+
                     b.Property<string>("CountryCode")
                         .HasColumnType("nvarchar(max)");
 
@@ -618,6 +621,9 @@ namespace Core_API.Infrastructure.Migrations
                     b.Property<bool>("EmailConfirmed")
                         .HasColumnType("bit");
 
+                    b.Property<int>("FailedOtpAttempts")
+                        .HasColumnType("int");
+
                     b.Property<string>("FullName")
                         .HasColumnType("nvarchar(max)");
 
@@ -629,6 +635,12 @@ namespace Core_API.Infrastructure.Migrations
 
                     b.Property<DateTime?>("LastLogin")
                         .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("LastOtpAttemptAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("LastOtpAttemptIp")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<bool>("LockoutEnabled")
                         .HasColumnType("bit");
@@ -646,6 +658,12 @@ namespace Core_API.Infrastructure.Migrations
 
                     b.Property<string>("OtpIdentifier")
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("OtpLastSentAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<DateTime?>("OtpLockoutEnd")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("PasswordHash")
                         .HasColumnType("nvarchar(max)");
@@ -750,8 +768,16 @@ namespace Core_API.Infrastructure.Migrations
 
             modelBuilder.Entity("Core_API.Domain.Entities.Identity.AuthToken", b =>
                 {
-                    b.Property<string>("Id")
-                        .HasColumnType("nvarchar(450)");
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("CreatedByIp")
+                        .HasMaxLength(45)
+                        .HasColumnType("nvarchar(45)");
 
                     b.Property<DateTime>("ExpiresAt")
                         .HasColumnType("datetime2");
@@ -762,9 +788,14 @@ namespace Core_API.Infrastructure.Migrations
                     b.Property<DateTime?>("RevokedAt")
                         .HasColumnType("datetime2");
 
+                    b.Property<string>("RevokedByIp")
+                        .HasMaxLength(45)
+                        .HasColumnType("nvarchar(45)");
+
                     b.Property<string>("Token")
                         .IsRequired()
-                        .HasColumnType("nvarchar(450)");
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<string>("UserId")
                         .IsRequired()
@@ -791,6 +822,9 @@ namespace Core_API.Infrastructure.Migrations
                     b.Property<string>("ApplicationUserId")
                         .IsRequired()
                         .HasColumnType("nvarchar(450)");
+
+                    b.Property<string>("CreatedByIp")
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("CreatedOn")
                         .HasColumnType("datetime2");
