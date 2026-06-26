@@ -20,7 +20,6 @@ namespace Core_API.Application.Features.Tasks.Queries.GetAllTasks
         private readonly IUnitOfWork _unitOfWork = unitOfWork;
         private readonly IMapper _mapper = mapper;
         private readonly ILogger<GetAllTasksQueryHandler> _logger = logger;
-
         public async Task<OperationResult<PaginatedResult<TaskDto>>> Handle(
               GetAllTasksQuery request, CancellationToken cancellationToken)
         {
@@ -89,7 +88,7 @@ namespace Core_API.Application.Features.Tasks.Queries.GetAllTasks
         /// <summary>
         /// Applies common includes for task details
         /// </summary>
-        private IQueryable<TaskItem> ApplyIncludes(IQueryable<TaskItem> query)
+        private static IQueryable<TaskItem> ApplyIncludes(IQueryable<TaskItem> query)
         {
             return query
                 .Include(t => t.AssignedToUser)
@@ -104,7 +103,7 @@ namespace Core_API.Application.Features.Tasks.Queries.GetAllTasks
         /// <summary>
         /// Applies filtering logic (shared between GetAll and GetMyTasks)
         /// </summary>
-        private IQueryable<TaskItem> ApplyFilters(IQueryable<TaskItem> query, TaskFilterDto? filter)
+        private static IQueryable<TaskItem> ApplyFilters(IQueryable<TaskItem> query, TaskFilterDto? filter)
         {
             if (filter == null) return query;
 
@@ -144,7 +143,7 @@ namespace Core_API.Application.Features.Tasks.Queries.GetAllTasks
         /// <summary>
         /// Applies sorting logic
         /// </summary>
-        private IQueryable<TaskItem> ApplySorting(IQueryable<TaskItem> query, TaskFilterDto? filter)
+        private static IQueryable<TaskItem> ApplySorting(IQueryable<TaskItem> query, TaskFilterDto? filter)
         {
             if (filter == null)
                 return query.OrderByDescending(t => t.DueDate);

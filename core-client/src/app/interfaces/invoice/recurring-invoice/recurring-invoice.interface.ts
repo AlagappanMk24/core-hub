@@ -162,18 +162,145 @@ export interface MoreFiltersDialogData {
   formData: any;
 }
 
-export type RecurringFrequency = 
-  | 'Daily' 
-  | 'Weekly' 
-  | 'Monthly' 
-  | 'Quarterly' 
-  | 'HalfYearly' 
-  | 'Annually';
+export interface CreateRecurringInvoiceDto {
+  name: string;
+  description?: string;
+  customerId: number;
+  billingAddressId?: number;
+  shippingAddressId?: number;
+  currency: string;
+  currencyRate: number;
+  poNumber?: string;
+  frequency: RecurringFrequency;
+  frequencyInterval: number;
+  dayOfMonth?: number;
+  dayOfWeek?: number;
+  weekOfMonth?: number;
+  monthOfYear?: number;
+  startDate: Date;
+  endDate?: Date;
+  maxOccurrences?: number;
+  generateInAdvanceDays: number;
+  autoSend: boolean;
+  autoEmail: boolean;
+  autoCharge: boolean;
+  reminderBeforeDue: boolean;
+  reminderDaysBefore: number;
+  sourceInvoiceId?: number;
+  overridePONumber?: string;
+  overrideCustomerNotes?: string;
+  overrideTermsAndConditions?: string;
+  overrideFooterNote?: string;
+  overrideProjectDetail?: string;
+  overridePaymentMethod?: string;
+  overridePaymentTerms?: number | null;
+  overrideShippingAmount?: number;
+  overrideAdjustmentAmount?: number;
+  overrideAdjustmentDescription?: string;
+  customerNotes?: string;
+  internalNotes?: string;
+  termsAndConditions?: string;
+  footerNote?: string;
+  projectDetail?: string;
+  paymentMethod?: string;
+  paymentTerms?: string;
+}
 
-export type RecurringStatus = 
-  | 'Draft' 
-  | 'Active' 
-  | 'Paused' 
-  | 'Completed' 
-  | 'Cancelled' 
-  | 'Expired';
+export interface UpdateRecurringInvoiceDto extends CreateRecurringInvoiceDto {
+  id: number;
+  status?: RecurringInvoiceStatus;
+}
+
+export enum RecurringInvoiceStatus {
+  Draft = 'Draft',
+  Active = 'Active',
+  Paused = 'Paused',
+  Completed = 'Completed',
+  Cancelled = 'Cancelled',
+  Expired = 'Expired'
+}
+export enum RecurringFrequency {
+  Daily = 1,
+  Weekly = 2,
+  BiWeekly = 3,
+  Monthly = 4,
+  BiMonthly = 5,
+  Quarterly = 6,
+  SemiAnnually = 7,
+  Annually = 8
+}
+
+export interface RecurringInvoiceResponseDto {
+  id: number;
+  name: string;
+  description: string;
+  customerId: number;
+  customerName: string;
+  companyId: number;
+  billingAddressId?: number;
+  shippingAddressId?: number;
+  currency: string;
+  currencyRate: number;
+  poNumber?: string;
+  subtotal: number;
+  discountTotal: number;
+  taxTotal: number;
+  shippingAmount: number;
+  totalAmount: number;
+  customerNotes: string;
+  internalNotes: string;
+  termsAndConditions: string;
+  footerNote: string;
+  projectDetail: string;
+  paymentMethod: string;
+  paymentTerms: string;
+  frequency: string;
+  frequencyInterval: number;
+  dayOfMonth?: number;
+  dayOfWeek?: string;
+  weekOfMonth?: number;
+  monthOfYear?: number;
+  startDate: Date;
+  endDate?: Date;
+  pausedDate?: Date;
+  cancelledDate?: Date;
+  maxOccurrences?: number;
+  occurrencesGenerated: number;
+  nextInvoiceDate: Date;
+  lastInvoiceDate?: Date;
+  status: string;
+  generateInAdvanceDays: number;
+  autoSend: boolean;
+  autoEmail: boolean;
+  autoCharge: boolean;
+  reminderBeforeDue: boolean;
+  reminderDaysBefore: number;
+  sourceInvoiceId?: number;
+  sourceInvoiceNumber?: string;
+  overridePONumber?: string;
+  overrideCustomerNotes?: string;
+  overrideTermsAndConditions?: string;
+  overrideFooterNote?: string;
+  overrideProjectDetail?: string;
+  overridePaymentMethod?: string;
+  overridePaymentTerms?: number;
+  overrideShippingAmount?: number;
+  overrideAdjustmentAmount?: number;
+  overrideAdjustmentDescription?: string;
+  generatedInvoices: RecurringInvoiceInstanceDto[];
+  totalGeneratedCount: number;
+  totalGeneratedValue: number;
+  averageInvoiceValue: number;
+  createdDate: Date;
+  createdBy: string;
+  updatedDate?: Date;
+  updatedBy?: string;
+}
+export interface RecurringInvoiceInstanceDto {
+  id: number;
+  invoiceNumber: string;
+  issueDate: Date;
+  dueDate: Date;
+  totalAmount: number;
+  status: string;
+}

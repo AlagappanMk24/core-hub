@@ -24,31 +24,21 @@ namespace Core_API.Infrastructure.Services.Invoicing.RecurringInvoice
     /// Service implementation for recurring invoice management
     /// REUSES IInvoiceService for actual invoice creation
     /// </summary>
-    public class RecurringInvoiceService : IRecurringInvoiceService
+    public class RecurringInvoiceService(
+        IUnitOfWork unitOfWork,
+        IInvoiceService invoiceService, // INJECTED and REUSED
+        IEmailServiceProvider emailServiceProvider,
+        ILogger<RecurringInvoiceService> logger,
+        IMapper mapper,
+        IHubContext<NotificationHub> hubContext) : IRecurringInvoiceService
     {
-        private readonly IUnitOfWork _unitOfWork;
-        private readonly IInvoiceService _invoiceService; // REUSED!
-        private readonly IEmailServiceProvider _emailServiceProvider;
-        private readonly ILogger<RecurringInvoiceService> _logger;
-        private readonly IMapper _mapper;
-        private readonly IHubContext<NotificationHub> _hubContext;
+        private readonly IUnitOfWork _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
+        private readonly IInvoiceService _invoiceService = invoiceService ?? throw new ArgumentNullException(nameof(invoiceService)); // REUSED!
+        private readonly IEmailServiceProvider _emailServiceProvider = emailServiceProvider ?? throw new ArgumentNullException(nameof(emailServiceProvider));
+        private readonly ILogger<RecurringInvoiceService> _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        private readonly IMapper _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
+        private readonly IHubContext<NotificationHub> _hubContext = hubContext ?? throw new ArgumentNullException(nameof(hubContext));
         private readonly string[] _supportedCurrencies = new[] { "USD", "EUR", "INR", "GBP", "CAD", "AUD" };
-
-        public RecurringInvoiceService(
-            IUnitOfWork unitOfWork,
-            IInvoiceService invoiceService, // INJECTED and REUSED
-            IEmailServiceProvider emailServiceProvider,
-            ILogger<RecurringInvoiceService> logger,
-            IMapper mapper,
-            IHubContext<NotificationHub> hubContext)
-        {
-            _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
-            _invoiceService = invoiceService ?? throw new ArgumentNullException(nameof(invoiceService));
-            _emailServiceProvider = emailServiceProvider ?? throw new ArgumentNullException(nameof(emailServiceProvider));
-            _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-            _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
-            _hubContext = hubContext ?? throw new ArgumentNullException(nameof(hubContext));
-        }
 
         #region CRUD Operations
 

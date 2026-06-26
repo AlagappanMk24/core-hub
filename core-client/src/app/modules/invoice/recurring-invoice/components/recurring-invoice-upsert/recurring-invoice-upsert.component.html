@@ -1,0 +1,470 @@
+<!-- components/create-recurring-invoice/create-recurring-invoice.component.html -->
+<div class="recurring-invoice-container bg-gray-100 min-h-screen">
+  <!-- Header -->
+  <div class="bg-white shadow-sm border-b border-gray-200 sticky top-0 z-10">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+      <div class="flex justify-between items-center">
+        <div class="flex items-center gap-4">
+          <button (click)="goBack()" class="p-2 rounded-full hover:bg-gray-100 transition">
+            <svg class="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+            </svg>
+          </button>
+          <h1 class="text-2xl font-semibold text-gray-900">
+            {{ isEditMode ? 'Edit Recurring Invoice' : 'Create Recurring Invoice' }}
+          </h1>
+          <span *ngIf="currentStatus" class="px-3 py-1 text-xs font-medium rounded-full" 
+                [ngClass]="{
+                  'bg-yellow-100 text-yellow-800': currentStatus === 'Draft',
+                  'bg-green-100 text-green-800': currentStatus === 'Active',
+                  'bg-gray-100 text-gray-800': currentStatus === 'Paused',
+                  'bg-blue-100 text-blue-800': currentStatus === 'Completed',
+                  'bg-red-100 text-red-800': currentStatus === 'Cancelled'
+                }">
+            {{ currentStatus }}
+          </span>
+        </div>
+        <div class="flex gap-3">
+          <button (click)="saveToDraft()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition">
+            Save to Draft
+          </button>
+          <button (click)="saveAndContinue()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition">
+            {{ isEditMode ? 'Update and Continue' : 'Save and Continue' }}
+          </button>
+          <button *ngIf="currentStatus !== 'Active'" (click)="activateTemplate()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+            Activate Template
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 py-8">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <!-- Left Column - Basic Info -->
+      <div class="lg:col-span-2 space-y-6">
+        <!-- Basic Information Card -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <h2 class="text-lg font-semibold text-gray-900">Basic Information</h2>
+            <p class="text-sm text-gray-500">Define the core details of your recurring invoice template</p>
+          </div>
+          <div class="p-6 space-y-5">
+            <!-- Template Name -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">
+                Template Name <span class="text-red-500">*</span>
+              </label>
+              <input type="text" [(ngModel)]="recurringInvoiceData.name" 
+                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                     placeholder="e.g., Monthly Subscription - Pro Plan">
+              <div *ngIf="errors['name']" class="text-red-500 text-sm mt-1">{{ errors['name'] }}</div>
+              <p class="text-xs text-gray-500 mt-1">A unique name to identify this recurring invoice template</p>
+            </div>
+
+            <!-- Description -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <textarea [(ngModel)]="recurringInvoiceData.description" rows="2"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                        placeholder="Describe the purpose of this recurring invoice..."></textarea>
+              <p class="text-xs text-gray-500 mt-1">Optional description for internal reference</p>
+            </div>
+
+            <!-- Customer Selection -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">
+                Customer <span class="text-red-500">*</span>
+              </label>
+              <div class="customer-dropdown relative">
+                <div class="relative" (click)="toggleCustomerDropdown()">
+                  <input type="text" [(ngModel)]="customerSearch" (ngModelChange)="onCustomerSearchChange()"
+                         placeholder="Search or select a customer..."
+                         class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500 cursor-pointer">
+                  <svg class="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+                <div *ngIf="showCustomerDropdown" 
+                     class="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto">
+                  <div *ngFor="let customer of filteredCustomers" 
+                       (click)="selectCustomer(customer)"
+                       class="px-4 py-3 hover:bg-gray-50 cursor-pointer flex items-center gap-3 border-b border-gray-100 last:border-0">
+                    <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-medium"
+                         [style.backgroundColor]="customer.color">
+                      {{ customer.initials }}
+                    </div>
+                    <div>
+                      <div class="font-medium text-gray-900">{{ customer.name }}</div>
+                      <div class="text-xs text-gray-500">{{ customer.address }}</div>
+                    </div>
+                  </div>
+                  <div *ngIf="filteredCustomers.length === 0" class="px-4 py-3 text-gray-500 text-center">
+                    No customers found
+                  </div>
+                </div>
+              </div>
+              <div *ngIf="errors['customerId']" class="text-red-500 text-sm mt-1">{{ errors['customerId'] }}</div>
+            </div>
+
+            <!-- Source Invoice Template -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Source Invoice (Optional)</label>
+              <div class="source-invoice-dropdown relative">
+                <div class="flex gap-2">
+                  <div class="relative flex-1" (click)="toggleSourceInvoiceDropdown()">
+                    <input type="text" [(ngModel)]="sourceInvoiceSearch" (ngModelChange)="onSourceInvoiceSearchChange()"
+                           placeholder="Search by invoice number or customer..."
+                           class="w-full px-3 py-2 pr-10 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+                    <svg class="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                  <button *ngIf="selectedSourceInvoice" (click)="clearSourceInvoice()"
+                          class="px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition">
+                    Clear
+                  </button>
+                </div>
+                <div *ngIf="showSourceInvoiceDropdown" 
+                     class="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg max-h-64 overflow-y-auto">
+                  <div *ngFor="let invoice of filteredSourceInvoices" 
+                       (click)="selectSourceInvoice(invoice)"
+                       class="px-4 py-3 hover:bg-gray-50 cursor-pointer border-b border-gray-100 last:border-0">
+                    <div class="font-medium text-gray-900">{{ invoice.invoiceNumber }}</div>
+                    <div class="text-sm text-gray-600">{{ invoice.customerName }}</div>
+                    <div class="text-xs text-gray-500">{{ invoice.totalAmount | currency }} - {{ invoice.issueDate | date }}</div>
+                  </div>
+                  <div *ngIf="filteredSourceInvoices.length === 0" class="px-4 py-3 text-gray-500 text-center">
+                    No invoices found
+                  </div>
+                </div>
+              </div>
+              <p class="text-xs text-gray-500 mt-1">Use an existing invoice as a template for line items and settings</p>
+            </div>
+
+            <!-- PO Number -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">PO/SO Number</label>
+              <input type="text" [(ngModel)]="recurringInvoiceData.poNumber"
+                     class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                     placeholder="Customer purchase order number">
+              <p class="text-xs text-gray-500 mt-1">Optional reference number for the customer</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Recurrence Schedule Card -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <h2 class="text-lg font-semibold text-gray-900">Recurrence Schedule</h2>
+            <p class="text-sm text-gray-500">Define how often invoices will be generated</p>
+          </div>
+          <div class="p-6 space-y-5">
+            <!-- Frequency -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Frequency</label>
+              <div class="frequency-dropdown relative">
+                <div (click)="showFrequencyDropdown = !showFrequencyDropdown"
+                     class="flex justify-between items-center px-3 py-2 border border-gray-300 rounded-lg cursor-pointer hover:border-purple-500">
+                  <span>{{ getFrequencyLabel(recurringInvoiceData.frequency) }}</span>
+                  <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+                <div *ngIf="showFrequencyDropdown" 
+                     class="absolute z-20 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg">
+                  <div *ngFor="let option of frequencyOptions" 
+                       (click)="recurringInvoiceData.frequency = option.value; showFrequencyDropdown = false; onFrequencyChange()"
+                       class="px-4 py-2 hover:bg-gray-50 cursor-pointer">
+                    {{ option.label }}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Interval -->
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Every</label>
+              <div class="flex items-center gap-3">
+                <input type="number" [(ngModel)]="recurringInvoiceData.frequencyInterval" min="1" max="365"
+                       class="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500">
+                <span class="text-gray-600">{{ getFrequencyDescription() }}</span>
+              </div>
+            </div>
+
+            <!-- Schedule Specifics (conditional) -->
+            <div class="bg-gray-50 rounded-lg p-4 space-y-4">
+              <h3 class="text-sm font-medium text-gray-700">Schedule Details</h3>
+              
+              <!-- Daily - no additional fields -->
+              
+              <!-- Weekly - Day of Week -->
+              <div *ngIf="recurringInvoiceData.frequency === 2">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Day of Week</label>
+                <div class="grid grid-cols-7 gap-2">
+                  <button *ngFor="let day of daysOfWeek; let i = index"
+                          (click)="recurringInvoiceData.dayOfWeek = i"
+                          [class.bg-purple-600]="recurringInvoiceData.dayOfWeek === i"
+                          [class.text-white]="recurringInvoiceData.dayOfWeek === i"
+                          [class.bg-gray-100]="recurringInvoiceData.dayOfWeek !== i"
+                          class="px-3 py-2 rounded-lg text-sm font-medium transition">
+                    {{ day.substring(0, 3) }}
+                  </button>
+                </div>
+              </div>
+
+              <!-- Monthly - Day of Month -->
+              <div *ngIf="recurringInvoiceData.frequency === 4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Day of Month</label>
+                <div class="grid grid-cols-7 gap-2">
+                  <button *ngFor="let day of daysOfMonth"
+                          (click)="recurringInvoiceData.dayOfMonth = day"
+                          [class.bg-purple-600]="recurringInvoiceData.dayOfMonth === day"
+                          [class.text-white]="recurringInvoiceData.dayOfMonth === day"
+                          class="w-10 h-10 rounded-lg text-sm font-medium transition"
+                          [class.bg-gray-100]="recurringInvoiceData.dayOfMonth !== day">
+                    {{ day }}
+                  </button>
+                </div>
+              </div>
+
+              <!-- Complex Schedules (BiWeekly, BiMonthly, Quarterly, etc.) -->
+              <div *ngIf="[3, 5, 6, 7, 8].includes(recurringInvoiceData.frequency)">
+                <div class="grid grid-cols-2 gap-4">
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Week of Month</label>
+                    <select [(ngModel)]="recurringInvoiceData.weekOfMonth" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                      <option [ngValue]="null">Select week</option>
+                      <option *ngFor="let week of weeksOfMonth" [ngValue]="week.value">{{ week.label }}</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Day of Week</label>
+                    <select [(ngModel)]="recurringInvoiceData.dayOfWeek" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                      <option [ngValue]="null">Select day</option>
+                      <option *ngFor="let day of daysOfWeek; let i = index" [ngValue]="i">{{ day }}</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Annual - Month of Year -->
+              <div *ngIf="recurringInvoiceData.frequency === 8">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Month of Year</label>
+                <select [(ngModel)]="recurringInvoiceData.monthOfYear" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                  <option [ngValue]="null">Select month</option>
+                  <option *ngFor="let month of monthsOfYear" [ngValue]="month.value">{{ month.label }}</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Lifecycle Card -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <h2 class="text-lg font-semibold text-gray-900">Schedule Lifecycle</h2>
+            <p class="text-sm text-gray-500">Define when the recurring schedule should end</p>
+          </div>
+          <div class="p-6 space-y-5">
+            <div class="flex flex-col space-y-3">
+              <label class="flex items-center gap-3 cursor-pointer">
+                <input type="radio" [(ngModel)]="lifecycleType" value="indefinite" class="w-4 h-4 text-purple-600">
+                <span class="text-gray-700">Never ends (indefinite)</span>
+              </label>
+              <label class="flex items-center gap-3 cursor-pointer">
+                <input type="radio" [(ngModel)]="lifecycleType" value="endDate" class="w-4 h-4 text-purple-600">
+                <span class="text-gray-700">End on specific date</span>
+              </label>
+              <div *ngIf="lifecycleType === 'endDate'" class="ml-6 mt-2">
+                <input type="date" [(ngModel)]="recurringInvoiceData.endDate" 
+                       [min]="recurringInvoiceData.startDate | date:'yyyy-MM-dd'"
+                       class="px-3 py-2 border border-gray-300 rounded-lg">
+                <div *ngIf="errors['endDate']" class="text-red-500 text-sm mt-1">{{ errors['endDate'] }}</div>
+              </div>
+              <label class="flex items-center gap-3 cursor-pointer">
+                <input type="radio" [(ngModel)]="lifecycleType" value="maxOccurrences" class="w-4 h-4 text-purple-600">
+                <span class="text-gray-700">After a number of occurrences</span>
+              </label>
+              <div *ngIf="lifecycleType === 'maxOccurrences'" class="ml-6 mt-2">
+                <select [(ngModel)]="recurringInvoiceData.maxOccurrences" class="px-3 py-2 border border-gray-300 rounded-lg">
+                  <option [ngValue]="null">Select number of invoices</option>
+                  <option *ngFor="let count of maxOccurrencesOptions" [ngValue]="count">{{ count }} invoices</option>
+                </select>
+                <div *ngIf="errors['maxOccurrences']" class="text-red-500 text-sm mt-1">{{ errors['maxOccurrences'] }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Template Overrides Card -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-200 bg-gray-50 flex justify-between items-center cursor-pointer"
+               (click)="showOverrideFields = !showOverrideFields">
+            <div>
+              <h2 class="text-lg font-semibold text-gray-900">Template Overrides</h2>
+              <p class="text-sm text-gray-500">Override default values on generated invoices</p>
+            </div>
+            <svg [class.rotate-180]="showOverrideFields" class="w-5 h-5 text-gray-400 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </div>
+          <div *ngIf="showOverrideFields" class="p-6 space-y-5">
+            <div class="grid grid-cols-2 gap-4">
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Override PO Number</label>
+                <input type="text" [(ngModel)]="recurringInvoiceData.overridePONumber" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Override Payment Method</label>
+                <input type="text" [(ngModel)]="recurringInvoiceData.overridePaymentMethod" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Override Payment Terms (days)</label>
+                <input type="number" [(ngModel)]="recurringInvoiceData.overridePaymentTerms" min="0" max="365" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+              </div>
+              <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Override Shipping Amount</label>
+                <input type="number" [(ngModel)]="recurringInvoiceData.overrideShippingAmount" step="0.01" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+              </div>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Override Customer Notes</label>
+              <textarea [(ngModel)]="recurringInvoiceData.overrideCustomerNotes" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg"></textarea>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Override Terms & Conditions</label>
+              <textarea [(ngModel)]="recurringInvoiceData.overrideTermsAndConditions" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg"></textarea>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Override Footer Note</label>
+              <textarea [(ngModel)]="recurringInvoiceData.overrideFooterNote" rows="1" class="w-full px-3 py-2 border border-gray-300 rounded-lg"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right Column - Settings -->
+      <div class="space-y-6">
+        <!-- Start Date Card -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <h2 class="text-lg font-semibold text-gray-900">Start Date</h2>
+          </div>
+          <div class="p-6">
+            <input type="date" [(ngModel)]="recurringInvoiceData.startDate" 
+                   [min]="today | date:'yyyy-MM-dd'"
+                   class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+            <div *ngIf="errors['startDate']" class="text-red-500 text-sm mt-1">{{ errors['startDate'] }}</div>
+            <p class="text-xs text-gray-500 mt-2">The date when the first invoice will be generated</p>
+          </div>
+        </div>
+
+        <!-- Generation Settings Card -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <h2 class="text-lg font-semibold text-gray-900">Generation Settings</h2>
+          </div>
+          <div class="p-6 space-y-5">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Generate in Advance</label>
+              <select [(ngModel)]="recurringInvoiceData.generateInAdvanceDays" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                <option *ngFor="let days of autoGenerateOptions" [ngValue]="days">
+                  {{ days === 0 ? 'On due date' : days + ' days before due date' }}
+                </option>
+              </select>
+              <p class="text-xs text-gray-500 mt-1">How many days before the due date to generate the invoice</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Automation Card -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <h2 class="text-lg font-semibold text-gray-900">Automation</h2>
+          </div>
+          <div class="p-6 space-y-4">
+            <label class="flex items-center justify-between cursor-pointer">
+              <span class="text-gray-700">Auto-send invoice to customer</span>
+              <input type="checkbox" [(ngModel)]="recurringInvoiceData.autoSend" class="w-4 h-4 text-purple-600 rounded">
+            </label>
+            <label class="flex items-center justify-between cursor-pointer">
+              <span class="text-gray-700">Send email notification when generated</span>
+              <input type="checkbox" [(ngModel)]="recurringInvoiceData.autoEmail" class="w-4 h-4 text-purple-600 rounded">
+            </label>
+            <label class="flex items-center justify-between cursor-pointer">
+              <span class="text-gray-700">Auto-charge payment method</span>
+              <input type="checkbox" [(ngModel)]="recurringInvoiceData.autoCharge" class="w-4 h-4 text-purple-600 rounded">
+            </label>
+          </div>
+        </div>
+
+        <!-- Reminders Card -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <h2 class="text-lg font-semibold text-gray-900">Payment Reminders</h2>
+          </div>
+          <div class="p-6 space-y-5">
+            <label class="flex items-center justify-between cursor-pointer">
+              <span class="text-gray-700">Send payment reminder before due date</span>
+              <input type="checkbox" [(ngModel)]="recurringInvoiceData.reminderBeforeDue" class="w-4 h-4 text-purple-600 rounded">
+            </label>
+            <div *ngIf="recurringInvoiceData.reminderBeforeDue">
+              <label class="block text-sm font-medium text-gray-700 mb-1">Days before due date to remind</label>
+              <select [(ngModel)]="recurringInvoiceData.reminderDaysBefore" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                <option *ngFor="let days of reminderOptions" [ngValue]="days">{{ days }} days before</option>
+              </select>
+              <div *ngIf="errors['reminderDaysBefore']" class="text-red-500 text-sm mt-1">{{ errors['reminderDaysBefore'] }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Invoice Defaults Card -->
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+          <div class="px-6 py-4 border-b border-gray-200 bg-gray-50">
+            <h2 class="text-lg font-semibold text-gray-900">Invoice Defaults</h2>
+          </div>
+          <div class="p-6 space-y-5">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Currency</label>
+              <select [(ngModel)]="recurringInvoiceData.currency" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                <option value="USD">USD - US Dollar ($)</option>
+                <option value="EUR">EUR - Euro (€)</option>
+                <option value="GBP">GBP - British Pound (£)</option>
+                <option value="INR">INR - Indian Rupee (₹)</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Payment Terms</label>
+              <input type="text" [(ngModel)]="recurringInvoiceData.paymentTerms" class="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="e.g., Net 30">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Payment Method</label>
+              <select [(ngModel)]="recurringInvoiceData.paymentMethod" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                <option value="">Select payment method</option>
+                <option value="Bank Transfer">Bank Transfer</option>
+                <option value="Credit Card">Credit Card</option>
+                <option value="PayPal">PayPal</option>
+                <option value="Cash">Cash</option>
+                <option value="UPI">UPI</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Project Detail</label>
+              <input type="text" [(ngModel)]="recurringInvoiceData.projectDetail" class="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="Project or service description">
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Terms & Conditions</label>
+              <textarea [(ngModel)]="recurringInvoiceData.termsAndConditions" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="Payment terms, late fees, etc."></textarea>
+            </div>
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Footer Note</label>
+              <textarea [(ngModel)]="recurringInvoiceData.footerNote" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg" placeholder="Thank you message or additional notes"></textarea>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

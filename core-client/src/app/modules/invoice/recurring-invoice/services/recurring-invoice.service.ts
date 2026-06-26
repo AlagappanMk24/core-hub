@@ -5,13 +5,16 @@ import { Observable, throwError } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
 import { environment } from '../../../../environments/environment.development';
 import {
+  CreateRecurringInvoiceDto,
   PaginatedRecurringInvoices,
   RecurringInvoice,
   RecurringInvoiceFilter,
   RecurringInvoiceInstance,
   RecurringInvoiceInstanceFilter,
+  RecurringInvoiceResponseDto,
   RecurringInvoiceStats,
   StatusCounts,
+  UpdateRecurringInvoiceDto,
 } from '../../../../interfaces/invoice/recurring-invoice/recurring-invoice.interface';
 
 @Injectable({
@@ -110,9 +113,8 @@ export class RecurringInvoiceService {
       );
   }
 
-  getRecurringInvoiceById(id: number): Observable<RecurringInvoice> {
-    return this.http.get<any>(`${this.apiUrl}/${id}`).pipe(
-      map((response) => this.mapToRecurringInvoice(response)),
+    getRecurringInvoiceById(id: number): Observable<RecurringInvoiceResponseDto> {
+    return this.http.get<RecurringInvoiceResponseDto>(`${this.apiUrl}/${id}`).pipe(
       catchError((error) =>
         this.handleError(error, 'Failed to fetch recurring invoice'),
       ),
@@ -137,9 +139,8 @@ export class RecurringInvoiceService {
       );
   }
 
-  createRecurringInvoice(formData: FormData): Observable<RecurringInvoice> {
-    return this.http.post<any>(this.apiUrl, formData).pipe(
-      map((response) => this.mapToRecurringInvoice(response)),
+  createRecurringInvoice(dto: CreateRecurringInvoiceDto): Observable<RecurringInvoiceResponseDto> {
+    return this.http.post<RecurringInvoiceResponseDto>(this.apiUrl, dto).pipe(
       catchError((error) =>
         this.handleError(error, 'Failed to create recurring invoice'),
       ),
@@ -148,10 +149,9 @@ export class RecurringInvoiceService {
 
   updateRecurringInvoice(
     id: number,
-    formData: FormData,
-  ): Observable<RecurringInvoice> {
-    return this.http.put<any>(`${this.apiUrl}/${id}`, formData).pipe(
-      map((response) => this.mapToRecurringInvoice(response)),
+    dto: UpdateRecurringInvoiceDto,
+  ): Observable<RecurringInvoiceResponseDto> {
+    return this.http.put<RecurringInvoiceResponseDto>(`${this.apiUrl}/${id}`, dto).pipe(
       catchError((error) =>
         this.handleError(error, 'Failed to update recurring invoice'),
       ),

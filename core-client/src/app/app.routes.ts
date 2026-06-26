@@ -78,6 +78,7 @@ import { AdminOrUserGuard } from './core/guards/admin-or-user.guard';
 import { TaskDetailComponent } from './modules/tasks/components/task-detail/task-detail.component';
 import { RecurringInvoiceListComponent } from './modules/invoice/recurring-invoice/components/recurring-invoice-list/recurring-invoice-list.component';
 import { CustomerDetailsComponent } from './modules/customer/components/customer-details/customer-details.component';
+import { CreateRecurringInvoiceComponent } from './modules/invoice/recurring-invoice/components/recurring-invoice-upsert/recurring-invoice-upsert.component';
 
 /**
  * Main application routes configuration
@@ -244,7 +245,7 @@ export const routes: Routes = [
        * Recurring Invoice Management Routes
        * Accessible based on user roles and permissions
        */
-       {
+      {
         path: 'invoices/recurring',
         children: [
           {
@@ -253,7 +254,16 @@ export const routes: Routes = [
             canActivate: [InvoiceAccessGuard], // All authenticated users
             data: { title: 'Invoices' },
           },
-        ]
+          {
+            path: 'create',
+            component: CreateRecurringInvoiceComponent ,
+            canActivate: [UserGuard], // Super Admin, Admin, User
+            data: {
+              title: 'Create Recurring Invoice',
+              roles: ['Admin', 'User', 'Super Admin'],
+            },
+          },
+        ],
       },
       /**
        * Customer Management Routes
@@ -268,7 +278,7 @@ export const routes: Routes = [
             canActivate: [AdminGuard], // Super Admin, Admin only
             data: { title: 'Customers', roles: ['Admin'] },
           },
-           {
+          {
             path: 'view/:id',
             component: CustomerDetailsComponent,
             canActivate: [AdminGuard], // Super Admin, Admin only
